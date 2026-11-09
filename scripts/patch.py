@@ -157,6 +157,11 @@ REPL = [
  ("<td>تُطبَّق داخل الواجهة؛ الدخول بالبريد دون كلمة مرور</td><td>ربط Microsoft Entra ID وطبقة خادم (API) تتحقق من الدور في كل طلب.</td>", "<td>الخادم يتحقق من الدور في كل طلب؛ الدخول بالبريد وكلمة المرور</td><td>ربط Microsoft Entra ID للدخول الموحّد (اختياري).</td>"),
  ('<button class="btn ghost sm" data-act="edituser" data-id="${u.id}">تحرير</button>', '<button class="btn ghost sm" data-act="pw-reset" data-id="${u.id}">كلمة المرور</button> <button class="btn ghost sm" data-act="edituser" data-id="${u.id}">تحرير</button>'),
 ]
+
+# 4) مزامنة مدة فيديو يوتيوب: تُحفظ في الدورة لمدير التدريب فقط، وللموظف في تقدّمه
+_a="les.dur=d;PL.p.dur=d;commit('libs');commit('progress');"
+assert _a in h; h=h.replace(_a,"PL.p.dur=d;commit('progress');if(S.role==='trainmgr'){les.dur=d;commit('libs')}")
+
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
     h = h.replace(a_, b_)

@@ -3128,7 +3128,7 @@ async function ytAttach(){
    playerVars:{playsinline:1,rel:0,modestbranding:1,disablekb:1,iv_load_policy:3,enablejsapi:1,origin:location.origin},
    events:{
     onReady:()=>{if(PL.les!==les)return;const d=Math.ceil(PL.yt.getDuration()||0);
-      if(d>0&&Math.abs(d-les.dur)>1){const old=les.dur;les.dur=d;PL.p.dur=d;commit('libs');commit('progress');audit('lesson.dur.sync','lesson',les.id,`المدة من ${old} إلى ${d} ث وفق مشغّل يوتيوب`)}
+      if(d>0&&Math.abs(d-les.dur)>1){const old=les.dur;PL.p.dur=d;commit('progress');if(S.role==='trainmgr'){les.dur=d;commit('libs')}audit('lesson.dur.sync','lesson',les.id,`المدة من ${old} إلى ${d} ث وفق مشغّل يوتيوب`)}
       if(!failed)ytRecordEmbed(lib,true);
       const pos=PL.p.pos||0;if(pos>0.5&&pos<les.dur-1.5){try{PL.yt.seekTo(pos,true)}catch(e){}PL.ytCt=pos}
       PL.yPrev=null;PL.lastCt=null;const s=document.getElementById('ytstate');if(s)s.textContent='';updatePlayerUI();ytStartPoll()},
