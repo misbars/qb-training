@@ -10,5 +10,5 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "qb-training-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "b71ed1f4-aa18-4c4c-90a6-64bd12c41735"
 migrations_dir = "migrations"

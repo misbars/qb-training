@@ -30,5 +30,5 @@ npm run dev             # http://localhost:8787
 
 ## النشر على Cloudflare
 
-1. أنشئ قاعدة D1 باسم `qb-training-db` وضع معرّفها في `wrangler.toml` مكان `REPLACE_WITH_D1_DATABASE_ID`.
+1. قاعدة D1 `qb-training-db` مربوطة في `wrangler.toml`.
 2. اربط المستودع من لوحة Cloudflare (Workers ← Import a repository)، وأمر النشر: `npm run deploy` (يطبّق ترحيلات قاعدة البيانات ثم ينشر).
