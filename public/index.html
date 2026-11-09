@@ -1479,7 +1479,7 @@ function renderLibEd(){
    <div class="field"><label>المدرب</label><select class="inp" data-ed="trainerId">${options(DB.trainers.filter(t=>t.status==='active'||t.id===e.trainerId).map(t=>[t.id,t.name]),e.trainerId,'—')}</select></div>
    <div class="field"><label>المجال</label><select class="inp" data-ed="cat">${options(Object.entries(CATS),e.cat)}</select></div>
    <div class="field"><label>الفئة المستهدفة</label><input class="inp" ${ed('audience',e.audience)}></div>
-   <div class="field"><label>الساعات المعتمدة عند الإتمام</label><input class="inp" type="number" min="0" step="0.5" data-num data-ed="creditHours" value="${e.creditHours}"></div>
+   <div class="field"><label>الساعات المعتمدة عند الإتمام</label><input class="inp" type="number" min="0" step="0.5" data-num data-ed="creditHours" value="${e.creditHours}"><span class="ins">القاعدة المعتمدة: المدة الفعلية للدورة مقرّبة لأقرب نصف ساعة للأسفل، ولا تُحتسب إلا بعد اجتياز الاختبار النهائي.</span></div>
    <div class="field full"><label>الصورة التعريفية (JPG/PNG)</label><div class="row center" style="gap:10px">${e.cover?`<img src="${e.cover}" alt="" style="height:54px;border-radius:8px">`:''}<input class="inp" type="file" accept="image/jpeg,image/png" data-act="cover-pick"></div></div>
    <div class="field full"><label>مخرجات التعلّم (سطر لكل مخرج)</label><textarea class="inp" rows="2" data-ed="objectives" data-lines>${esc((e.objectives||[]).join('\n'))}</textarea></div></div>
   <h3 style="margin:14px 0 8px">المصدر والحقوق</h3><div class="fgrid3">
