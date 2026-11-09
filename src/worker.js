@@ -1,6 +1,22 @@
 // منصة التطوير والتدريب — خادم Cloudflare Workers + D1
 // دخول حقيقي، صلاحيات تُفحص في الخادم، حفظ على مستوى السجل مع كشف التعارض، ومزامنة حية.
 import { authorize, changed } from './rules.js';
+import SCHEMA from '../migrations/0001_init.sql';
+import SEED from '../migrations/0002_seed.sql';
+
+// تهيئة ذاتية: إن لم تكن الجداول موجودة تُنشأ وتُعبّأ بالبيانات الأولية (آمنة للتكرار)
+let READY = false;
+async function ensureReady(db) {
+  if (READY) return;
+  const t = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").first();
+  if (!t) {
+    const stmts = s => s.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('--'));
+    await db.batch(stmts(SCHEMA).map(q => db.prepare(q)));
+    const seed = stmts(SEED);
+    for (let i = 0; i < seed.length; i += 80) await db.batch(seed.slice(i, i + 80).map(q => db.prepare(q)));
+  }
+  READY = true;
+}
 
 const COLS = ['users','depts','jobs','comps','assess','courses','libs','enrolls','completions','surveys','attempts','progress','tests','mgrEvals','kpis','kpiMeas','kpiLinks','programs','plans','trainers','mails','audit','nominations','libenr','readings','readprog','comments','extreq','visits','retakes','files','settings'];
 const ROLE_PRI = ['sysadmin','trainmgr','linemgr','trainer','employee'];
@@ -186,8 +202,8 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname.startsWith('/api/')) {
-      try { return await api(req, env, url) }
-      catch (e) { console.error(e); return json({ error: 'خطأ في الخادم' }, 500) }
+      try { await ensureReady(env.DB); return await api(req, env, url) }
+      catch (e) { console.error(e); return json({ error: 'خطأ في الخادم: ' + String(e && e.message || e).slice(0, 200) }, 500) }
     }
     return env.ASSETS.fetch(req);
   }
