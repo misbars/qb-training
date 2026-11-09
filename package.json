@@ -1,0 +1,13 @@
+{
+  "name": "qb-training",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "migrate:local": "wrangler d1 migrations apply DB --local",
+    "migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+    "seed": "node scripts/make-seed.mjs"
+  },
+  "devDependencies": { "wrangler": "^4.20.0" }
+}
