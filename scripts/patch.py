@@ -162,6 +162,12 @@ REPL = [
 _a="les.dur=d;PL.p.dur=d;commit('libs');commit('progress');"
 assert _a in h; h=h.replace(_a,"PL.p.dur=d;commit('progress');if(S.role==='trainmgr'){les.dur=d;commit('libs')}")
 
+# 5) فحص التضمين يحدّث مدة درس يوتيوب الفعلية (لمدير التدريب)
+_b="events:{onReady:()=>{if(!settled){settled=true;clearTimeout(to);fin(true)}}"
+assert _b in h
+h=h.replace(_b,"events:{onReady:ev=>{if(!settled){settled=true;clearTimeout(to);const sync=()=>{try{const d=Math.ceil(ev.target.getDuration()||0);if(d>0&&Math.abs(d-les.dur)>1){const old=les.dur;les.dur=d;commit('libs');audit('lesson.dur.sync','lesson',les.id,'المدة من '+old+' إلى '+d+' ث وفق فحص التضمين');toast('حُدّثت مدة الدرس','وفق يوتيوب: '+mmss(d));return true}}catch(e){}return false};if(!sync()){try{ev.target.mute();ev.target.playVideo()}catch(e){}let k=0;const iv=setInterval(()=>{if(sync()||++k>16){clearInterval(iv);try{ev.target.stopVideo()}catch(e){}fin(true)}},500);return}fin(true)}}")
+h=h.replace("const fin=(ok,msg,code)=>{try{box.remove()}catch(e){}","const fin=(ok,msg,code)=>{if(box._done)return;box._done=1;try{box.remove()}catch(e){}",1)
+
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
     h = h.replace(a_, b_)

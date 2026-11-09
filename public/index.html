@@ -3173,11 +3173,11 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&PL.yt){try
 async function ytCheckEmbed(libId){
   const lib=libById(libId);if(!lib)return;const les=allLessons(lib).find(l=>l.src==='youtube');if(!les)return;
   const id=ytId(les.url);const box=document.createElement('div');box.style.cssText='position:fixed;left:-9999px;width:320px;height:180px';box.innerHTML='<div id="ytchk"></div>';document.body.appendChild(box);
-  const fin=(ok,msg,code)=>{try{box.remove()}catch(e){}ytRecordEmbed(lib,ok,msg,code);toast(ok?'التضمين متاح':'التضمين غير متاح',ok?lib.title:msg);draw()};
+  const fin=(ok,msg,code)=>{if(box._done)return;box._done=1;try{box.remove()}catch(e){}ytRecordEmbed(lib,ok,msg,code);toast(ok?'التضمين متاح':'التضمين غير متاح',ok?lib.title:msg);draw()};
   if(!id)return fin(false,YT_ERR[2],2);
   try{await ytLoadApi()}catch(e){return fin(false,e.message,0)}
   let settled=false;const to=setTimeout(()=>{if(!settled){settled=true;fin(false,'لم يستجب مشغّل يوتيوب خلال المهلة',0)}},12000);
-  new YT.Player('ytchk',{host:'https://www.youtube-nocookie.com',videoId:id,width:'320',height:'180',events:{onReady:()=>{if(!settled){settled=true;clearTimeout(to);fin(true)}},onError:e=>{if(!settled){settled=true;clearTimeout(to);fin(false,YT_ERR[e.data]||('خطأ '+e.data),e.data)}}}});
+  new YT.Player('ytchk',{host:'https://www.youtube-nocookie.com',videoId:id,width:'320',height:'180',events:{onReady:ev=>{if(!settled){settled=true;clearTimeout(to);const sync=()=>{try{const d=Math.ceil(ev.target.getDuration()||0);if(d>0&&Math.abs(d-les.dur)>1){const old=les.dur;les.dur=d;commit('libs');audit('lesson.dur.sync','lesson',les.id,'المدة من '+old+' إلى '+d+' ث وفق فحص التضمين');toast('حُدّثت مدة الدرس','وفق يوتيوب: '+mmss(d));return true}}catch(e){}return false};if(!sync()){try{ev.target.mute();ev.target.playVideo()}catch(e){}let k=0;const iv=setInterval(()=>{if(sync()||++k>16){clearInterval(iv);try{ev.target.stopVideo()}catch(e){}fin(true)}},500);return}fin(true)}},onError:e=>{if(!settled){settled=true;clearTimeout(to);fin(false,YT_ERR[e.data]||('خطأ '+e.data),e.data)}}}});
 }
 
 /* تفاصيل المشاهدة لكل موظف (لوحة مدير التدريب) */
