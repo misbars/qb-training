@@ -42,3 +42,11 @@ Object.assign(ACT,{
   'user-toggle-go'(t){closeLayer();toggleUser(t.dataset.id)},
 });
 {const _vp=VIEWS.profile;VIEWS.profile=()=>_vp()+`<div class="card pad" style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h3>كلمة المرور</h3><p class="muted small">غيّرها دوريًا، ولا تشاركها مع أحد.</p></div><button class="btn sec" data-act="pw-ask">تغيير كلمة المرور</button></div>`}
+
+/* تنبيه عند مغادرة صفحة المشاهدة (مثل فتح الفيديو في يوتيوب) */
+{let leftAt=0;document.addEventListener('visibilitychange',()=>{
+  const onYt=S.view==='player'&&document.querySelector('#view iframe[src*="youtube"]');
+  if(document.hidden){if(onYt)leftAt=Date.now();return}
+  if(leftAt&&onYt&&Date.now()-leftAt>3000)toast('المشاهدة تُحتسب داخل المنصة فقط','ما شوهد خارج هذه الصفحة لا يُضاف لتقدّمك. أكمل الفيديو هنا.');
+  leftAt=0;
+});}

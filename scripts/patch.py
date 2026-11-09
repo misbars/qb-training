@@ -173,6 +173,11 @@ _c='<label>الساعات المعتمدة عند الإتمام</label><input c
 assert _c in h
 h=h.replace(_c,'<label>الساعات المعتمدة عند الإتمام</label><input class="inp" type="number" min="0" step="0.5" data-num data-ed="creditHours" value="${e.creditHours}"><span class="ins">القاعدة المعتمدة: المدة الفعلية للدورة مقرّبة لأقرب نصف ساعة للأسفل، ولا تُحتسب إلا بعد اجتياز الاختبار النهائي.</span></div>')
 
+# 7) تنبيه واضح: المشاهدة تُحتسب داخل المنصة فقط
+_d="function ytPrivacyNote(){return `"
+assert _d in h
+h=h.replace(_d,"function ytPrivacyNote(){return `<div class=\"note warn\" style=\"margin-top:10px\"><b>شاهد الفيديو هنا داخل المنصة.</b> لا تُحتسب إلا المشاهدة في هذه الصفحة. الضغط على شعار يوتيوب أو عنوان الفيديو يفتحه في موقع يوتيوب، وما تشاهده هناك لا يُضاف لتقدّمك.</div>",1)
+
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
     h = h.replace(a_, b_)
