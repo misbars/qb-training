@@ -134,7 +134,7 @@ Object.assign(ACT,{
   async logout(){audit('logout','session','');detachPlayer();await flush();try{await api('/api/logout')}catch(e){}S.me=null;S.role=null;P.loaded=false;COLS.forEach(c=>DB[c]=[]);draw()},
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lg_pw')ACT['login-email']()});
-"""+open(os.path.join(os.path.dirname(__file__),"client-extra.js"),encoding="utf-8").read()+r"""
+"""+"".join(open(os.path.join(os.path.dirname(__file__),n),encoding="utf-8").read()+"\n" for n in ("client-extra.js","reports.js"))+r"""
 """
 boot_a = h.index('(async function boot(){')
 boot_b = h.index('})();', boot_a) + len('})();')
