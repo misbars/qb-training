@@ -331,6 +331,20 @@ tbody tr.click:hover td{background:var(--sky-3)}
 
 td.num,th.num{display:table-cell;text-align:right}
 /* ===== خط ثمانية ===== */
+.kpi .v small,.kpi-c .v small,.kv-val small,.v .unit,.kv-val .unit{font-family:var(--font);font-weight:500;font-size:.48em;color:var(--ink-3);margin-inline-start:4px;letter-spacing:0}
+.kpi .v small{font-size:.5em}
+.tag,.pill,.rec,.badge{white-space:nowrap;line-height:1.5}
+td .tag{margin-inline-start:6px}td .tag:first-child{margin-inline-start:0}
+td b{font-weight:600}
+.tbl-wrap td:first-child{min-width:170px}
+td.small.num,td .small.num{white-space:nowrap}
+.nav-h,.switch-l,.save-st{font-size:12.5px}
+.ring span{font-size:12px;line-height:1.3;display:block;max-width:84px;margin-inline:auto}
+.chart text{font-size:13px}
+.mini{font-size:12px}
+.tabs{scrollbar-width:thin;-webkit-mask-image:linear-gradient(to left,#000 92%,transparent);mask-image:linear-gradient(to left,#000 92%,transparent)}
+@media(max-width:900px){.tbl-wrap table{min-width:680px}.tbl-wrap td{min-width:110px}.tabs button{padding:10px 12px;font-size:14px}.ring{width:104px;height:104px}.ring div{width:82px;height:82px}.ring b{font-size:22px}}
+
 :root{--font:"Thmanyah Sans","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;--display:"Thmanyah Serif Display","Thmanyah Sans","IBM Plex Sans Arabic",serif}
 body{font-feature-settings:"kern" 1}
 .page-h h1,.hero h1,.login-art h1,.login-box h2,.login-art .brand-l b,.m-h h3,.kpi .v,.kpi-c .v,.ring b,.stats-row b{font-family:var(--display);font-weight:700;letter-spacing:0}
@@ -487,7 +501,7 @@ async function flush(){
       if(x.ok)setBase(op.col,op.id,op.delete?null:op.data,x.ver);
       else{applyServerRow(op.col,op.id,x.data,x.ver,x.deleted||!x.data);if(op.col!=='audit')reverted.push(x)}
     });
-    P.failed=false;P.online=true;P.msg='محفوظ في الخادم · '+new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    P.failed=false;P.online=true;P.msg='محفوظ في الخادم · '+new Date().toLocaleTimeString('ar-SA-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
     P.failed=true;P.online=false;P.msg='تعذّر الحفظ في الخادم — سيُعاد المحاولة ('+e.message+')';
     clearTimeout(P.t);P.t=setTimeout(flush,3000);
@@ -1464,7 +1478,7 @@ function libDash(){
     ${rows.length?`<div class="kv"><dt>متوسط نسبة الإتمام</dt><dd><b class="num">${num(avg(rows.map(r=>r.pct)),1)}%</b></dd><dt>متوسط درجة الاختبار</dt><dd>${scores.length?`<b class="num">${num(avg(scores),1)}%</b> <span class="small muted">(أفضل محاولة لكل متعلّم، ن=${scores.length})</span>`:'<span class="muted">لا اختبارات بعد</span>'}</dd><dt>الأكثر تشغيلًا</dt><dd>${most?esc(most.l.title)+' <span class="small muted">('+most.plays+' تشغيلًا)</span>':'—'}</dd><dt>الأقل إتمامًا</dt><dd>${least&&least.rate!=null?esc(least.l.title)+' <span class="small muted">('+num(least.rate,0)+'%)</span>':'—'}</dd></div>`:'<div class="empty">لا بيانات مطابقة للمرشّحات</div>'}</section>
    <section class="card pad"><h3>التوزيع حسب الإدارة</h3><div class="h-sub" style="margin-bottom:10px">عدد المستفيدين</div>${Object.keys(byDept).length?Object.entries(byDept).map(([d,s])=>`<div class="hb" style="grid-template-columns:150px 1fr 36px"><span class="t">${esc(d)}</span><div class="bar navy"><i style="width:${s.size/dmax*100}%"></i></div><b class="num">${s.size}</b></div>`).join(''):'<div class="muted">لا بيانات</div>'}</section>
   </div>
-  <section class="card"><div class="row between center pad" style="padding-bottom:0"><h3>سجل المتعلّمين</h3><div class="row" style="gap:8px"><button class="btn ghost sm" data-act="exp-lib" data-fmt="xlsx">Excel</button><button class="btn ghost sm" data-act="exp-lib" data-fmt="csv">CSV</button></div></div><div class="tbl-wrap"><table class="sm-t"><thead><tr><th>الموظف</th><th>الدورة</th><th>الإتمام</th><th>تشغيل</th><th>ساعات فعلية</th><th>الاختبار</th><th>الحالة</th><th>آخر مشاهدة</th><th></th></tr></thead><tbody>${rows.length?rows.map(r=>`<tr><td>${esc(r.u.name)} ${demoTag(r.u)}</td><td>${esc(r.l.title)}</td><td style="min-width:110px"><div class="pbar"><i style="width:${r.pct}%"></i></div><span class="small num">${r.pct}%</span></td><td class="num">${r.plays}</td><td class="num">${num(r.secs/3600,2)}</td><td>${r.best!=null?`<b class="num">${r.best}%</b> <span class="small muted">(${r.att} محاولة)</span>`:'—'}</td><td>${r.passed?'<span class="tag ok">ناجح</span>':'<span class="tag warn">غير مكتمل</span>'}${r.attested?' <span class="tag mini" title="إقرار ذاتي غير مُتحقَّق">إقرار</span>':''}</td><td class="small">${r.last?esc(fmt(r.last)):'—'}</td><td style="text-align:end"><button class="btn ghost sm" data-act="watch-detail" data-u="${r.u.id}" data-l="${r.l.id}">التفاصيل</button></td></tr>`).join(''):'<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">لا بيانات</td></tr>'}</tbody></table></div></section>
+  <section class="card"><div class="row between center pad" style="padding-bottom:0"><h3>سجل المتعلّمين</h3><div class="row" style="gap:8px"><button class="btn ghost sm" data-act="exp-lib" data-fmt="xlsx">Excel</button><button class="btn ghost sm" data-act="exp-lib" data-fmt="csv">CSV</button></div></div><div class="tbl-wrap"><table class="sm-t"><thead><tr><th>الموظف</th><th>الدورة</th><th>الإتمام</th><th>تشغيل</th><th>ساعات فعلية</th><th>الاختبار</th><th>الحالة</th><th>آخر مشاهدة</th><th></th></tr></thead><tbody>${rows.length?rows.map(r=>`<tr><td>${esc(r.u.name)} ${demoTag(r.u)}</td><td>${esc(r.l.title)}</td><td style="min-width:110px"><div class="pbar"><i style="width:${r.pct}%"></i></div><span class="small num">${r.pct}%</span></td><td class="num">${r.plays}</td><td class="num">${num(r.secs/3600,2)}</td><td>${r.best!=null?`<span style="white-space:nowrap"><b class="num">${r.best}%</b> <span class="small muted">(${r.att} ${r.att===1?'محاولة':r.att===2?'محاولتان':'محاولات'})</span></span>`:'—'}</td><td>${r.passed?'<span class="tag ok">ناجح</span>':'<span class="tag warn">غير مكتمل</span>'}${r.attested?' <span class="tag mini" title="إقرار ذاتي غير مُتحقَّق">إقرار</span>':''}</td><td class="small">${r.last?esc(fmt(r.last)):'—'}</td><td style="text-align:end"><button class="btn ghost sm" data-act="watch-detail" data-u="${r.u.id}" data-l="${r.l.id}">التفاصيل</button></td></tr>`).join(''):'<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">لا بيانات</td></tr>'}</tbody></table></div></section>
   <p class="ins" style="margin-top:10px">«ساعات التعلّم الإلكتروني» تُحسب من الثواني المُشغَّلة تشغيلًا متصلًا، وليست الساعات المعتمدة في الشهادة.</p>`;
 }
 function libCourses(){
@@ -1985,16 +1999,16 @@ function l3Stats(){
   return {all,done,pending:all.filter(x=>x.state==='due'),missed:all.filter(x=>x.state==='missed'),overdue:all.filter(x=>x.state==='due'&&dBetween(x.due,TODAY())>14),avg:done.length?avg(done.map(x=>x.ev.rating)):null};
 }
 function vImpact(){
-  const tabs=[['ov','نظرة عامة'],['l1','١ · رد الفعل'],['l2','٢ · التعلّم'],['l3','٣ · السلوك'],['l4','٤ · النتائج']];const t=curTab('impact',tabs);
+  const tabs=[['ov','نظرة عامة'],['l1','1 · رد الفعل'],['l2','2 · التعلّم'],['l3','3 · السلوك'],['l4','4 · النتائج']];const t=curTab('impact',tabs);
   return `${pg('قياس أثر التدريب','نموذج كيركباتريك بأربعة مستويات. لا تُعرض نسبة أثر أو تحسّن إلا إذا وُجدت بيانات موثّقة كافية خلفها.')}${tabsHtml('impact',tabs)}${t==='ov'?impOv():t==='l1'?impL1():t==='l2'?impL2():t==='l3'?impL3():impL4()}`;
 }
 function impOv(){
   const s1=DB.surveys.filter(inc),pairs=learningPairs(),l3=l3Stats(),links=DB.kpiLinks.filter(inc).map(kpiImpact).filter(x=>x&&x.ok);
-  const tile=(n,title,ok,val,detail,go)=>`<div class="card pad" style="${ok?'':'background:#FAF8F3'}"><div class="small muted">المستوى <span class="num">${n}</span></div><b style="color:var(--navy);font-weight:600">${title}</b><div style="margin:8px 0;min-height:40px">${ok?`<span class="num" style="font-size:28px;font-weight:600;color:var(--teal)">${val}</span>`:insufficient('')}</div><div class="small muted">${detail}</div><button class="btn ghost sm" style="margin-top:10px" data-act="tab" data-key="impact" data-v="l${n}">التفاصيل</button></div>`;
-  return `<div class="grid g4">${tile(1,'رد الفعل (الرضا)',s1.length>=MIN_N.l1,num(avg(s1.map(surveyPct)),0)+'%',`${N(s1.length)} استبيانًا · الحد الأدنى ${MIN_N.l1}`)}
-  ${tile(2,'التعلّم',pairs.length>=MIN_N.l2,(avg(pairs.map(p=>p.gain))>=0?'+':'')+num(avg(pairs.map(p=>p.gain)),1)+' نقطة',`${N(pairs.length)} زوج اختبار قبلي/بعدي · الحد الأدنى ${MIN_N.l2}`)}
-  ${tile(3,'السلوك (تقييم الرئيس)',l3.done.length>=MIN_N.l3,num(l3.avg,1)+' / 5',`${N(l3.done.length)} تقييمًا منجزًا من ${N(l3.all.length)} مستحقًا`)}
-  ${tile(4,'النتائج (مؤشرات الأداء)',links.length>=1,N(links.length)+' مؤشر',`${N(DB.kpiLinks.filter(inc).length)} ربطًا · القابل للقياس ${N(links.length)}`)}</div>
+  const tile=(n,title,ok,val,detail,go)=>`<div class="card pad" style="${ok?'':'background:#FAF8F3'}"><div class="small muted">المستوى <span class="num">${n}</span></div><b style="color:var(--navy);font-weight:600">${title}</b><div style="margin:8px 0;min-height:40px">${ok?`<span class="kv-val" style="font-size:30px;font-weight:700;font-family:var(--display);color:var(--navy)">${val}</span>`:insufficient('')}</div><div class="small muted">${detail}</div><button class="btn ghost sm" style="margin-top:10px" data-act="tab" data-key="impact" data-v="l${n}">التفاصيل</button></div>`;
+  return `<div class="grid g4">${tile(1,'رد الفعل (الرضا)',s1.length>=MIN_N.l1,'<bdi class="num">'+num(avg(s1.map(surveyPct)),0)+'%</bdi>',`${N(s1.length)} استبيانًا · الحد الأدنى ${MIN_N.l1}`)}
+  ${tile(2,'التعلّم',pairs.length>=MIN_N.l2,'<bdi class="num">'+(avg(pairs.map(p=>p.gain))>=0?'+':'')+num(avg(pairs.map(p=>p.gain)),1)+'</bdi> <small class="unit">نقطة</small>',`${N(pairs.length)} زوج اختبار قبلي/بعدي · الحد الأدنى ${MIN_N.l2}`)}
+  ${tile(3,'السلوك (تقييم الرئيس)',l3.done.length>=MIN_N.l3,'<bdi class="num">'+num(l3.avg,1)+'</bdi> <small class="unit">من 5</small>',`${N(l3.done.length)} تقييمًا منجزًا من ${N(l3.all.length)} مستحقًا`)}
+  ${tile(4,'النتائج (مؤشرات الأداء)',links.length>=1,'<bdi class="num">'+N(links.length)+'</bdi> <small class="unit">مؤشر</small>',`${N(DB.kpiLinks.filter(inc).length)} ربطًا · القابل للقياس ${N(links.length)}`)}</div>
   <div class="note" style="margin-top:16px">المصدر: بيانات المنصة نفسها (استبيانات، اختبارات، تقييمات الرؤساء، قياسات المؤشرات). عندما يقل عدد السجلات عن الحد الأدنى تُعرض «بيانات غير كافية» بدل رقم قد يضلّل.</div>`;
 }
 function impL1(){
@@ -2004,7 +2018,7 @@ function impL1(){
 function impL2(){
   const L=l2Stats(),pairs=learningPairs();
   const postOnly=DB.tests.filter(t=>inc(t)&&t.kind==='post').filter(t=>!DB.tests.some(x=>x.userId===t.userId&&x.ref===t.ref&&x.refId===t.refId&&x.kind==='pre')).length;
-  return `<div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>البرنامج</th><th>أزواج (قبلي+بعدي)</th><th>متوسط القبلي</th><th>متوسط البعدي</th><th>متوسط التحسّن</th></tr></thead><tbody>${L.length?L.map(r=>`<tr><td><b>${esc(titleOf(r.ref,r.rid))}</b></td><td class="num">${r.n}${r.n<MIN_N.l2?' <span class="tag warn mini">عينة صغيرة</span>':''}</td>${r.n>=MIN_N.l2?`<td class="num">${num(r.pre,1)}</td><td class="num">${num(r.post,1)}</td><td><b class="num">${r.gain>=0?'+':''}${num(r.gain,1)}</b> نقطة</td>`:'<td colspan="3" class="small muted">غير كافٍ</td>'}</tr>`).join(''):'<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">لا أزواج اختبارات</td></tr>'}</tbody></table></div>
+  return `<div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>البرنامج</th><th>أزواج (قبلي+بعدي)</th><th>متوسط القبلي</th><th>متوسط البعدي</th><th>متوسط التحسّن</th></tr></thead><tbody>${L.length?L.map(r=>`<tr><td><b>${esc(titleOf(r.ref,r.rid))}</b></td><td class="num">${r.n}${r.n<MIN_N.l2?' <span class="tag warn mini">عينة صغيرة</span>':''}</td>${r.n>=MIN_N.l2?`<td class="num">${num(r.pre,1)}</td><td class="num">${num(r.post,1)}</td><td style="white-space:nowrap"><bdi class="num"><b>${r.gain>=0?'+':''}${num(r.gain,1)}</b></bdi> نقطة</td>`:'<td colspan="3" class="small muted">غير كافٍ</td>'}</tr>`).join(''):'<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">لا أزواج اختبارات</td></tr>'}</tbody></table></div>
   <p class="ins" style="margin-top:8px">لا تُحسب نسبة التحسّن إلا للمتعلّم الذي له اختبار قبلي وبعدي معًا. ${postOnly?`يوجد <b class="num">${postOnly}</b> اختبار بعدي بلا قبلي، لذلك لا يُحتسب في التحسّن.`:''}</p>`;
 }
 function impL3(){
@@ -3241,7 +3255,7 @@ function computeKPIs(deptId,year){
   const ot=sum(pst.map(s=>s.onTime)),otn=sum(pst.map(s=>s.onTimeN));put('ontime',otn?ot/otn*100:null,otn,3,'%',`${ot} من ${otn}`);
   return KPI_DICT.map(d=>Object.assign({name:d[1]},out[d[0]]));
 }
-const kpiFmt=k=>k.unit==='%'?num(k.v,0)+'%':k.unit==='ر.س'?num(k.v,0)+' <small>ر.س</small>':k.unit==='نقطة'?(k.v>=0?'+':'')+num(k.v,1)+' <small>نقطة</small>':num(k.v,1)+' <small>'+k.unit+'</small>';
+const kpiFmt=k=>k.unit==='%'?'<bdi class="num">'+num(k.v,0)+'%</bdi>':k.unit==='ر.س'?'<bdi class="num">'+num(k.v,0)+'</bdi> <small class="unit">ر.س</small>':k.unit==='نقطة'?'<bdi class="num">'+(k.v>=0?'+':'')+num(k.v,1)+'</bdi> <small class="unit">نقطة</small>':'<bdi class="num">'+num(k.v,1)+'</bdi> <small class="unit">'+k.unit+'</small>';
 
 /* ---- لوحة التحكم ---- */
 function vDash(){
@@ -3272,9 +3286,9 @@ function vDash(){
    <section class="card pad"><h3>الساعات التدريبية المعتمدة شهريًا</h3><div class="h-sub">من سجل الإنجازات الفعلي لعام ${Y}</div>${hrs?`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="الساعات الشهرية">${grid}${bars}</svg>`:'<div class="empty">لا إنجازات مسجّلة هذا العام</div>'}</section>
    <section class="card pad"><h3>يحتاج انتباهك</h3><div class="h-sub" style="margin-bottom:6px">مؤشرات استباقية</div>${alerts.length?alerts.join(''):`<div class="empty">${ico('check')}<div>لا تنبيهات حاليًا</div></div>`}</section></div>
   <section class="card pad"><div class="row between wrap"><div><h3>أثر التدريب — كيركباتريك</h3><div class="h-sub">تُعرض الأرقام فقط عند توفر بيانات كافية</div></div><button class="btn ghost sm" data-act="go" data-v="impact">التفاصيل</button></div>
-   <div class="grid g4" style="margin-top:14px">${[['1','رد الفعل',K.sat,k=>num(k.v,0)+'%'],['2','التعلّم',K.learn,k=>(k.v>=0?'+':'')+num(k.v,1)+' نقطة'],['3','السلوك',K.apply,k=>num(k.v,0)+'% تطبيق جيد'],['4','النتائج',null,null]].map(([n,t,k,f])=>{
+   <div class="grid g4" style="margin-top:14px">${[['1','رد الفعل',K.sat,k=>'<bdi class="num">'+num(k.v,0)+'%</bdi>'],['2','التعلّم',K.learn,k=>'<bdi class="num">'+(k.v>=0?'+':'')+num(k.v,1)+'</bdi> <small class="unit">نقطة</small>'],['3','السلوك',K.apply,k=>'<bdi class="num">'+num(k.v,0)+'%</bdi> <small class="unit">تطبيق جيد</small>'],['4','النتائج',null,null]].map(([n,t,k,f])=>{
      const l4=DB.kpiLinks.filter(inc).map(kpiImpact).filter(x=>x&&x.ok).length;const ok=n==='4'?l4>0:k.ok;
-     return `<div style="border:1px solid var(--line);border-radius:12px;padding:14px;${ok?'background:var(--sky-3)':''}"><div class="small muted">المستوى <span class="num">${n}</span></div><b style="color:var(--navy);font-weight:600">${t}</b><div style="font-size:${ok?22:15}px;font-weight:600;color:${ok?'var(--teal)':'var(--ink-3)'};margin:6px 0" class="num">${ok?(n==='4'?l4+' مؤشر مرتبط':f(k)):'بيانات غير كافية'}</div><div class="small muted">${n==='4'?'ربط برامج بمؤشرات الأداء':'ن='+k.n+' (الحد الأدنى '+k.min+')'}</div></div>`}).join('')}</div></section>`;
+     return `<div style="border:1px solid var(--line);border-radius:12px;padding:14px;${ok?'background:var(--sky-3)':''}"><div class="small muted">المستوى <span class="num">${n}</span></div><b style="display:block;color:var(--navy);font-weight:700">${t}</b><div class="kv-val" style="font-size:${ok?26:15}px;font-weight:700;font-family:${ok?'var(--display)':'var(--font)'};color:${ok?'var(--navy)':'var(--ink-3)'};margin:6px 0">${ok?(n==='4'?'<bdi class="num">'+l4+'</bdi> <small class="unit">مؤشر مرتبط</small>':f(k)):'بيانات غير كافية'}</div><div class="small muted">${n==='4'?'ربط برامج بمؤشرات الأداء':'ن='+k.n+' (الحد الأدنى '+k.min+')'}</div></div>`}).join('')}</div></section>`;
 }
 
 /* ---- التقارير ---- */
@@ -3288,7 +3302,7 @@ function repKpi(){
   const ks=computeKPIs(S.rp.dept,S.rp.year);const years=[...new Set([...DB.plans.map(p=>p.year),...DB.completions.map(c=>+c.date.slice(0,4)),+TODAY().slice(0,4)])].sort((a,b)=>b-a);
   return `<div class="card pad" style="margin-bottom:16px"><div class="sel-bar">${scopeSel()}<select class="inp" data-rp="year" aria-label="السنة">${options(years.map(y=>[String(y),String(y)]),S.rp.year)}</select><span style="flex:1"></span><button class="btn ghost sm" data-act="exp-kpi" data-fmt="xlsx">Excel</button><button class="btn ghost sm" data-act="exp-pdf" data-sel="#kpigrid" data-name="مؤشرات التدريب.pdf">PDF</button></div></div>
   <div id="kpigrid"><div class="small muted" style="margin-bottom:8px">${esc(S.rp.dept?deptName(S.rp.dept):'الجمعية كاملة')} · عام ${S.rp.year}${hasDemo()&&S.showDemo?' · <span class="tag demo mini">يتضمن بيانات تجريبية</span>':''}</div>
-  <div class="grid g4">${ks.map(k=>`<div class="card kpi-c"><span class="t">${esc(k.name)}</span>${k.ok?`<span class="v num">${kpiFmt(k)}</span><span class="ins">${esc(k.extra)}</span>`:`<span class="na">بيانات غير كافية</span><span class="ins">${k.v==null?'لا بيانات للحساب':'ن='+k.n+' (الحد الأدنى '+k.min+')'}</span>`}</div>`).join('')}</div></div>`;
+  <div class="grid g4">${ks.map(k=>`<div class="card kpi-c"><span class="t">${esc(k.name)}</span>${k.ok?`<span class="v">${kpiFmt(k)}</span><span class="ins">${esc(k.extra)}</span>`:`<span class="na">بيانات غير كافية</span><span class="ins">${k.v==null?'لا بيانات للحساب':'ن='+k.n+' (الحد الأدنى '+k.min+')'}</span>`}</div>`).join('')}</div></div>`;
 }
 function repDict(){
   return `<div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>المؤشر</th><th>التعريف</th><th>المعادلة</th><th>مصدر البيانات</th><th>الدورية</th><th>المسؤول</th></tr></thead><tbody>${KPI_DICT.map(d=>`<tr><td><b style="color:var(--navy)">${esc(d[1])}</b></td><td>${esc(d[2])}</td><td class="small">${esc(d[3])}</td><td class="small">${esc(d[4])}</td><td class="small">${esc(d[5])}</td><td class="small">${esc(d[6])}</td></tr>`).join('')}</tbody></table></div>
@@ -3473,7 +3487,7 @@ function vAdmData(){
   const tot=sum(COLS.map(sizeOf));const iss=S.integ;
   return `${pg('البيانات والنسخ الاحتياطي','حفظ البيانات واستعادتها وفحص سلامتها والتحكم في البيانات التجريبية.')}
   <div class="grid g2" style="margin-bottom:18px">
-  <section class="card pad"><h3>وضع التخزين</h3><div class="h-sub" style="margin-bottom:10px">أين تُحفَظ البيانات الآن</div><div class="kv"><dt>الوضع</dt><dd><b>${P.mode!=='local'?'قاعدة بيانات الخادم (مشتركة)':'تخزين محلي في هذا المتصفح'}</b></dd><dt>الحالة</dt><dd>${esc(P.msg)}</dd><dt>الحجم التقريبي</dt><dd class="num">${num(tot/1024,1)} ك.بايت</dd></div>${P.mode==='local'?'<div class="note warn" style="margin-top:12px">في الوضع المحلي لا تظهر بياناتك لمستخدمين آخرين ولا تنتقل بين الأجهزة. للتشغيل متعدد المستخدمين يلزم قاعدة بيانات مشتركة بصلاحيات كتابة.</div>':''}</section>
+  <section class="card pad"><h3>وضع التخزين</h3><div class="h-sub" style="margin-bottom:10px">أين تُحفَظ البيانات الآن</div><div class="kv"><dt>الوضع</dt><dd><b>${P.mode!=='local'?'قاعدة بيانات الخادم (مشتركة)':'تخزين محلي في هذا المتصفح'}</b></dd><dt>الحالة</dt><dd>${esc(P.msg)}</dd><dt>الحجم التقريبي</dt><dd><bdi class="num">${num(tot/1024,1)}</bdi> ك.بايت</dd></div>${P.mode==='local'?'<div class="note warn" style="margin-top:12px">في الوضع المحلي لا تظهر بياناتك لمستخدمين آخرين ولا تنتقل بين الأجهزة. للتشغيل متعدد المستخدمين يلزم قاعدة بيانات مشتركة بصلاحيات كتابة.</div>':''}</section>
   <section class="card pad"><h3>نسخ احتياطي واستعادة</h3><div class="h-sub" style="margin-bottom:10px">ملف JSON يضم كل المجموعات</div><div class="row wrap" style="gap:10px"><button class="btn" data-act="backup">${ico('download')}تنزيل نسخة احتياطية</button><label class="btn sec" style="cursor:pointer">استعادة من ملف<input type="file" id="rs_file" accept="application/json,.json" style="display:none"></label></div><div class="ins" style="margin-top:8px">الاستعادة تستبدل كل البيانات الحالية. يُنصح بتنزيل نسخة قبلها.</div></section></div>
   <div class="grid g2" style="margin-bottom:18px">
   <section class="card pad"><h3>فحص سلامة البيانات</h3><div class="h-sub" style="margin-bottom:10px">سجلات يتيمة وتكرارات وتجاوزات</div><button class="btn sm" data-act="integrity">تشغيل الفحص</button>${iss?(iss.length?`<div style="margin-top:12px">${iss.map(i=>`<div class="rate-row"><span class="small">${esc(i.label)}</span><span><b class="num">${i.n}</b></span></div>`).join('')}</div>${iss.some(i=>i.fix)?'<button class="btn gold sm" style="margin-top:10px" data-act="integrity-fix">إصلاح ما يمكن إصلاحه تلقائيًا</button>':''}`:'<div class="tag ok" style="margin-top:12px">لم تُكتشف مشكلات</div>'):''}</section>
@@ -3885,7 +3899,7 @@ function vReportBuilder(){
   const attRate=pct(s.att,s.enr);
   return `${pg(S.role==='trainmgr'?'التقارير والمؤشرات':'تقارير إدارتي',S.role==='trainmgr'?'اختر الفترة والنطاق ثم صدّر التقرير.':'تقارير الإنجاز التدريبي لقسمك ومن يتبعونك، لأي فترة تختارها.')}
   ${S.role==='trainmgr'?tabsHtml('reports',RB_TABS):''}
-  <div class="card pad" style="margin-bottom:16px;display:grid;gap:14px">
+  <div class="card pad" style="margin-bottom:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px">
     <div><div class="small muted" style="margin-bottom:6px">الفترة</div><div class="pills" role="group" aria-label="الفترة">${PRESETS.map(([k,l])=>`<button class="pill${f.preset===k?' on':''}" data-act="rb-preset" data-p="${k}" aria-pressed="${f.preset===k}">${l}</button>`).join('')}</div></div>
     <div class="sel-bar" style="align-items:flex-end">
       <label class="field" style="margin:0"><span class="small muted">من</span><input class="inp" type="date" data-rb="from" id="rb_from" value="${f.from}" max="${f.to}" style="width:auto"></label>
@@ -3897,7 +3911,7 @@ function vReportBuilder(){
       <button class="btn ghost sm" data-act="rb-export" data-fmt="csv">CSV</button>
     </div>
   </div>
-  <div id="rbrep" style="display:grid;gap:16px;background:var(--sand-2)">
+  <div id="rbrep" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px;background:var(--sand-2)">
     <div class="card pad"><h3>تقرير الإنجاز التدريبي — ${esc(scopeLabel(f))}</h3><div class="h-sub">الفترة ${esc(period)} · ${empN(s.emps)}${single&&r0?' · '+esc(deptName(r0.u.deptId)):''} · أُعدّ في ${fmt(TODAY())} بواسطة ${esc((ME()||{}).name||'')}${hasDemo()&&S.showDemo?' · <span class="tag demo mini">يتضمن بيانات تجريبية</span>':''}</div></div>
     ${s.emps?`
     <div class="grid g4">

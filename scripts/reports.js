@@ -107,7 +107,7 @@ function vReportBuilder(){
   const attRate=pct(s.att,s.enr);
   return `${pg(S.role==='trainmgr'?'التقارير والمؤشرات':'تقارير إدارتي',S.role==='trainmgr'?'اختر الفترة والنطاق ثم صدّر التقرير.':'تقارير الإنجاز التدريبي لقسمك ومن يتبعونك، لأي فترة تختارها.')}
   ${S.role==='trainmgr'?tabsHtml('reports',RB_TABS):''}
-  <div class="card pad" style="margin-bottom:16px;display:grid;gap:14px">
+  <div class="card pad" style="margin-bottom:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px">
     <div><div class="small muted" style="margin-bottom:6px">الفترة</div><div class="pills" role="group" aria-label="الفترة">${PRESETS.map(([k,l])=>`<button class="pill${f.preset===k?' on':''}" data-act="rb-preset" data-p="${k}" aria-pressed="${f.preset===k}">${l}</button>`).join('')}</div></div>
     <div class="sel-bar" style="align-items:flex-end">
       <label class="field" style="margin:0"><span class="small muted">من</span><input class="inp" type="date" data-rb="from" id="rb_from" value="${f.from}" max="${f.to}" style="width:auto"></label>
@@ -119,7 +119,7 @@ function vReportBuilder(){
       <button class="btn ghost sm" data-act="rb-export" data-fmt="csv">CSV</button>
     </div>
   </div>
-  <div id="rbrep" style="display:grid;gap:16px;background:var(--sand-2)">
+  <div id="rbrep" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px;background:var(--sand-2)">
     <div class="card pad"><h3>تقرير الإنجاز التدريبي — ${esc(scopeLabel(f))}</h3><div class="h-sub">الفترة ${esc(period)} · ${empN(s.emps)}${single&&r0?' · '+esc(deptName(r0.u.deptId)):''} · أُعدّ في ${fmt(TODAY())} بواسطة ${esc((ME()||{}).name||'')}${hasDemo()&&S.showDemo?' · <span class="tag demo mini">يتضمن بيانات تجريبية</span>':''}</div></div>
     ${s.emps?`
     <div class="grid g4">

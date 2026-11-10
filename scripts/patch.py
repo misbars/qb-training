@@ -59,7 +59,7 @@ async function flush(){
       if(x.ok)setBase(op.col,op.id,op.delete?null:op.data,x.ver);
       else{applyServerRow(op.col,op.id,x.data,x.ver,x.deleted||!x.data);if(op.col!=='audit')reverted.push(x)}
     });
-    P.failed=false;P.online=true;P.msg='محفوظ في الخادم · '+new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+    P.failed=false;P.online=true;P.msg='محفوظ في الخادم · '+new Date().toLocaleTimeString('ar-SA-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
     P.failed=true;P.online=false;P.msg='تعذّر الحفظ في الخادم — سيُعاد المحاولة ('+e.message+')';
     clearTimeout(P.t);P.t=setTimeout(flush,3000);
@@ -191,6 +191,53 @@ body{font-feature-settings:"kern" 1}
 .page-h h1,.hero h1,.login-art h1,.login-box h2,.login-art .brand-l b,.m-h h3,.kpi .v,.kpi-c .v,.ring b,.stats-row b{font-family:var(--display);font-weight:700;letter-spacing:0}
 .page-h h1{font-size:30px}.hero h1{font-size:30px}
 """,1)
+
+# 9) توازن الخطوط (مراجعة الطباعة): الأرقام والوحدات والاتجاه والالتفاف والأحجام
+R9=[
+ # بطاقات كيركباتريك في لوحة التحكم: فصل العنوان عن القيمة، وحدة بخط عادي، رقم بخط العرض
+ ("['1','رد الفعل',K.sat,k=>num(k.v,0)+'%'],['2','التعلّم',K.learn,k=>(k.v>=0?'+':'')+num(k.v,1)+' نقطة'],['3','السلوك',K.apply,k=>num(k.v,0)+'% تطبيق جيد'],['4','النتائج',null,null]",
+  "['1','رد الفعل',K.sat,k=>'<bdi class=\"num\">'+num(k.v,0)+'%</bdi>'],['2','التعلّم',K.learn,k=>'<bdi class=\"num\">'+(k.v>=0?'+':'')+num(k.v,1)+'</bdi> <small class=\"unit\">نقطة</small>'],['3','السلوك',K.apply,k=>'<bdi class=\"num\">'+num(k.v,0)+'%</bdi> <small class=\"unit\">تطبيق جيد</small>'],['4','النتائج',null,null]"),
+ ("<b style=\"color:var(--navy);font-weight:600\">${t}</b><div style=\"font-size:${ok?22:15}px;font-weight:600;color:${ok?'var(--teal)':'var(--ink-3)'};margin:6px 0\" class=\"num\">${ok?(n==='4'?l4+' مؤشر مرتبط':f(k)):'بيانات غير كافية'}</div>",
+  "<b style=\"display:block;color:var(--navy);font-weight:700\">${t}</b><div class=\"kv-val\" style=\"font-size:${ok?26:15}px;font-weight:700;font-family:${ok?'var(--display)':'var(--font)'};color:${ok?'var(--navy)':'var(--ink-3)'};margin:6px 0\">${ok?(n==='4'?'<bdi class=\"num\">'+l4+'</bdi> <small class=\"unit\">مؤشر مرتبط</small>':f(k)):'بيانات غير كافية'}</div>"),
+ # بطاقات مستويات الأثر: نفس أسلوب المؤشرات
+ ("${ok?`<span class=\"num\" style=\"font-size:28px;font-weight:600;color:var(--teal)\">${val}</span>`:insufficient('')}",
+  "${ok?`<span class=\"kv-val\" style=\"font-size:30px;font-weight:700;font-family:var(--display);color:var(--navy)\">${val}</span>`:insufficient('')}"),
+ ("num(avg(s1.map(surveyPct)),0)+'%',`${N(s1.length)} استبيانًا", "'<bdi class=\"num\">'+num(avg(s1.map(surveyPct)),0)+'%</bdi>',`${N(s1.length)} استبيانًا"),
+ ("(avg(pairs.map(p=>p.gain))>=0?'+':'')+num(avg(pairs.map(p=>p.gain)),1)+' نقطة',", "'<bdi class=\"num\">'+(avg(pairs.map(p=>p.gain))>=0?'+':'')+num(avg(pairs.map(p=>p.gain)),1)+'</bdi> <small class=\"unit\">نقطة</small>',"),
+ ("num(l3.avg,1)+' / 5',", "'<bdi class=\"num\">'+num(l3.avg,1)+'</bdi> <small class=\"unit\">من 5</small>',"),
+ ("N(links.length)+' مؤشر',", "'<bdi class=\"num\">'+N(links.length)+'</bdi> <small class=\"unit\">مؤشر</small>',"),
+ # صيغة قيم المؤشرات: الوحدة خارج اتجاه الرقم
+ ("const kpiFmt=k=>k.unit==='%'?num(k.v,0)+'%':k.unit==='ر.س'?num(k.v,0)+' <small>ر.س</small>':k.unit==='نقطة'?(k.v>=0?'+':'')+num(k.v,1)+' <small>نقطة</small>':num(k.v,1)+' <small>'+k.unit+'</small>';",
+  "const kpiFmt=k=>k.unit==='%'?'<bdi class=\"num\">'+num(k.v,0)+'%</bdi>':k.unit==='ر.س'?'<bdi class=\"num\">'+num(k.v,0)+'</bdi> <small class=\"unit\">ر.س</small>':k.unit==='نقطة'?'<bdi class=\"num\">'+(k.v>=0?'+':'')+num(k.v,1)+'</bdi> <small class=\"unit\">نقطة</small>':'<bdi class=\"num\">'+num(k.v,1)+'</bdi> <small class=\"unit\">'+k.unit+'</small>';"),
+ ("<span class=\"v num\">${kpiFmt(k)}</span>", "<span class=\"v\">${kpiFmt(k)}</span>"),
+ # جدول التحسن والاختبار والحجم
+ ("<td><b class=\"num\">${r.gain>=0?'+':''}${num(r.gain,1)}</b> نقطة</td>", "<td style=\"white-space:nowrap\"><bdi class=\"num\"><b>${r.gain>=0?'+':''}${num(r.gain,1)}</b></bdi> نقطة</td>"),
+ ("`<b class=\"num\">${r.best}%</b> <span class=\"small muted\">(${r.att} محاولة)</span>`", "`<span style=\"white-space:nowrap\"><b class=\"num\">${r.best}%</b> <span class=\"small muted\">(${r.att} ${r.att===1?'محاولة':r.att===2?'محاولتان':'محاولات'})</span></span>`"),
+ ("<dd class=\"num\">${num(tot/1024,1)} ك.بايت</dd>", "<dd><bdi class=\"num\">${num(tot/1024,1)}</bdi> ك.بايت</dd>"),
+]
+for a_,b_ in R9:
+    assert a_ in h, 'R9 missing: '+a_[:70]
+    h=h.replace(a_,b_)
+_css9='/* ===== خط ثمانية ===== */'
+h=h.replace(_css9,_css9+"""
+.kpi .v small,.kpi-c .v small,.kv-val small,.v .unit,.kv-val .unit{font-family:var(--font);font-weight:500;font-size:.48em;color:var(--ink-3);margin-inline-start:4px;letter-spacing:0}
+.kpi .v small{font-size:.5em}
+.tag,.pill,.rec,.badge{white-space:nowrap;line-height:1.5}
+td .tag{margin-inline-start:6px}td .tag:first-child{margin-inline-start:0}
+td b{font-weight:600}
+.tbl-wrap td:first-child{min-width:170px}
+td.small.num,td .small.num{white-space:nowrap}
+.nav-h,.switch-l,.save-st{font-size:12.5px}
+.ring span{font-size:12px;line-height:1.3;display:block;max-width:84px;margin-inline:auto}
+.chart text{font-size:13px}
+.mini{font-size:12px}
+.tabs{scrollbar-width:thin;-webkit-mask-image:linear-gradient(to left,#000 92%,transparent);mask-image:linear-gradient(to left,#000 92%,transparent)}
+@media(max-width:900px){.tbl-wrap table{min-width:680px}.tbl-wrap td{min-width:110px}.tabs button{padding:10px 12px;font-size:14px}.ring{width:104px;height:104px}.ring div{width:82px;height:82px}.ring b{font-size:22px}}
+""",1)
+
+# 10) أرقام لاتينية موحّدة في تبويبات مستويات الأثر
+for _a,_b in (("'١ · ","'1 · "),("'٢ · ","'2 · "),("'٣ · ","'3 · "),("'٤ · ","'4 · ")):
+    h=h.replace(_a,_b)
 
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
