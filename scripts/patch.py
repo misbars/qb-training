@@ -246,6 +246,7 @@ R11=[
  ("${a&&a.mgr!=null?`<div class=\"small\" style=\"color:var(--teal)\">تقييم رئيسك:","${a&&a.mgr!=null&&a.self!=null?`<div class=\"small\" style=\"color:var(--teal)\">تقييم رئيسك:"),
  ("'<div class=\"small muted\">لم يقيّمك رئيسك بعد</div>'}","(a&&a.mgr!=null?'<div class=\"small muted\">يظهر تقييم رئيسك بعد ما تحفظ تقييمك</div>':'<div class=\"small muted\">لم يقيّمك رئيسك بعد</div>')}"),
  ("  </header><main class=\"content\" id=\"view\">","  </header>${S.role==='employee'?`<nav class=\"emp-tabs\" aria-label=\"الأقسام\">${nav.map(([k,l])=>`<button data-act=\"go\" data-v=\"${k}\" class=\"${navOn(k)?'on':''}\" ${navOn(k)?'aria-current=\"page\"':''}>${l}</button>`).join('')}</nav>`:''}<main class=\"content\" id=\"view\">"),
+ ('<div class="note warn" style="margin-bottom:14px">تنبيه: الصلاحيات هنا تُطبَّق داخل الواجهة فقط. لا يوجد خادم مصادقة؛ فالفصل الأمني الحقيقي بين الأدوار يتطلب ربطًا بـ Microsoft Entra ID وطبقة خادم.</div>','<div class="note" style="margin-bottom:14px">الصلاحيات تُطبَّق على الخادم: كل حساب يرى وينفّذ ما تسمح به صفته فقط. لإصدار كلمة مرور مؤقتة لأي مستخدم استخدم زر «كلمة المرور».</div>'),
  ('وصف مختصر *</label>','وصف مختصر <span class="muted">(اختياري)</span></label>'),
  ('المهارات أو المعارف المكتسبة *</label>','المهارات المكتسبة <span class="muted">(اختياري)</span></label>'),
  ("قيّم مستواك الحالي بصدق في كل كفاية. تقييمك الذاتي يُقارَن بتقييم رئيسك المباشر، والفجوة تحدد احتياجك التدريبي.","اختر مستواك الحالي في كل مهارة بصدق. نقارنه بتقييم رئيسك، ومنه نقترح لك الدورات المناسبة."),

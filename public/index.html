@@ -3406,7 +3406,7 @@ function doExport(kind,fmtx){
 function vAdmUsers(){
   const L=DB.users.slice().sort((a,b)=>a.name.localeCompare(b.name,'ar'));
   return `${pg('المستخدمون والصلاحيات','كل حساب مرتبط ببريده الرسمي. الصفات تحدد ما يظهر للمستخدم من وظائف.',`<button class="btn" data-act="newuser">${ico('plus')}مستخدم جديد</button>`)}
-  <div class="note warn" style="margin-bottom:14px">تنبيه: الصلاحيات هنا تُطبَّق داخل الواجهة فقط. لا يوجد خادم مصادقة؛ فالفصل الأمني الحقيقي بين الأدوار يتطلب ربطًا بـ Microsoft Entra ID وطبقة خادم.</div>
+  <div class="note" style="margin-bottom:14px">الصلاحيات تُطبَّق على الخادم: كل حساب يرى وينفّذ ما تسمح به صفته فقط. لإصدار كلمة مرور مؤقتة لأي مستخدم استخدم زر «كلمة المرور».</div>
   <div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>المستخدم</th><th>البريد</th><th>الصفات</th><th>القسم</th><th>الرئيس</th><th>الحالة</th><th></th></tr></thead><tbody>${L.map(u=>`<tr><td><b>${esc(u.name)}</b> ${demoTag(u)}<div class="small muted">${esc(u.title||'')}</div></td><td class="num small">${esc(u.email)}</td><td class="small">${u.roles.map(r=>ROLES[r]).join('، ')}</td><td class="small">${esc(deptName(u.deptId))}</td><td class="small">${esc((U(u.managerId)||{}).name||'—')}</td><td><span class="tag ${u.active!==false?'ok':'bad'}">${u.active!==false?'نشط':'موقوف'}</span></td><td style="white-space:nowrap;text-align:end"><button class="btn ghost sm" data-act="pw-reset" data-id="${u.id}">كلمة المرور</button> <button class="btn ghost sm" data-act="edituser" data-id="${u.id}">تحرير</button> <button class="btn sec sm" data-act="user-toggle" data-id="${u.id}">${u.active!==false?'إيقاف':'تفعيل'}</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 function userModal(id){
