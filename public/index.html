@@ -331,6 +331,40 @@ tbody tr.click:hover td{background:var(--sky-3)}
 
 td.num,th.num{display:table-cell;text-align:right}
 /* ===== خط ثمانية ===== */
+/* ===== شاشة الموظف ===== */
+.emp-tabs{display:none}
+@media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:var(--sky)}}
+.emp-sub{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
+.emp-sub button{min-height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-weight:500;font-size:14px}
+.emp-sub button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.emp-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+.emp-head h1{font-family:var(--display);font-size:30px;color:var(--navy);line-height:1.3}
+.emp-head p{color:var(--ink-2);font-size:16px;margin-top:2px}.emp-head p b{color:var(--navy)}
+.emp-cols{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.emp-tasks{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.emp-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.emp-h2{font-size:15px;color:var(--ink-2);font-weight:600;margin:10px 2px 0}
+.tk{display:flex;align-items:center;gap:14px;padding:16px 18px;flex-wrap:wrap}
+.tk-alert{border-color:#E9B8AC}.tk-wait{background:var(--paper);box-shadow:none}
+.tk-ic,.tk-date{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;flex:none}
+.tk-ic .i{width:24px;height:24px}
+.tk-date{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}.tk-date span{font-size:11.5px;opacity:.85}.tk-date b{font-size:20px;font-family:var(--display)}
+.tk-body{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tk-body b{font-size:16px;color:var(--navy);font-weight:700}.tk-body>span{font-size:14px;color:var(--ink-2)}
+.tk-bar{height:8px;border-radius:6px;background:var(--sand);overflow:hidden;max-width:320px;margin-top:4px}.tk-bar i{display:block;height:100%;background:var(--teal)}
+.tk-btn{min-height:44px;padding:0 20px}
+.emp-prog{background:var(--navy);color:#fff;border:0;padding:20px;display:flex;align-items:center;gap:18px}
+.emp-prog .ring div{background:var(--navy)}
+.emp-prog-t{display:block;font-size:16px;font-weight:700}.emp-prog span{display:block;font-size:13.5px;color:#C4D8E5;margin-top:2px}
+.linkbtn{color:var(--sky);font-size:14px;font-weight:600;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.emp-rec .linkbtn{color:var(--teal)}
+.emp-rec-i{display:flex;flex-direction:column;gap:2px;text-align:start;width:100%;padding:10px 12px;border-radius:12px;background:var(--sand-2);margin-bottom:8px}
+.emp-rec-i b{font-size:14.5px;color:var(--navy)}.emp-rec-i span{font-size:13px;color:var(--ink-2)}
+.emp-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.emp-choice button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;padding:18px;border:1.5px solid var(--line);border-radius:14px;background:#fff}
+.emp-choice button:hover{border-color:var(--teal)}.emp-choice .i{width:28px;height:28px;color:var(--teal)}.emp-choice b{font-size:16px;color:var(--navy)}.emp-choice span{font-size:13.5px;color:var(--ink-2)}
+@media(max-width:620px){.emp-choice{grid-template-columns:1fr}.emp-head h1{font-size:26px}.tk{padding:14px}.tk-btn{width:100%}}
+
 .kpi .v small,.kpi-c .v small,.kv-val small,.v .unit,.kv-val .unit{font-family:var(--font);font-weight:500;font-size:.48em;color:var(--ink-3);margin-inline-start:4px;letter-spacing:0}
 .kpi .v small{font-size:.5em}
 .tag,.pill,.rec,.badge{white-space:nowrap;line-height:1.5}
@@ -641,6 +675,7 @@ function requestEnroll(userId,courseId,opts={}){
   if(status==='registered'){
     notify(userId,`تأكيد التسجيل: ${c.title}`,'تم تسجيلك بنجاح',`<p>تم تأكيد تسجيلك في دورة <b>${esc(c.title)}</b> مع ${esc((trainerById(c.trainerId)||{}).name||'')}.</p><p>📅 ${c.fmt==='ذاتي'?'مسار ذاتي حتى '+fmt(c.date):dow(c.date)+' '+fmt(c.date)} · ${esc(c.time||'')}<br>📍 ${esc(c.loc||'')}<br>⏱ ${num(c.hours)} ساعات معتمدة</p>`,'عرض تدريبي','my-learning');
   }else if(status==='pending_lm'&&u.managerId){
+    notify(userId,`استلمنا طلبك: ${c.title}`,'ننتظر موافقة رئيسك',`<p>وصل طلب تسجيلك في دورة <b>${esc(c.title)}</b> إلى <b>${esc((U(u.managerId)||{}).name||'رئيسك')}</b>. بيوصلك إشعار أول ما يعتمده.</p>`,'عرض دوراتي','my-learning');
     notify(u.managerId,`طلب تسجيل بانتظار اعتمادك: ${u.name}`,'طلب يحتاج اعتمادًا',`<p>يطلب <b>${esc(u.name)}</b> التسجيل في دورة <b>${esc(c.title)}</b>.</p>`,'مراجعة الطلبات','team');
   }
   return {ok:true,status,enroll:e};
@@ -1090,7 +1125,7 @@ function shell(){
   <aside class="side ${S.nav?'open':''}" id="side"><div class="pattern"></div>
    <div class="brand"><img class="logo-w" src="${LOGO}" alt=""><div><b>منصة التطوير والتدريب</b><span>تحفيظ بريدة</span></div></div>
    <nav class="nav" aria-label="القائمة الرئيسية"><div class="nav-h">${NAV_TITLE[S.role]}</div>
-    ${nav.map(([k,l,i])=>`<button data-act="go" data-v="${k}" class="${S.view===k||(k==='library'&&S.view==='player')?'on':''}" ${S.view===k?'aria-current="page"':''}>${ico(i)}<span>${l}</span>${k==='inbox'&&ur?`<span class="badge">${ur}</span>`:''}</button>`).join('')}
+    ${nav.map(([k,l,i])=>`<button data-act="go" data-v="${k}" class="${navOn(k)?'on':''}" ${navOn(k)?'aria-current="page"':''}>${ico(i)}<span>${l}</span>${k==='inbox'&&ur?`<span class="badge">${ur}</span>`:''}</button>`).join('')}
    </nav>
    <div class="side-foot">
     <div class="save-st" id="savest">${saveStHtml()}</div>
@@ -1102,7 +1137,7 @@ function shell(){
    <div class="gsearch">${ico('search')}<input id="gs" placeholder="ابحث عن دورة أو مدرب…" aria-label="بحث" value=""></div><div class="sp"></div>
    <div style="position:relative"><button class="icon-btn" data-act="bell" aria-label="الإشعارات">${ico('bell')}${ur?`<span class="dot">${ur}</span>`:''}</button>${S.dd?`<div class="dd" role="menu"><div class="h"><b style="color:var(--navy)">آخر الإشعارات</b><span class="outlook-tag">${ico('mail')}صندوق المنصة</span></div>${L.length?L.map(m=>`<div class="it" data-act="openmail" data-id="${m.id}"><span class="ic">${ico('mail')}</span><div style="min-width:0"><div style="${m.unread?'font-weight:700':''};color:var(--navy);line-height:1.5">${esc(m.subj)}</div><small class="muted">${fmt(m.date)}</small></div></div>`).join(''):'<div class="empty">لا إشعارات</div>'}<button class="btn ghost" style="width:100%;border-radius:0;padding:13px" data-act="go" data-v="inbox">عرض كل الإشعارات</button></div>`:''}</div>
    <div class="user-chip"><div class="av" style="background:${col}">${esc(initials(u.name))}</div><div><b>${esc(u.name.split(' ').slice(0,2).join(' '))}</b><small>${esc(u.email)}</small></div></div>
-  </header><main class="content" id="view">${view()}</main></div></div>`;
+  </header>${S.role==='employee'?`<nav class="emp-tabs" aria-label="الأقسام">${nav.map(([k,l])=>`<button data-act="go" data-v="${k}" class="${navOn(k)?'on':''}" ${navOn(k)?'aria-current="page"':''}>${l}</button>`).join('')}</nav>`:''}<main class="content" id="view">${view()}</main></div></div>`;
 }
 
 /* ================= الرئيسية ================= */
@@ -1558,12 +1593,12 @@ const LVL_HELP='1 مبتدئ · 2 أساسي · 3 كفء (يؤدي باستقل�
 /* ---- التقييم الذاتي (الموظف) ---- */
 function vSelfAssess(){
   const u=ME(),j=jobById(u.jobId);
-  if(!j)return `${pg('تقييم كفاياتي','')}<div class="card empty">لم يُربط حسابك بوصف وظيفي بعد. تواصل مع إدارة التدريب.</div>`;
+  if(!j)return `${pg('تقييم مهاراتي','')}<div class="card empty">لم يُربط حسابك بوصف وظيفي بعد. تواصل مع إدارة التدريب.</div>`;
   S.selfDraft=S.selfDraft||{};
-  return `${pg('تقييم كفاياتي',`وصفك الوظيفي: <b>${esc(j.title)}</b> — ${esc(j.summary)}`)}
-  <div class="note" style="margin-bottom:14px">قيّم مستواك الحالي بصدق في كل كفاية. تقييمك الذاتي يُقارَن بتقييم رئيسك المباشر، والفجوة تحدد احتياجك التدريبي. <span class="ins">${LVL_HELP}</span></div>
+  return `${pg('تقييم مهاراتي',`وصفك الوظيفي: <b>${esc(j.title)}</b> — ${esc(j.summary)}`)}
+  <div class="note" style="margin-bottom:14px">اختر مستواك الحالي في كل مهارة بصدق. نقارنه بتقييم رئيسك، ومنه نقترح لك الدورات المناسبة. <span class="ins">${LVL_HELP}</span></div>
   <div class="card pad">${j.comps.map(jc=>{const a=assessOf(u.id,jc.compId),draft=S.selfDraft[jc.compId],val=draft??(a?a.self:null);const g=gapInfo(u,jc);
-   return `<div class="rate-row" style="align-items:flex-start;gap:14px;flex-wrap:wrap"><span style="min-width:200px;flex:1"><b style="color:var(--navy)">${esc((compById(jc.compId)||{}).name)}</b><div class="small muted">المطلوب للوظيفة: <b class="num">${jc.req}</b> (${LEVELS[jc.req]}) · الأهمية <span class="num">${jc.imp}</span>/5</div>${a&&a.mgr!=null?`<div class="small" style="color:var(--teal)">تقييم رئيسك: <b class="num">${a.mgr}</b> (${LEVELS[a.mgr]})${g.gap>0?` · الفجوة <span class="num">${g.gap}</span>`:' · لا فجوة'}</div>`:'<div class="small muted">لم يقيّمك رئيسك بعد</div>'}</span>${lvlBtns(esc((compById(jc.compId)||{}).name),val,`data-act="self-lvl" data-c="${jc.compId}"`)}</div>`}).join('')}
+   return `<div class="rate-row" style="align-items:flex-start;gap:14px;flex-wrap:wrap"><span style="min-width:200px;flex:1"><b style="color:var(--navy)">${esc((compById(jc.compId)||{}).name)}</b><div class="small muted">المطلوب للوظيفة: <b class="num">${jc.req}</b> (${LEVELS[jc.req]}) · الأهمية <span class="num">${jc.imp}</span>/5</div>${a&&a.mgr!=null&&a.self!=null?`<div class="small" style="color:var(--teal)">تقييم رئيسك: <b class="num">${a.mgr}</b> (${LEVELS[a.mgr]})${g.gap>0?` · الفجوة <span class="num">${g.gap}</span>`:' · لا فجوة'}</div>`:(a&&a.mgr!=null?'<div class="small muted">يظهر تقييم رئيسك بعد ما تحفظ تقييمك</div>':'<div class="small muted">لم يقيّمك رئيسك بعد</div>')}</span>${lvlBtns(esc((compById(jc.compId)||{}).name),val,`data-act="self-lvl" data-c="${jc.compId}"`)}</div>`}).join('')}
   <div class="sticky-act"><button class="btn" data-act="self-save">حفظ تقييمي</button></div></div>`;
 }
 function saveSelf(){
@@ -2320,8 +2355,6 @@ function validateExt(f){
   else if(f.date>TODAY())e.push('تاريخ التنفيذ لا يمكن أن يكون في المستقبل');
   const h=+f.hours;if(!(h>0)||h>200)e.push('عدد الساعات يجب أن يكون بين 0.5 و200');
   if(!CATS[f.field])e.push('اختر المجال التدريبي');
-  if((f.desc||'').trim().length<10)e.push('الوصف المختصر مطلوب (10 أحرف على الأقل)');
-  if((f.skills||'').trim().length<5)e.push('اذكر المهارات أو المعارف المكتسبة');
   if(!f.certFile)e.push('ارفع شهادة الحضور أو الإتمام');
   return e;
 }
@@ -2574,8 +2607,8 @@ function extModal(){
    <div class="field"><label for="ex_date">تاريخ التنفيذ *</label><input class="inp" id="ex_date" type="date" max="${TODAY()}"></div>
    <div class="field"><label for="ex_hours">عدد الساعات *</label><input class="inp" id="ex_hours" type="number" min="0.5" max="200" step="0.5"></div>
    <div class="field"><label for="ex_field">المجال التدريبي *</label><select class="inp" id="ex_field">${options(Object.entries(CATS),'','اختر…')}</select></div>
-   <div class="field full"><label for="ex_desc">وصف مختصر *</label><textarea class="inp" id="ex_desc" rows="2" maxlength="600"></textarea></div>
-   <div class="field full"><label for="ex_skills">المهارات أو المعارف المكتسبة *</label><textarea class="inp" id="ex_skills" rows="2" maxlength="600"></textarea></div>
+   <div class="field full"><label for="ex_desc">وصف مختصر <span class="muted">(اختياري)</span></label><textarea class="inp" id="ex_desc" rows="2" maxlength="600"></textarea></div>
+   <div class="field full"><label for="ex_skills">المهارات المكتسبة <span class="muted">(اختياري)</span></label><textarea class="inp" id="ex_skills" rows="2" maxlength="600"></textarea></div>
    <div class="field full"><label for="ex_cert">شهادة الحضور أو الإتمام * (PDF/JPG/PNG حتى ${(FILE_MAX/1e6).toFixed(1)} م.ب)</label><input class="inp" id="ex_cert" type="file" accept=".pdf,.jpg,.jpeg,.png"></div>
    <div class="field full"><label for="ex_att">مرفقات إضافية (اختياري)</label><input class="inp" id="ex_att" type="file" multiple accept=".pdf,.jpg,.jpeg,.png"></div></div>
    ${limitsNote('تُخزَّن الملفات المرفقة مع بيانات المنصة بحدود الحجم أعلاه. للإنتاج يلزم ربطها بخدمة تخزين ملفات (انظر «دليل التشغيل»).')}</div>
@@ -3964,6 +3997,109 @@ document.addEventListener('change',e=>{
   draw();
 });
 })();
+
+/* ================= شاشة الموظف المبسّطة: 4 أقسام + الرئيسية قائمة مهام ================= */
+// الأقسام: الرئيسية · تعلّم · سجلي · حسابي. الصفحات القديمة تبقى، وتُعرض داخل قسمها مع شريط تبويب.
+const EMP_GROUPS={
+  learn:{label:'تعلّم',icon:'book',subs:[['opportunities','الدورات الحضورية'],['library','الدورات المسجّلة والمواد'],['my-learning','دوراتي']]},
+  myrec:{label:'سجلي',icon:'award',subs:[['record','ساعاتي وشهاداتي'],['devp','الدورات الخارجية والزيارات']]},
+  account:{label:'حسابي',icon:'user',subs:[['profile','ملفي'],['selfassess','مهاراتي'],['inbox','الإشعارات'],['trainers','المدربون']]}
+};
+const EMP_GROUP_OF={};Object.entries(EMP_GROUPS).forEach(([g,o])=>o.subs.forEach(([v])=>EMP_GROUP_OF[v]=g));EMP_GROUP_OF.player='learn';EMP_GROUP_OF.reader='learn';
+NAV.employee=[['home','الرئيسية','home'],['learn','تعلّم','book'],['myrec','سجلي','award'],['account','حسابي','user']];
+NAV_TITLE.employee='';
+
+function navOn(k){
+  if(S.view===k)return true;
+  if(S.role==='employee')return EMP_GROUP_OF[S.view]===k;
+  return k==='library'&&S.view==='player';
+}
+// موجّه الصفحات: يسمح للموظف بصفحات أقسامه الداخلية
+function view(){
+  const ok=NAV[S.role].map(x=>x[0]);
+  if(S.role==='employee'){ok.push('player','reader');Object.keys(EMP_GROUP_OF).forEach(v=>ok.push(v))}
+  if(!ok.includes(S.view))S.view=HOME_OF[S.role];
+  try{return VIEWS[S.view]()}catch(e){console.error(e);return `<div class="card empty">${ico('alert')}<div>حدث خطأ أثناء عرض الصفحة: ${esc(e.message)}</div></div>`}
+}
+S.empLast=S.empLast||{};
+function empGroupBar(g,cur){
+  const o=EMP_GROUPS[g];
+  return `<div class="emp-sub" role="tablist" aria-label="${esc(o.label)}">${o.subs.map(([v,l])=>`<button role="tab" class="${v===cur?'on':''}" aria-selected="${v===cur}" data-act="go" data-v="${v}">${l}${v==='inbox'&&unreadN()?` <span class="badge" style="display:inline-grid;margin-inline-start:6px">${unreadN()}</span>`:''}</button>`).join('')}</div>`;
+}
+Object.entries(EMP_GROUPS).forEach(([g,o])=>{
+  VIEWS[g]=()=>{const v=S.empLast[g]||o.subs[0][0];S.view=v;return VIEWS[v]()};
+  o.subs.forEach(([v])=>{const orig=VIEWS[v];if(!orig)return;VIEWS[v]=()=>{if(S.role!=='employee')return orig();S.empLast[g]=v;return empGroupBar(g,v)+orig()}});
+});
+
+/* ---------- الرئيسية: وش المطلوب منك الحين ---------- */
+const relDay=d=>{const t=new Date(TODAY()+'T00:00:00'),x=new Date(d+'T00:00:00');const n=Math.round((x-t)/864e5);return n===0?'اليوم':n===1?'بكرة':n===2?'بعد بكرة':n<=10?`بعد ${n} أيام`:`بعد ${n} يومًا`};
+function empTasks(u){
+  const T=[];
+  // دورات قريبة (خلال 7 أيام)
+  DB.enrolls.filter(e=>e.userId===u.id&&e.status==='registered').map(e=>({e,c:courseById(e.courseId)})).filter(x=>x.c&&x.c.date>=TODAY()&&x.c.fmt!=='ذاتي'&&(new Date(x.c.date)-new Date(TODAY()))/864e5<=7).sort((a,b)=>a.c.date.localeCompare(b.c.date))
+    .forEach(({c})=>T.push({kind:'course',date:c.date,title:c.title,sub:`${dow(c.date)} ${fmt(c.date)}${c.time?' · '+c.time:''}${c.loc?' · '+c.loc:''}`,btn:'التفاصيل',act:'go',v:'my-learning'}));
+  // طلبات ردّها الرئيس أو مدير التدريب
+  DB.visits.filter(v=>v.userId===u.id&&v.status==='returned'&&inc(v)).forEach(v=>T.push({kind:'returned',title:`${(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]} رجّع زيارتك`,sub:v.mgrNote?`«${v.mgrNote}»`:'افتحها وعدّلها حسب الملاحظة',btn:'عدّلها',act:'go',v:'devp'}));
+  DB.extreq.filter(x=>x.userId===u.id&&x.status==='returned'&&inc(x)).forEach(x=>T.push({kind:'returned',title:'رجّعت إدارة التدريب دورتك الخارجية',sub:x.title,btn:'عدّلها',act:'go',v:'devp'}));
+  // كمّل دورة مسجّلة
+  DB.libs.filter(l=>l.status==='published'&&inc(l)&&DB.progress.some(p=>p.userId===u.id&&allLessons(l).some(x=>x.id===p.lessonId))&&!libPassed(u.id,l.id)).forEach(l=>{
+    const pc=libPct(u.id,l);const att=attemptsOf(u.id,l.id,'post').length,max=(l.settings||{}).maxAttempts||3;
+    const pendRetake=DB.retakes.some(r=>r.userId===u.id&&r.libId===l.id&&['pending','pending_tm'].includes(r.status));
+    if(pc>=100&&att>=max){T.push({kind:'retake',title:`خلصت محاولات اختبار «${l.title}»`,sub:pendRetake?'طلب الإعادة عند إدارة التدريب، وبيوصلك إشعار بالقرار':'تقدر تطلب إعادة الدورة',btn:pendRetake?null:'اطلب إعادة',act:'openlib',id:l.id})}
+    else if(pc>=100){T.push({kind:'exam',title:`اختبار «${l.title}» جاهز`,sub:`خلصت الدروس، باقي الاختبار (${max-att} ${max-att===1?'محاولة متبقية':'محاولات متبقية'})`,btn:'ابدأ',act:'openlib',id:l.id,primary:true})}
+    else T.push({kind:'continue',title:`كمّل «${l.title}»`,sub:`وصلت ${pc}%`,pct:pc,btn:'كمّل',act:'openlib',id:l.id,primary:true});
+  });
+  // تقييم الدورات المكتملة
+  DB.completions.filter(c=>c.userId===u.id&&!surveyOf(u.id,c.kind,c.refId)).slice(0,2).forEach(c=>T.push({kind:'survey',title:`قيّم «${titleOf(c.kind,c.refId)}»`,sub:'دقيقتين، ورأيك يحسّن الدورات',btn:'قيّم',act:'rate',dkind:c.kind,id:c.refId}));
+  // تقييم المهارات
+  const nGap=gapsOfEmp(u).filter(g=>g.state==='unrated'||(g.a&&g.a.self==null)).length;
+  if(nGap)T.push({kind:'skills',title:'قيّم مهاراتك',sub:`${nGap} ${nGap===1?'مهارة':nGap===2?'مهارتان':nGap<=10?'مهارات':'مهارة'} تنتظر تقييمك، وعليها نقترح لك الدورات`,btn:'قيّم',act:'go',v:'selfassess'});
+  // طلبات تنتظر غيرك (للعلم فقط)
+  DB.enrolls.filter(e=>e.userId===u.id&&['pending_lm','pending_tm'].includes(e.status)).forEach(e=>{const c=courseById(e.courseId);if(!c)return;const who=e.status==='pending_lm'?(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]:'إدارة التدريب';T.push({kind:'wait',title:`ننتظر موافقة ${who}`,sub:`على تسجيلك في «${c.title}». بيوصلك إشعار بالقرار.`})});
+  DB.extreq.filter(x=>x.userId===u.id&&['pending','submitted'].includes(x.status)&&inc(x)).forEach(x=>T.push({kind:'wait',title:'ننتظر اعتماد إدارة التدريب',sub:`لدورتك الخارجية «${x.title}»`}));
+  DB.visits.filter(v=>v.userId===u.id&&['pending','pending_lm','submitted'].includes(v.status)&&inc(v)).forEach(v=>T.push({kind:'wait',title:`ننتظر موافقة ${(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]}`,sub:`على زيارتك لـ «${v.org||'جهة'}»`}));
+  return T;
+}
+const TASK_ICON={course:['cal','#072C49','#fff'],returned:['rotate','#F8E4DF','#8F3B2B'],continue:['play','#D3EEF3','#007497'],exam:['check','#D3EEF3','#007497'],retake:['rotate','#FBEFD9','#8A5C12'],survey:['smile','#F7E7D4','#7A4A18'],skills:['target','#EAF6F9','#007497'],wait:['clock','#F0ECE4','#47596A']};
+function taskCard(t){
+  const [ic,bg,fg]=TASK_ICON[t.kind]||TASK_ICON.wait;
+  const badge=t.kind==='course'?`<div class="tk-date" style="background:${bg};color:${fg}"><span>${relDay(t.date)}</span><b class="num">${+t.date.slice(8,10)}</b></div>`:`<div class="tk-ic" style="background:${bg};color:${fg}">${ico(ic)}</div>`;
+  const btn=t.btn?`<button class="btn ${t.primary?'':'ghost'} tk-btn" data-act="${t.act}"${t.v?` data-v="${t.v}"`:''}${t.id?` data-id="${t.id}"`:''}${t.dkind?` data-kind="${t.dkind}"`:''}>${t.btn}</button>`:'';
+  return `<article class="card tk ${t.kind==='returned'?'tk-alert':''} ${t.kind==='wait'?'tk-wait':''}">${badge}<div class="tk-body"><b>${esc(t.title)}</b><span>${esc(t.sub||'')}</span>${t.pct!=null?`<div class="tk-bar"><i style="width:${t.pct}%"></i></div>`:''}</div>${btn}</article>`;
+}
+VIEWS.home=function(){
+  const u=ME();if(!u)return '';
+  const h=hoursOf(u.id,TODAY().slice(0,4)+'-01-01'),p=Math.round(h/TARGET_H*100);
+  const T=empTasks(u),act=T.filter(t=>t.kind!=='wait'),wait=T.filter(t=>t.kind==='wait');
+  const rec=recommendedFor(u).slice(0,3);
+  const certs=DB.completions.filter(c=>c.userId===u.id&&inc(c)).length;
+  const n=act.length;
+  return `<div class="emp-home">
+  <div class="emp-head"><div><h1>هلا ${esc(u.name.split(' ')[0])}</h1><p>${n?`عندك <b>${n===1?'شي واحد':n===2?'شيئين':n+' أشياء'}</b> ${n===1?'يحتاجك':'تحتاجك'}`:'ما عندك شي مطلوب الحين'}</p></div>
+   <button class="btn gold" data-act="emp-add">${ico('plus')}أضف إنجاز</button></div>
+  <div class="emp-cols">
+   <section class="emp-tasks" aria-label="المطلوب منك">
+    ${act.length?act.map(taskCard).join(''):`<div class="card empty" style="padding:32px">${ico('check')}<div><b style="color:var(--navy)">كل شي تمام</b><div class="small muted" style="margin-top:4px">تصفح الدورات المتاحة لو تبي تتعلّم شي جديد.</div></div><button class="btn" style="margin-top:12px" data-act="go" data-v="opportunities">تصفح الدورات</button></div>`}
+    ${wait.length?`<h2 class="emp-h2">ننتظر غيرك</h2>${wait.map(taskCard).join('')}`:''}
+   </section>
+   <aside class="emp-side">
+    <section class="card emp-prog" aria-label="تقدّمك هذا العام">
+     <div class="ring" style="--p:${Math.min(100,p)}"><div><div><b class="num">${p}%</b></div></div></div>
+     <div><b class="emp-prog-t">${h>=TARGET_H?'حققت مستهدفك السنوي':`باقي ${num(Math.max(0,TARGET_H-h))} ساعة على مستهدفك`}</b><span><bdi class="num">${num(h)}</bdi> من ${TARGET_H} ساعة هذا العام · ${certs} ${certs===1?'شهادة':certs===2?'شهادتان':certs<=10?'شهادات':'شهادة'}</span><button class="linkbtn" data-act="go" data-v="record">عرض سجلي</button></div>
+    </section>
+    ${rec.length?`<section class="card pad emp-rec"><h2 class="emp-h2" style="margin:0 0 8px">مقترح لك</h2>${rec.map(({c})=>`<button class="emp-rec-i" data-act="go" data-v="opportunities"><b>${esc(c.title)}</b><span>${dow(c.date)} ${fmt(c.date)} · ${esc(c.fmt||'')} · <bdi class="num">${num(c.hours)}</bdi> ${c.hours>2&&c.hours<11?'ساعات':'ساعة'}</span></button>`).join('')}<button class="linkbtn" data-act="go" data-v="opportunities">كل الدورات</button></section>`:''}
+   </aside>
+  </div></div>`;
+};
+
+/* ---------- أضف إنجاز: يختار النوع ثم النموذج ---------- */
+ACT['emp-add']=function(){
+  miniModal('أضف إنجاز',`<p class="muted" style="margin-bottom:14px">وش تبي تضيف؟</p><div class="emp-choice"><button data-act="emp-add-go" data-k="ext">${ico('award')}<b>دورة خارجية</b><span>حضرتها خارج الجمعية وعندك شهادتها</span></button><button data-act="emp-add-go" data-k="visit">${ico('pin')}<b>زيارة ميدانية</b><span>زرت جمعية أو جهة واستفدت منها</span></button></div>`,'<button class="btn sec" data-act="mm-close">إلغاء</button>');
+};
+ACT['emp-add-go']=function(t){closeLayer();S.tab.devp=t.dataset.k==='ext'?'ext':'visits';go('devp');setTimeout(()=>{const a=ACT[t.dataset.k==='ext'?'ext-new':'visit-new'];if(a)a(t)},60)};
+
+/* ---------- كلام أبسط للحالات ---------- */
+STATUS_AR.pending_lm='ننتظر موافقة رئيسك';STATUS_AR.pending_tm='ننتظر موافقة إدارة التدريب';STATUS_AR.waitlist='في قائمة الانتظار';
 
 
 (async function boot(){

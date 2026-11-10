@@ -134,7 +134,7 @@ Object.assign(ACT,{
   async logout(){audit('logout','session','');detachPlayer();await flush();try{await api('/api/logout')}catch(e){}S.me=null;S.role=null;P.loaded=false;COLS.forEach(c=>DB[c]=[]);draw()},
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lg_pw')ACT['login-email']()});
-"""+"".join(open(os.path.join(os.path.dirname(__file__),n),encoding="utf-8").read()+"\n" for n in ("client-extra.js","reports.js"))+r"""
+"""+"".join(open(os.path.join(os.path.dirname(__file__),n),encoding="utf-8").read()+"\n" for n in ("client-extra.js","reports.js","employee.js"))+r"""
 """
 boot_a = h.index('(async function boot(){')
 boot_b = h.index('})();', boot_a) + len('})();')
@@ -238,6 +238,58 @@ td.small.num,td .small.num{white-space:nowrap}
 # 10) أرقام لاتينية موحّدة في تبويبات مستويات الأثر
 for _a,_b in (("'١ · ","'1 · "),("'٢ · ","'2 · "),("'٣ · ","'3 · "),("'٤ · ","'4 · ")):
     h=h.replace(_a,_b)
+
+# 11) شاشة الموظف المبسّطة
+R11=[
+ ("class=\"${S.view===k||(k==='library'&&S.view==='player')?'on':''}\" ${S.view===k?'aria-current=\"page\"':''}","class=\"${navOn(k)?'on':''}\" ${navOn(k)?'aria-current=\"page\"':''}"),
+ ("  if((f.desc||'').trim().length<10)e.push('الوصف المختصر مطلوب (10 أحرف على الأقل)');\n  if((f.skills||'').trim().length<5)e.push('اذكر المهارات أو المعارف المكتسبة');\n",""),
+ ("${a&&a.mgr!=null?`<div class=\"small\" style=\"color:var(--teal)\">تقييم رئيسك:","${a&&a.mgr!=null&&a.self!=null?`<div class=\"small\" style=\"color:var(--teal)\">تقييم رئيسك:"),
+ ("'<div class=\"small muted\">لم يقيّمك رئيسك بعد</div>'}","(a&&a.mgr!=null?'<div class=\"small muted\">يظهر تقييم رئيسك بعد ما تحفظ تقييمك</div>':'<div class=\"small muted\">لم يقيّمك رئيسك بعد</div>')}"),
+ ("  </header><main class=\"content\" id=\"view\">","  </header>${S.role==='employee'?`<nav class=\"emp-tabs\" aria-label=\"الأقسام\">${nav.map(([k,l])=>`<button data-act=\"go\" data-v=\"${k}\" class=\"${navOn(k)?'on':''}\" ${navOn(k)?'aria-current=\"page\"':''}>${l}</button>`).join('')}</nav>`:''}<main class=\"content\" id=\"view\">"),
+ ('وصف مختصر *</label>','وصف مختصر <span class="muted">(اختياري)</span></label>'),
+ ('المهارات أو المعارف المكتسبة *</label>','المهارات المكتسبة <span class="muted">(اختياري)</span></label>'),
+ ("قيّم مستواك الحالي بصدق في كل كفاية. تقييمك الذاتي يُقارَن بتقييم رئيسك المباشر، والفجوة تحدد احتياجك التدريبي.","اختر مستواك الحالي في كل مهارة بصدق. نقارنه بتقييم رئيسك، ومنه نقترح لك الدورات المناسبة."),
+ ("  }else if(status==='pending_lm'&&u.managerId){\n","  }else if(status==='pending_lm'&&u.managerId){\n    notify(userId,`استلمنا طلبك: ${c.title}`,'ننتظر موافقة رئيسك',`<p>وصل طلب تسجيلك في دورة <b>${esc(c.title)}</b> إلى <b>${esc((U(u.managerId)||{}).name||'رئيسك')}</b>. بيوصلك إشعار أول ما يعتمده.</p>`,'عرض دوراتي','my-learning');\n"),
+]
+for a_,b_ in R11:
+    assert a_ in h, 'R11 missing: '+a_[:80]
+    h=h.replace(a_,b_,1)
+h=h.replace("${pg('تقييم كفاياتي',","${pg('تقييم مهاراتي',")
+h=h.replace('/* ===== خط ثمانية ===== */','/* ===== خط ثمانية ===== */'+"""
+/* ===== شاشة الموظف ===== */
+.emp-tabs{display:none}
+@media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:var(--sky)}}
+.emp-sub{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
+.emp-sub button{min-height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-weight:500;font-size:14px}
+.emp-sub button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.emp-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+.emp-head h1{font-family:var(--display);font-size:30px;color:var(--navy);line-height:1.3}
+.emp-head p{color:var(--ink-2);font-size:16px;margin-top:2px}.emp-head p b{color:var(--navy)}
+.emp-cols{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.emp-tasks{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.emp-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.emp-h2{font-size:15px;color:var(--ink-2);font-weight:600;margin:10px 2px 0}
+.tk{display:flex;align-items:center;gap:14px;padding:16px 18px;flex-wrap:wrap}
+.tk-alert{border-color:#E9B8AC}.tk-wait{background:var(--paper);box-shadow:none}
+.tk-ic,.tk-date{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;flex:none}
+.tk-ic .i{width:24px;height:24px}
+.tk-date{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}.tk-date span{font-size:11.5px;opacity:.85}.tk-date b{font-size:20px;font-family:var(--display)}
+.tk-body{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tk-body b{font-size:16px;color:var(--navy);font-weight:700}.tk-body>span{font-size:14px;color:var(--ink-2)}
+.tk-bar{height:8px;border-radius:6px;background:var(--sand);overflow:hidden;max-width:320px;margin-top:4px}.tk-bar i{display:block;height:100%;background:var(--teal)}
+.tk-btn{min-height:44px;padding:0 20px}
+.emp-prog{background:var(--navy);color:#fff;border:0;padding:20px;display:flex;align-items:center;gap:18px}
+.emp-prog .ring div{background:var(--navy)}
+.emp-prog-t{display:block;font-size:16px;font-weight:700}.emp-prog span{display:block;font-size:13.5px;color:#C4D8E5;margin-top:2px}
+.linkbtn{color:var(--sky);font-size:14px;font-weight:600;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.emp-rec .linkbtn{color:var(--teal)}
+.emp-rec-i{display:flex;flex-direction:column;gap:2px;text-align:start;width:100%;padding:10px 12px;border-radius:12px;background:var(--sand-2);margin-bottom:8px}
+.emp-rec-i b{font-size:14.5px;color:var(--navy)}.emp-rec-i span{font-size:13px;color:var(--ink-2)}
+.emp-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.emp-choice button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;padding:18px;border:1.5px solid var(--line);border-radius:14px;background:#fff}
+.emp-choice button:hover{border-color:var(--teal)}.emp-choice .i{width:28px;height:28px;color:var(--teal)}.emp-choice b{font-size:16px;color:var(--navy)}.emp-choice span{font-size:13.5px;color:var(--ink-2)}
+@media(max-width:620px){.emp-choice{grid-template-columns:1fr}.emp-head h1{font-size:26px}.tk{padding:14px}.tk-btn{width:100%}}
+""",1)
 
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
