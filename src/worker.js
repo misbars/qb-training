@@ -131,6 +131,47 @@ async function ensureAuth(S, u) {
   await S.db.prepare('INSERT OR IGNORE INTO auth(user_id,email,salt,hash) VALUES(?,?,?,?)').bind(u.id, u.email.toLowerCase(), '', '').run();
 }
 
+// حساب تجريبي جاهز لشخص يجرّب المنصة كموظف حقيقي (يُعاد ضبطه كل مرة)
+async function seedGuest(S, ses) {
+  const G = 'u_guest', day = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  const put = async (col, o) => {
+    const cur = await S.row(col, o.id), ver = (cur ? cur.ver : 0) + 1;
+    await S.db.batch([
+      S.db.prepare("UPDATE meta SET v = CAST(v AS INTEGER) + 1 WHERE k='seq'"),
+      S.db.prepare(`INSERT INTO rows(col,id,data,ver,seq,deleted,at,by) VALUES(?,?,?,?,(SELECT CAST(v AS INTEGER) FROM meta WHERE k='seq'),0,?,?)
+        ON CONFLICT(col,id) DO UPDATE SET data=excluded.data, ver=excluded.ver, seq=excluded.seq, deleted=0, at=excluded.at, by=excluded.by`).bind(col, o.id, JSON.stringify(o), ver, now(), ses.user.id)
+    ]);
+  };
+  // امسح أي سجلات سابقة للحساب (إعادة ضبط)
+  const { results: old } = await S.db.prepare("SELECT col,id,data FROM rows WHERE deleted=0 AND col<>'users'").all();
+  for (const r of old) { const o = JSON.parse(r.data); if (o.userId === G || o.empId === G || o.to === G || o.by === G) await S.db.batch([S.db.prepare("UPDATE meta SET v = CAST(v AS INTEGER) + 1 WHERE k='seq'"), S.db.prepare("UPDATE rows SET deleted=1, ver=ver+1, seq=(SELECT CAST(v AS INTEGER) FROM meta WHERE k='seq') WHERE col=? AND id=?").bind(r.col, r.id)]) }
+  const u = { id: G, name: 'ضيف المنصة', email: 'guest@qb.org.sa', roles: ['employee'], deptId: 'S11', jobId: 'J1', managerId: 'u_abdulaziz', title: 'منسق حلقات', empNo: 'QB-9001', active: true };
+  await put('users', u);
+  const t = new Date().toISOString();
+  // 1) دورة حضورية قريبة مسجّل فيها
+  await put('enrolls', { id: 'en_guest_c1', userId: G, courseId: 'c1', status: 'registered', at: day(-5), by: G, att: null, pre: null, post: null });
+  // 2) دورة مكتملة تنتظر تقييمه + شهادتها
+  await put('enrolls', { id: 'en_guest_p4', userId: G, courseId: 'p4', status: 'completed', at: '2026-08-10', by: G, att: true, pre: null, post: null });
+  await put('completions', { id: 'cp_guest_p4', userId: G, kind: 'c', refId: 'p4', date: '2026-08-22', hours: 6, cert: 'QB-2026-G0001' });
+  // 3) دورة مسجّلة بدأها ووقف في الدرس الثاني
+  await put('libenr', { id: 'le_guestL1', userId: G, libId: 'L1', at: day(-3) + 'T08:00:00Z', status: 'registered' });
+  await put('progress', { id: G + '|L1a', userId: G, lessonId: 'L1a', watched: [[0, 15]], pos: 15, max: 15, dur: 15, plays: 1, updated: t });
+  await put('progress', { id: G + '|L1b', userId: G, lessonId: 'L1b', watched: [[0, 6]], pos: 6, max: 6, dur: 15, plays: 1, updated: t });
+  // 4) زيارة ميدانية رجّعها رئيسه للتعديل
+  await put('visits', { id: 'vs_guest', userId: G, mgrId: 'u_abdulaziz', org: 'جمعية تحفيظ القرآن بعنيزة', people: 'أ. سعد المحمد — مشرف الحلقات', date: day(-12), goals: 'الاطلاع على آلية متابعة الحلقات.', start: '09:00', end: '11:00', durMin: 120, topics: 'آلية المتابعة الأسبوعية.', results: 'استفدنا.', recs: '', attach: [], status: 'returned', at: day(-11) + 'T09:00:00Z', submittedAt: day(-11) + 'T09:00:00Z', mgrNote: 'اكتب النتائج بتفصيل أكثر: وش الشي اللي بنطبقه عندنا؟', decisions: [{ at: day(-11) + 'T09:00:00Z', by: G, action: 'submit', note: '' }, { at: day(-9) + 'T10:00:00Z', by: 'u_abdulaziz', action: 'return', note: 'اكتب النتائج بتفصيل أكثر: وش الشي اللي بنطبقه عندنا؟' }], decidedAt: day(-9) + 'T10:00:00Z' });
+  // 5) دورة خارجية معتمدة (تحسب في ساعاته)
+  await put('extreq', { id: 'ex_guest', userId: G, title: 'مهارات التعليم عن بعد لمعلمي القرآن', provider: 'أكاديمية تبيان', trainer: '', date: '2026-10-05', hours: 8, field: 'quran', desc: '', skills: '', certFile: '', attach: [], status: 'approved', at: '2026-10-06T09:00:00Z', decidedAt: '2026-10-08T09:00:00Z', decisions: [{ at: '2026-10-06T09:00:00Z', by: G, action: 'submit', note: '' }, { at: '2026-10-08T09:00:00Z', by: 'u_noura', action: 'approve', note: '' }] });
+  // 6) رسالة ترحيب
+  await put('mails', { id: 'ml_guest_welcome', to: G, subj: 'هلا فيك في منصة التطوير والتدريب', title: 'حسابك جاهز', body: '<p>هذا حساب تجريبي كموظف في قسم الحلقات. في الرئيسية بتلقى اللي يحتاجك: دورة قريبة، دورة مسجّلة تكمّلها، تقييم، وزيارة رجّعها رئيسك. جرّب كل شي براحتك.</p>', cta: 'الرئيسية', go: 'home', date: day(0), at: t, unread: true, from: 'منصة التطوير والتدريب' });
+  // كلمة مرور مؤقتة
+  const pw = tempPassword(), salt = rand(8);
+  await S.db.prepare('INSERT INTO auth(user_id,email,salt,hash,fails,locked_until,must_change) VALUES(?,?,?,?,0,0,1) ON CONFLICT(user_id) DO UPDATE SET email=excluded.email, salt=excluded.salt, hash=excluded.hash, fails=0, locked_until=0, must_change=1')
+    .bind(G, u.email, salt, await hashPw(pw, salt)).run();
+  await S.db.prepare('DELETE FROM sessions WHERE user_id=?').bind(G).run();
+  await S.log(ses.user.id, ses.role, 'demo.guest', 'users', G, 1, 'reset guest');
+  return { email: u.email, password: pw };
+}
+
 async function api(req, env, url) {
   const S = new Store(env.DB);
   const body = async () => { try { return await req.json() } catch (e) { return {} } };
@@ -189,6 +230,10 @@ async function api(req, env, url) {
     await S.db.prepare('DELETE FROM sessions WHERE user_id=? AND token<>?').bind(ses.user.id, ses.token).run();
     await S.log(ses.user.id, ses.role, 'password.change', 'auth', ses.user.id, 1, '');
     return json({ ok: true });
+  }
+  if (p === '/api/demo/guest' && req.method === 'POST') {
+    if (ses.role !== 'sysadmin') return json({ error: 'لمسؤول النظام فقط' }, 403);
+    return json(await seedGuest(S, ses));
   }
   if (p === '/api/events') {
     if (ses.role !== 'sysadmin') return json({ error: 'غير مصرّح' }, 403);

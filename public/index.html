@@ -4039,7 +4039,7 @@ function empTasks(u){
   DB.enrolls.filter(e=>e.userId===u.id&&e.status==='registered').map(e=>({e,c:courseById(e.courseId)})).filter(x=>x.c&&x.c.date>=TODAY()&&x.c.fmt!=='ذاتي'&&(new Date(x.c.date)-new Date(TODAY()))/864e5<=7).sort((a,b)=>a.c.date.localeCompare(b.c.date))
     .forEach(({c})=>T.push({kind:'course',date:c.date,title:c.title,sub:`${dow(c.date)} ${fmt(c.date)}${c.time?' · '+c.time:''}${c.loc?' · '+c.loc:''}`,btn:'التفاصيل',act:'go',v:'my-learning'}));
   // طلبات ردّها الرئيس أو مدير التدريب
-  DB.visits.filter(v=>v.userId===u.id&&v.status==='returned'&&inc(v)).forEach(v=>T.push({kind:'returned',title:`${(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]} رجّع زيارتك`,sub:v.mgrNote?`«${v.mgrNote}»`:'افتحها وعدّلها حسب الملاحظة',btn:'عدّلها',act:'go',v:'devp'}));
+  DB.visits.filter(v=>v.userId===u.id&&v.status==='returned'&&inc(v)).forEach(v=>T.push({kind:'returned',title:`${(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]} رجّع زيارتك`,sub:v.mgrNote?`«${v.mgrNote}»`:'افتحها وعدّلها حسب الملاحظة',btn:'عدّلها',act:'emp-visit',id:v.id}));
   DB.extreq.filter(x=>x.userId===u.id&&x.status==='returned'&&inc(x)).forEach(x=>T.push({kind:'returned',title:'رجّعت إدارة التدريب دورتك الخارجية',sub:x.title,btn:'عدّلها',act:'go',v:'devp'}));
   // كمّل دورة مسجّلة
   DB.libs.filter(l=>l.status==='published'&&inc(l)&&DB.progress.some(p=>p.userId===u.id&&allLessons(l).some(x=>x.id===p.lessonId))&&!libPassed(u.id,l.id)).forEach(l=>{
@@ -4100,6 +4100,8 @@ ACT['emp-add-go']=function(t){closeLayer();S.tab.devp=t.dataset.k==='ext'?'ext':
 
 /* ---------- كلام أبسط للحالات ---------- */
 STATUS_AR.pending_lm='ننتظر موافقة رئيسك';STATUS_AR.pending_tm='ننتظر موافقة إدارة التدريب';STATUS_AR.waitlist='في قائمة الانتظار';
+
+ACT['emp-visit']=function(t){S.tab.devp='visits';go('devp');setTimeout(()=>visitModal(t.dataset.id),50)};
 
 
 (async function boot(){
