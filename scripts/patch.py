@@ -178,6 +178,20 @@ _d="function ytPrivacyNote(){return `"
 assert _d in h
 h=h.replace(_d,"function ytPrivacyNote(){return `<div class=\"note warn\" style=\"margin-top:10px\"><b>شاهد الفيديو هنا داخل المنصة.</b> لا تُحتسب إلا المشاهدة في هذه الصفحة. الضغط على شعار يوتيوب أو عنوان الفيديو يفتحه في موقع يوتيوب، وما تشاهده هناك لا يُضاف لتقدّمك.</div>",1)
 
+# 8) خط ثمانية: الواجهة بثمانية Sans، والعناوين الكبيرة والأرقام البارزة بثمانية Serif Display
+_t='<title>منصة التطوير والتدريب — جمعية تحفيظ بريدة</title>'
+assert _t in h
+h=h.replace(_t,_t+'\n<script src="/app-fonts.js" async></script>',1)
+_css='td.num,th.num{display:table-cell;text-align:right}'
+assert _css in h
+h=h.replace(_css,_css+"""
+/* ===== خط ثمانية ===== */
+:root{--font:"Thmanyah Sans","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;--display:"Thmanyah Serif Display","Thmanyah Sans","IBM Plex Sans Arabic",serif}
+body{font-feature-settings:"kern" 1}
+.page-h h1,.hero h1,.login-art h1,.login-box h2,.login-art .brand-l b,.m-h h3,.kpi .v,.kpi-c .v,.ring b,.stats-row b{font-family:var(--display);font-weight:700;letter-spacing:0}
+.page-h h1{font-size:30px}.hero h1{font-size:30px}
+""",1)
+
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
     h = h.replace(a_, b_)
