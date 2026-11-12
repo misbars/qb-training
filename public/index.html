@@ -332,8 +332,8 @@ tbody tr.click:hover td{background:var(--sky-3)}
 td.num,th.num{display:table-cell;text-align:right}
 /* ===== خط ثمانية ===== */
 /* ===== شاشة الموظف ===== */
-.emp-tabs{display:none}
-@media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:var(--sky)}}
+.ui-pill{position:absolute;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{inset-inline:12px;top:0;border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}.emp-tabs{display:none}
+@media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:transparent}.emp-tabs button{position:relative;z-index:1}.emp-tabs .badge{display:inline-grid;margin-inline-start:5px;vertical-align:middle;min-width:20px;height:20px;border-radius:10px;font-size:11.5px}.emp-tabs>.ui-pill{left:0;right:auto;bottom:0;top:auto;height:3px;background:var(--sky);border-radius:3px 3px 0 0}}
 .emp-sub{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
 .emp-sub button{min-height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-weight:500;font-size:14px}
 .emp-sub button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
@@ -4587,6 +4587,45 @@ empTasks = function (u) {
 ACT.navgo = function (t) { go(t.dataset.v) };
 // صفحة «بطاقات مسار القيادات» للرئيس: بطاقات فريقه فقط (مساره هو في «تعلّم»)
 { const orig = VIEWS.track; VIEWS.track = () => S.role === 'linemgr' ? vTrackTeam() : orig() }
+
+/* ================= مؤشّر منزلق للقائمة الجانبية وشريط تبويبات الجوال ================= */
+// بدل ما يقفز التظليل من قسم لقسم، ينزلق بينها. العنصر المنزلق يُعاد بناؤه مع كل رسم،
+// فنحفظ موضعه السابق ونبدأ منه ثم ننتقل للموضع الجديد حتى تظهر الحركة.
+(function () {
+  const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let prevNav = null, prevTabs = null;
+
+  function slide(box, vertical, prev) {
+    if (!box || !box.offsetWidth) return null;
+    const on = box.querySelector('button.on');
+    let pill = box.querySelector(':scope > .ui-pill');
+    if (!on) { if (pill) pill.remove(); return null }
+    if (!pill) { pill = document.createElement('span'); pill.className = 'ui-pill'; box.prepend(pill) }
+    const br = box.getBoundingClientRect(), ar = on.getBoundingClientRect();
+    const to = vertical
+      ? { a: ar.top - br.top + box.scrollTop, b: ar.height }
+      : { a: ar.left - br.left + box.scrollLeft, b: ar.width };
+    const put = p => {
+      pill.style.transform = vertical ? 'translateY(' + p.a + 'px)' : 'translateX(' + p.a + 'px)';
+      pill.style[vertical ? 'height' : 'width'] = p.b + 'px';
+    };
+    put(prev && !reduce() ? prev : to);
+    pill.style.transition = 'none';
+    pill.getBoundingClientRect();
+    pill.style.transition = '';
+    put(to);
+    return to;
+  }
+
+  function place() {
+    prevNav = slide(document.querySelector('.nav'), true, prevNav);
+    prevTabs = slide(document.querySelector('.emp-tabs'), false, prevTabs);
+  }
+
+  const _drawPill = draw;
+  draw = function () { const r = _drawPill.apply(this, arguments); requestAnimationFrame(place); return r };
+  addEventListener('resize', () => { prevNav = prevTabs = null; place() });
+})();
 
 
 (async function boot(){
