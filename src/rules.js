@@ -1,6 +1,6 @@
 // قواعد الصلاحيات في الخادم — مشتركة
-const OWNER = { users: 'id', assess: 'empId', enrolls: 'userId', completions: 'userId', surveys: 'userId', attempts: 'userId', progress: 'userId', tests: 'userId', libenr: 'userId', readprog: 'userId', comments: 'userId', extreq: 'userId', visits: 'userId', retakes: 'userId', files: 'by', mgrEvals: 'by', mails: 'to' };
-const TM_COLS = ['jobs','comps','courses','libs','programs','plans','trainers','kpis','kpiMeas','kpiLinks','readings','enrolls','completions','surveys','attempts','progress','tests','mgrEvals','nominations','libenr','readprog','comments','extreq','visits','retakes','files','assess'];
+const OWNER = { users: 'id', assess: 'empId', enrolls: 'userId', completions: 'userId', surveys: 'userId', attempts: 'userId', progress: 'userId', tests: 'userId', libenr: 'userId', readprog: 'userId', comments: 'userId', extreq: 'userId', visits: 'userId', retakes: 'userId', files: 'by', mgrEvals: 'by', mails: 'to', trackprog: 'userId' };
+const TM_COLS = ['jobs','comps','courses','libs','programs','plans','trainers','kpis','kpiMeas','kpiLinks','readings','enrolls','completions','surveys','attempts','progress','tests','mgrEvals','nominations','libenr','readprog','comments','extreq','visits','retakes','files','assess','tracks','trackprog'];
 const ADM_COLS = ['users','depts','jobs','comps'];
 export const changed = (a, b) => { const ks = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]); return [...ks].filter(k => JSON.stringify((a || {})[k]) !== JSON.stringify((b || {})[k])) };
 
@@ -37,6 +37,7 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
     if (col === 'nominations' && (!row.userId || T.includes(row.userId) || row.by === me)) return true;
     if (col === 'enrolls' && T.includes(target) && (!oldO ? true : only('status','note','lmBy','lmAt','decidedAt','decisions','statusLog'))) return true;
     if (['visits','extreq'].includes(col) && T.includes(target) && only('status','decisions','decidedAt','mgrNote','statusLog')) return true;
+    if (col === 'trackprog' && oldO && T.includes(oldO.userId) && only('acks')) return true;
     if (col === 'comments' && only('replies','status','statusLog')) return 'الرئيس المباشر لا يدير التعليقات';
     // يقع للأسفل: تصرفاته على سجلاته الشخصية كموظف
   }
@@ -70,6 +71,7 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
       return true;
     case 'completions': return ['l','r','lib','reading','read'].includes(newO.kind) ? true : 'إنجاز الدورات الحضورية يصدره مدير التدريب';
     case 'mgrEvals': return 'تقييم الأثر للرئيس المباشر فقط';
+    case 'trackprog': return diff.includes('acks') ? 'اطلاع الرئيس يكتبه الرئيس المباشر' : true;
     default: return true;
   }
 }

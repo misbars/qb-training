@@ -18,7 +18,7 @@ async function ensureReady(db) {
   READY = true;
 }
 
-const COLS = ['users','depts','jobs','comps','assess','courses','libs','enrolls','completions','surveys','attempts','progress','tests','mgrEvals','kpis','kpiMeas','kpiLinks','programs','plans','trainers','mails','audit','nominations','libenr','readings','readprog','comments','extreq','visits','retakes','files','settings'];
+const COLS = ['users','depts','jobs','comps','assess','courses','libs','enrolls','completions','surveys','attempts','progress','tests','mgrEvals','kpis','kpiMeas','kpiLinks','programs','plans','trainers','mails','audit','nominations','libenr','readings','readprog','comments','extreq','visits','retakes','files','tracks','trackprog','settings'];
 const ROLE_PRI = ['sysadmin','trainmgr','linemgr','trainer','employee'];
 const SESSION_DAYS = 14;
 const enc = new TextEncoder();
