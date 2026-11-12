@@ -1262,7 +1262,40 @@ function vRecord(){
 }
 function certModal(id){
   const x=DB.completions.find(c=>c.id===id);if(!x)return;const u=U(x.userId);const t=x.kind==='l'?trainerById((libById(x.refId)||{}).trainerId):trainerById((courseById(x.refId)||{}).trainerId);
-  mask(`${mHead('شهادة إتمام تدريبي')}<div class="m-b" style="background:var(--sand-2)"><div id="certbox" style="background:#fff;border:2px solid var(--navy);border-radius:10px;padding:34px 26px;text-align:center"><img src="${LOGO}" alt="" style="height:70px"><div class="muted" style="margin-top:8px">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div><div style="font-size:13px;color:var(--teal);margin-top:18px">تشهد الجمعية بأن</div><div style="font-size:28px;font-weight:600;color:var(--navy);margin:6px 0">${esc(u.name)}</div><div class="muted">قد أتمّ بنجاح</div><div style="font-size:20px;font-weight:600;color:var(--teal);margin:8px 0">${esc(titleOf(x.kind,x.refId))}</div><div class="muted small">بتاريخ ${fmt(x.date)} · مدة <span class="num">${num(x.hours)}</span> ساعات تدريبية${t?' · '+esc(t.name):''}</div><div class="small muted num" style="margin-top:14px">${esc(x.cert)}</div>${x.demo?'<div class="small" style="color:#7A5410;margin-top:8px">شهادة تجريبية</div>':''}</div></div><div class="m-f"><button class="btn sec" data-act="close">إغلاق</button><button class="btn" data-act="cert-pdf" data-id="${x.id}">تنزيل PDF</button></div>`,'wide');
+  const meta=[['التاريخ',fmt(x.date)],['الساعات التدريبية',num(x.hours)+' ساعات'],['المدرب',t?t.name:'—']];
+  mask(`${mHead('شهادة إتمام تدريبي')}<div class="m-b" style="background:var(--sand)">
+   <div id="certbox" style="background:var(--paper);border:1px solid var(--sand);border-radius:12px;overflow:hidden;position:relative">
+    <div style="height:16px;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:56px"></div>
+    <div style="position:relative;padding:30px 30px 24px">
+     <div style="position:absolute;inset:0;background-image:url('/brand-pattern.svg');background-size:190px;opacity:.05"></div>
+     <div style="position:relative;text-align:center">
+      <img src="${LOGO}" alt="" style="height:66px">
+      <div style="margin-top:6px;font-size:13px;color:var(--ink-2)">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:18px auto 0;max-width:420px">
+       <i style="flex:1;height:1px;background:var(--sand)"></i>
+       <i style="width:7px;height:7px;background:var(--teal);transform:rotate(45deg)"></i>
+       <i style="flex:1;height:1px;background:var(--sand)"></i>
+      </div>
+      <div style="font-size:12.5px;color:var(--teal);margin-top:16px;letter-spacing:.04em">تشهد الجمعية بأن</div>
+      <div style="font-size:30px;font-weight:600;color:var(--navy);margin:8px 0;line-height:1.35">${esc(u.name)}</div>
+      <div style="font-size:12.5px;color:var(--ink-2)">قد أتمّ بنجاح متطلبات</div>
+      <div style="font-size:19px;font-weight:600;color:var(--teal);margin:8px 0 20px;line-height:1.5">${esc(titleOf(x.kind,x.refId))}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--sand);border:1px solid var(--sand);border-radius:10px;overflow:hidden;max-width:470px;margin:0 auto">
+       ${meta.map(([l,v])=>`<div style="background:var(--sand-2);padding:11px 8px"><div style="font-size:10.5px;color:var(--ink-3);letter-spacing:.03em">${l}</div><div style="font-size:13.5px;font-weight:600;color:var(--navy);margin-top:3px">${esc(String(v))}</div></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:24px;margin:26px auto 0;max-width:470px">
+       ${[['مدير التدريب','']].concat([['ختم الجمعية','']]).map(([l])=>`<div style="flex:1"><i style="display:block;height:1px;background:var(--navy);opacity:.35;margin-bottom:7px"></i><span style="font-size:11px;color:var(--ink-3)">${l}</span></div>`).join('')}
+      </div>
+     </div>
+    </div>
+    <div style="position:relative;border-top:1px solid var(--sand);background:var(--sand-2);padding:10px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+     <span style="font-size:11px;color:var(--ink-3)">رقم الشهادة</span>
+     <span class="num" style="font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.06em">${esc(x.cert)}</span>
+    </div>
+    ${x.demo?`<div style="position:relative;background:#FBEFD9;color:#7A5410;font-size:11px;text-align:center;padding:5px">شهادة تجريبية — بيانات غير حقيقية</div>`:''}
+    <div style="height:16px;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:56px"></div>
+   </div></div>
+   <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button><button class="btn" data-act="cert-pdf" data-id="${x.id}">تنزيل PDF</button></div>`,'wide');
 }
 /* استبيان الرضا (المستوى 1) — منفصل تمامًا عن اختبار التعلّم */
 function rateRows(){return SURVEY_ITEMS.map(([k,l])=>`<div class="rate-row"><span>${l}</span><div class="st" role="radiogroup" aria-label="${l}">${[1,2,3,4,5].map(i=>`<button class="${S._rate.v[k]>=i?'on':''}" data-act="star" data-k="${k}" data-i="${i}" aria-label="${i} من 5">${starSvg}</button>`).join('')}</div></div>`).join('')}

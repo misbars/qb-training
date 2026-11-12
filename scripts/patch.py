@@ -263,6 +263,47 @@ for a_,b_ in R11:
     assert a_ in h, 'R11 missing: '+a_[:80]
     h=h.replace(a_,b_,1)
 h=h.replace("${pg('تقييم كفاياتي',","${pg('تقييم مهاراتي',")
+
+# ===== الشهادة: تصميم على دليل الهوية =====
+import re as _re
+_cert_old = _re.search(r"^  mask\(`\$\{mHead\('شهادة إتمام تدريبي'\)\}.*$", h, _re.M)
+assert _cert_old, 'cert line not found'
+_CERT = r"""  const meta=[['التاريخ',fmt(x.date)],['الساعات التدريبية',num(x.hours)+' ساعات'],['المدرب',t?t.name:'—']];
+  mask(`${mHead('شهادة إتمام تدريبي')}<div class="m-b" style="background:var(--sand)">
+   <div id="certbox" style="background:var(--paper);border:1px solid var(--sand);border-radius:12px;overflow:hidden;position:relative">
+    <div style="height:16px;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:56px"></div>
+    <div style="position:relative;padding:30px 30px 24px">
+     <div style="position:absolute;inset:0;background-image:url('/brand-pattern.svg');background-size:190px;opacity:.05"></div>
+     <div style="position:relative;text-align:center">
+      <img src="${LOGO}" alt="" style="height:66px">
+      <div style="margin-top:6px;font-size:13px;color:var(--ink-2)">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:18px auto 0;max-width:420px">
+       <i style="flex:1;height:1px;background:var(--sand)"></i>
+       <i style="width:7px;height:7px;background:var(--teal);transform:rotate(45deg)"></i>
+       <i style="flex:1;height:1px;background:var(--sand)"></i>
+      </div>
+      <div style="font-size:12.5px;color:var(--teal);margin-top:16px;letter-spacing:.04em">تشهد الجمعية بأن</div>
+      <div style="font-size:30px;font-weight:600;color:var(--navy);margin:8px 0;line-height:1.35">${esc(u.name)}</div>
+      <div style="font-size:12.5px;color:var(--ink-2)">قد أتمّ بنجاح متطلبات</div>
+      <div style="font-size:19px;font-weight:600;color:var(--teal);margin:8px 0 20px;line-height:1.5">${esc(titleOf(x.kind,x.refId))}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--sand);border:1px solid var(--sand);border-radius:10px;overflow:hidden;max-width:470px;margin:0 auto">
+       ${meta.map(([l,v])=>`<div style="background:var(--sand-2);padding:11px 8px"><div style="font-size:10.5px;color:var(--ink-3);letter-spacing:.03em">${l}</div><div style="font-size:13.5px;font-weight:600;color:var(--navy);margin-top:3px">${esc(String(v))}</div></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:24px;margin:26px auto 0;max-width:470px">
+       ${[['مدير التدريب','']].concat([['ختم الجمعية','']]).map(([l])=>`<div style="flex:1"><i style="display:block;height:1px;background:var(--navy);opacity:.35;margin-bottom:7px"></i><span style="font-size:11px;color:var(--ink-3)">${l}</span></div>`).join('')}
+      </div>
+     </div>
+    </div>
+    <div style="position:relative;border-top:1px solid var(--sand);background:var(--sand-2);padding:10px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+     <span style="font-size:11px;color:var(--ink-3)">رقم الشهادة</span>
+     <span class="num" style="font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.06em">${esc(x.cert)}</span>
+    </div>
+    ${x.demo?`<div style="position:relative;background:#FBEFD9;color:#7A5410;font-size:11px;text-align:center;padding:5px">شهادة تجريبية — بيانات غير حقيقية</div>`:''}
+    <div style="height:16px;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:56px"></div>
+   </div></div>
+   <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button><button class="btn" data-act="cert-pdf" data-id="${x.id}">تنزيل PDF</button></div>`,'wide');"""
+h = h[:_cert_old.start()] + _CERT + h[_cert_old.end():]
+
 h=h.replace('/* ===== خط ثمانية ===== */','/* ===== خط ثمانية ===== */'+"""
 /* ===== شاشة الموظف ===== */
 .ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}@property --p{syntax:"<number>";inherits:false;initial-value:0}@keyframes inUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.in-up{animation:inUp .4s cubic-bezier(.22,.8,.3,1) both;animation-delay:var(--d,0ms)}.ring{transition:--p .9s cubic-bezier(.22,.8,.3,1) .15s}.side-toggle{display:none}@media(min-width:901px){.app{grid-template-columns:var(--sidew,268px) 1fr;transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1)}.side-toggle{display:grid}html.side-off{--sidew:76px}html.side-off .brand{padding:22px 0 16px;justify-content:center}html.side-off .brand img{height:40px}html.side-off .brand div,html.side-off .nav-h,html.side-off .nav button span,html.side-off .save-st,html.side-off .switch-l,html.side-off .switch{display:none}html.side-off .nav{padding:8px 14px}html.side-off .nav button{justify-content:center;padding:11px 0}html.side-off .nav .badge{position:absolute;top:5px;inset-inline-end:7px;min-width:8px;width:8px;height:8px;padding:0;border-radius:50%;font-size:0;overflow:hidden}html.side-off .nav>.ui-pill:before{display:none}html.side-off .side-foot{padding:10px 14px}html.side-off .ev-btn{font-size:0;gap:0;padding:11px 0}}@media(prefers-reduced-motion:reduce){.in-up{animation:none}.app,.ring,.pbar i{transition:none}}.emp-tabs{display:none}
