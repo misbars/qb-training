@@ -127,8 +127,8 @@ function trSummary(uid) {
 function trSave(p, what) { commit('trackprog'); if (what) audit('track.' + what, 'trackprog', p.id, TRACK.title) }
 function trNotifyUp(subj, body) {
   const u = ME(), m = u && u.managerId && U(u.managerId);
-  if (m) notify(m.id, subj, 'مسار القيادات', body, 'عرض البطاقة', 'track');
-  tmUsers().forEach(t => { if (!m || t.id !== m.id) notify(t.id, subj, 'مسار القيادات', body, 'متابعة المسار', 'trackadm') });
+  if (m) notify(m.id, subj, 'مسار القيادات', body, 'عرض البطاقة', 'linemgr:track');
+  tmUsers().forEach(t => { if (!m || t.id !== m.id) notify(t.id, subj, 'مسار القيادات', body, 'متابعة المسار', 'trainmgr:trackadm') });
 }
 
 /* ---------- عناصر العرض ---------- */
@@ -328,7 +328,7 @@ Object.assign(ACT, {
     const note = fieldVal(`tra_${t.dataset.u}_${n}`);
     p.acks = p.acks || {}; p.acks[n] = { by: S.me, at: nowISO(), note };
     trSave(p, 'ack');
-    notify(t.dataset.u, `اطّلع ${(ME() || {}).name} على بطاقتك: ${TR_AX(n).k.t}`, 'مسار القيادات', note ? `<p>${esc(note)}</p>` : '<p>اطّلع رئيسك على بطاقة التطبيق.</p>', 'افتح المسار', 'track');
+    notify(t.dataset.u, `اطّلع ${(ME() || {}).name} على بطاقتك: ${TR_AX(n).k.t}`, 'مسار القيادات', note ? `<p>${esc(note)}</p>` : '<p>اطّلع رئيسك على بطاقة التطبيق.</p>', 'افتح المسار', 'employee:track');
     toast('تم'); draw();
   },
   'tr-who'(t) {

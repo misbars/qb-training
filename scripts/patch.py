@@ -134,7 +134,7 @@ Object.assign(ACT,{
   async logout(){audit('logout','session','');detachPlayer();await flush();try{await api('/api/logout')}catch(e){}S.me=null;S.role=null;P.loaded=false;COLS.forEach(c=>DB[c]=[]);draw()},
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lg_pw')ACT['login-email']()});
-"""+"".join(open(os.path.join(os.path.dirname(__file__),n),encoding="utf-8").read()+"\n" for n in ("client-extra.js","reports.js","employee.js","tracks.js"))+r"""
+"""+"".join(open(os.path.join(os.path.dirname(__file__),n),encoding="utf-8").read()+"\n" for n in ("client-extra.js","reports.js","employee.js","tracks.js","nav.js"))+r"""
 """
 boot_a = h.index('(async function boot(){')
 boot_b = h.index('})();', boot_a) + len('})();')
@@ -245,7 +245,7 @@ R11=[
  ("  if((f.desc||'').trim().length<10)e.push('الوصف المختصر مطلوب (10 أحرف على الأقل)');\n  if((f.skills||'').trim().length<5)e.push('اذكر المهارات أو المعارف المكتسبة');\n",""),
  ("${a&&a.mgr!=null?`<div class=\"small\" style=\"color:var(--teal)\">تقييم رئيسك:","${a&&a.mgr!=null&&a.self!=null?`<div class=\"small\" style=\"color:var(--teal)\">تقييم رئيسك:"),
  ("'<div class=\"small muted\">لم يقيّمك رئيسك بعد</div>'}","(a&&a.mgr!=null?'<div class=\"small muted\">يظهر تقييم رئيسك بعد ما تحفظ تقييمك</div>':'<div class=\"small muted\">لم يقيّمك رئيسك بعد</div>')}"),
- ("  </header><main class=\"content\" id=\"view\">","  </header>${S.role==='employee'?`<nav class=\"emp-tabs\" aria-label=\"الأقسام\">${nav.map(([k,l])=>`<button data-act=\"go\" data-v=\"${k}\" class=\"${navOn(k)?'on':''}\" ${navOn(k)?'aria-current=\"page\"':''}>${l}</button>`).join('')}</nav>`:''}<main class=\"content\" id=\"view\">"),
+ ("  </header><main class=\"content\" id=\"view\">","  </header>${empTabsHtml()}<main class=\"content\" id=\"view\">"),
  ('<div class="note warn" style="margin-bottom:14px">تنبيه: الصلاحيات هنا تُطبَّق داخل الواجهة فقط. لا يوجد خادم مصادقة؛ فالفصل الأمني الحقيقي بين الأدوار يتطلب ربطًا بـ Microsoft Entra ID وطبقة خادم.</div>','<div class="note" style="margin-bottom:14px">الصلاحيات تُطبَّق على الخادم: كل حساب يرى وينفّذ ما تسمح به صفته فقط. لإصدار كلمة مرور مؤقتة لأي مستخدم استخدم زر «كلمة المرور».</div>'),
  ("'extreq','visits','retakes','files'];","'extreq','visits','retakes','files','tracks','trackprog'];"),
  ('وصف مختصر *</label>','وصف مختصر <span class="muted">(اختياري)</span></label>'),
@@ -292,6 +292,12 @@ h=h.replace('/* ===== خط ثمانية ===== */','/* ===== خط ثمانية ==
 .emp-choice button:hover{border-color:var(--teal)}.emp-choice .i{width:28px;height:28px;color:var(--teal)}.emp-choice b{font-size:16px;color:var(--navy)}.emp-choice span{font-size:13.5px;color:var(--ink-2)}
 @media(max-width:620px){.emp-choice{grid-template-columns:1fr}.emp-head h1{font-size:26px}.tk{padding:14px}.tk-btn{width:100%}}
 """,1)
+
+# 12) قائمة موحّدة حسب الصلاحيات
+_s=h.index('<nav class="nav" aria-label="القائمة الرئيسية">');_e=h.index('</nav>',_s)+len('</nav>')
+h=h[:_s]+'${unifiedNavHtml()}'+h[_e:]
+_a="""    ${u.roles.length>1?`<div class="switch-l">الصفة الحالية</div><div class="switch" style="flex-wrap:wrap">${u.roles.map(r=>`<button data-act="role" data-role="${r}" class="${S.role===r?'on':''}">${ROLES[r]}</button>`).join('')}</div>`:''}\n"""
+assert _a in h, 'switch block';h=h.replace(_a,'',1)
 
 for a_, b_ in REPL:
     assert a_ in h, 'missing: ' + a_[:60]
