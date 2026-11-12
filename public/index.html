@@ -332,7 +332,7 @@ tbody tr.click:hover td{background:var(--sky-3)}
 td.num,th.num{display:table-cell;text-align:right}
 /* ===== خط ثمانية ===== */
 /* ===== شاشة الموظف ===== */
-.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}.emp-tabs{display:none}
+.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.content.view-in{animation:viewIn .3s cubic-bezier(.22,.8,.3,1)}.side-toggle{display:none}@media(min-width:901px){.app{grid-template-columns:var(--sidew,268px) 1fr;transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1)}.side{transition:opacity .22s ease}html.side-off{--sidew:0px}html.side-off .side{opacity:0;pointer-events:none}.side-toggle{display:grid}}@media(prefers-reduced-motion:reduce){.content.view-in{animation:none}.app,.side{transition:none}}.emp-tabs{display:none}
 @media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:transparent}.emp-tabs button{position:relative;z-index:1}.emp-tabs .badge{display:inline-grid;margin-inline-start:5px;vertical-align:middle;min-width:20px;height:20px;border-radius:10px;font-size:11.5px}.emp-tabs>.ui-pill{height:3px;background:var(--sky);border-radius:3px 3px 0 0}}
 .emp-sub{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
 .emp-sub button{min-height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-weight:500;font-size:14px}
@@ -1130,7 +1130,7 @@ function shell(){
     <button class="ev-btn" data-act="logout">${ico('x')}تسجيل الخروج</button></div>
   </aside><div class="scrim ${S.nav?'on':''}" data-act="navclose"></div>
   <div class="main"><header class="top">
-   <button class="hamb" data-act="navopen" aria-label="القائمة">${ico('menu')}</button>
+   <button class="icon-btn side-toggle" data-act="sidetoggle" aria-label="طيّ القائمة الجانبية" title="طيّ القائمة الجانبية">${ico('menu')}</button><button class="hamb" data-act="navopen" aria-label="القائمة">${ico('menu')}</button>
    <div class="gsearch">${ico('search')}<input id="gs" placeholder="ابحث عن دورة أو مدرب…" aria-label="بحث" value=""></div><div class="sp"></div>
    <div style="position:relative"><button class="icon-btn" data-act="bell" aria-label="الإشعارات">${ico('bell')}${ur?`<span class="dot">${ur}</span>`:''}</button>${S.dd?`<div class="dd" role="menu"><div class="h"><b style="color:var(--navy)">آخر الإشعارات</b><span class="outlook-tag">${ico('mail')}صندوق المنصة</span></div>${L.length?L.map(m=>`<div class="it" data-act="openmail" data-id="${m.id}"><span class="ic">${ico('mail')}</span><div style="min-width:0"><div style="${m.unread?'font-weight:700':''};color:var(--navy);line-height:1.5">${esc(m.subj)}</div><small class="muted">${fmt(m.date)}</small></div></div>`).join(''):'<div class="empty">لا إشعارات</div>'}<button class="btn ghost" style="width:100%;border-radius:0;padding:13px" data-act="go" data-v="inbox">عرض كل الإشعارات</button></div>`:''}</div>
    <div class="user-chip"><div class="av" style="background:${col}">${esc(initials(u.name))}</div><div><b>${esc(u.name.split(' ').slice(0,2).join(' '))}</b><small>${esc(u.email)}</small></div></div>
@@ -4635,6 +4635,23 @@ ACT.navgo = function (t) { go(t.dataset.v) };
       document.querySelectorAll(sel).forEach((box, i) => slide(box, mode, sel + '#' + i));
   }
 
+  // ظهور المحتوى: ينزل بهدوء عند تغيّر الصفحة فقط، لا مع كل حفظ أو مزامنة
+  let sig = null;
+  function fadeView() {
+    const view = document.getElementById('view');
+    if (!view) { sig = null; return }
+    let now;
+    try { now = [S.role, S.view, S.trackAxis || '', S.trTab || '', JSON.stringify(S.tab || {})].join('|') }
+    catch (e) { return }
+    if (now === sig) return;
+    const first = sig === null;
+    sig = now;
+    if (first) return;
+    view.classList.remove('view-in');
+    view.offsetWidth;
+    view.classList.add('view-in');
+  }
+
   // الرسم يستبدل الصفحة كاملة، والنوافذ المنبثقة ترسم نفسها، فنراقب التغيّر بدل ربطه بدالة واحدة
   let busy = false, queued = false;
   function schedule() {
@@ -4642,11 +4659,20 @@ ACT.navgo = function (t) { go(t.dataset.v) };
     queued = true;
     requestAnimationFrame(() => {
       queued = false; busy = true;
-      try { place() } finally { requestAnimationFrame(() => { busy = false }) }
+      try { place(); fadeView() } finally { requestAnimationFrame(() => { busy = false }) }
     });
   }
   new MutationObserver(() => { if (!busy) schedule() })
     .observe(document.body, { childList: true, subtree: true });
+  // طيّ القائمة الجانبية: الصنف على <html> فيبقى بعد إعادة رسم الصفحة
+  const SIDE_KEY = 'qb.sideOff';
+  try { if (localStorage.getItem(SIDE_KEY) === '1') document.documentElement.classList.add('side-off') } catch (e) { }
+  ACT.sidetoggle = function () {
+    const off = document.documentElement.classList.toggle('side-off');
+    try { localStorage.setItem(SIDE_KEY, off ? '1' : '0') } catch (e) { }
+    setTimeout(() => { prev.clear(); schedule() }, 320);
+  };
+
   addEventListener('resize', () => { prev.clear(); schedule() });
   schedule();
 })();

@@ -45,6 +45,23 @@
       document.querySelectorAll(sel).forEach((box, i) => slide(box, mode, sel + '#' + i));
   }
 
+  // ظهور المحتوى: ينزل بهدوء عند تغيّر الصفحة فقط، لا مع كل حفظ أو مزامنة
+  let sig = null;
+  function fadeView() {
+    const view = document.getElementById('view');
+    if (!view) { sig = null; return }
+    let now;
+    try { now = [S.role, S.view, S.trackAxis || '', S.trTab || '', JSON.stringify(S.tab || {})].join('|') }
+    catch (e) { return }
+    if (now === sig) return;
+    const first = sig === null;
+    sig = now;
+    if (first) return;
+    view.classList.remove('view-in');
+    view.offsetWidth;
+    view.classList.add('view-in');
+  }
+
   // الرسم يستبدل الصفحة كاملة، والنوافذ المنبثقة ترسم نفسها، فنراقب التغيّر بدل ربطه بدالة واحدة
   let busy = false, queued = false;
   function schedule() {
@@ -52,11 +69,20 @@
     queued = true;
     requestAnimationFrame(() => {
       queued = false; busy = true;
-      try { place() } finally { requestAnimationFrame(() => { busy = false }) }
+      try { place(); fadeView() } finally { requestAnimationFrame(() => { busy = false }) }
     });
   }
   new MutationObserver(() => { if (!busy) schedule() })
     .observe(document.body, { childList: true, subtree: true });
+  // طيّ القائمة الجانبية: الصنف على <html> فيبقى بعد إعادة رسم الصفحة
+  const SIDE_KEY = 'qb.sideOff';
+  try { if (localStorage.getItem(SIDE_KEY) === '1') document.documentElement.classList.add('side-off') } catch (e) { }
+  ACT.sidetoggle = function () {
+    const off = document.documentElement.classList.toggle('side-off');
+    try { localStorage.setItem(SIDE_KEY, off ? '1' : '0') } catch (e) { }
+    setTimeout(() => { prev.clear(); schedule() }, 320);
+  };
+
   addEventListener('resize', () => { prev.clear(); schedule() });
   schedule();
 })();
