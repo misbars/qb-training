@@ -2,11 +2,6 @@ name = "qb-training"
 main = "src/worker.js"
 compatibility_date = "2025-06-01"
 
-# النطاقات المخصّصة: كل جهة تأخذ نطاقًا فرعيًا باسمها
-routes = [
-  { pattern = "qb.dallearn.com", custom_domain = true }
-]
-
 [assets]
 directory = "./public"
 binding = "ASSETS"
