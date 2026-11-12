@@ -4,8 +4,6 @@ compatibility_date = "2025-06-01"
 
 # النطاقات المخصّصة: كل جهة تأخذ نطاقًا فرعيًا باسمها
 routes = [
-  { pattern = "dallearn.com", custom_domain = true },
-  { pattern = "www.dallearn.com", custom_domain = true },
   { pattern = "qb.dallearn.com", custom_domain = true }
 ]
 
