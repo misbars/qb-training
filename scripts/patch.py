@@ -253,6 +253,11 @@ R11=[
  ('المهارات أو المعارف المكتسبة *</label>','المهارات المكتسبة <span class="muted">(اختياري)</span></label>'),
  ("قيّم مستواك الحالي بصدق في كل كفاية. تقييمك الذاتي يُقارَن بتقييم رئيسك المباشر، والفجوة تحدد احتياجك التدريبي.","اختر مستواك الحالي في كل مهارة بصدق. نقارنه بتقييم رئيسك، ومنه نقترح لك الدورات المناسبة."),
  ("  }else if(status==='pending_lm'&&u.managerId){\n","  }else if(status==='pending_lm'&&u.managerId){\n    notify(userId,`استلمنا طلبك: ${c.title}`,'ننتظر موافقة رئيسك',`<p>وصل طلب تسجيلك في دورة <b>${esc(c.title)}</b> إلى <b>${esc((U(u.managerId)||{}).name||'رئيسك')}</b>. بيوصلك إشعار أول ما يعتمده.</p>`,'عرض دوراتي','my-learning');\n"),
+
+ (".pattern{position:absolute;inset:0;opacity:.13;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 60 60' fill='none' stroke='%239DDAE5' stroke-width='1'%3E%3Crect x='10' y='10' width='40' height='40'/%3E%3Cpath d='M30 1.7L58.3 30 30 58.3 1.7 30z'/%3E%3Ccircle cx='30' cy='30' r='9'/%3E%3Ccircle cx='30' cy='30' r='3'/%3E%3C/svg%3E\");}",
+  ".pattern{position:absolute;inset:0;opacity:.13;background-image:url(\"/brand-pattern.svg\");background-size:142px}"),
+ (".side .pattern{opacity:.07;background-size:72px;", ".side .pattern{opacity:.1;background-size:132px;"),
+ (".opp .top-s .pattern{opacity:.18;background-size:56px}", ".opp .top-s .pattern{opacity:.2;background-size:104px}"),
 ]
 for a_,b_ in R11:
     assert a_ in h, 'R11 missing: '+a_[:80]
