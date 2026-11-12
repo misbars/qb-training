@@ -332,7 +332,7 @@ tbody tr.click:hover td{background:var(--sky-3)}
 td.num,th.num{display:table-cell;text-align:right}
 /* ===== خط ثمانية ===== */
 /* ===== شاشة الموظف ===== */
-.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.content.view-in{animation:viewIn .3s cubic-bezier(.22,.8,.3,1)}.side-toggle{display:none}@media(min-width:901px){.app{grid-template-columns:var(--sidew,268px) 1fr;transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1)}.side{transition:opacity .22s ease}html.side-off{--sidew:0px}html.side-off .side{opacity:0;pointer-events:none}.side-toggle{display:grid}}@media(prefers-reduced-motion:reduce){.content.view-in{animation:none}.app,.side{transition:none}}.emp-tabs{display:none}
+.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}@property --p{syntax:"<number>";inherits:false;initial-value:0}@keyframes inUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.in-up{animation:inUp .4s cubic-bezier(.22,.8,.3,1) both;animation-delay:var(--d,0ms)}.ring{transition:--p .9s cubic-bezier(.22,.8,.3,1) .15s}.side-toggle{display:none}@media(min-width:901px){.app{grid-template-columns:var(--sidew,268px) 1fr;transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1)}.side-toggle{display:grid}html.side-off{--sidew:76px}html.side-off .brand{padding:22px 0 16px;justify-content:center}html.side-off .brand img{height:40px}html.side-off .brand div,html.side-off .nav-h,html.side-off .nav button span,html.side-off .save-st,html.side-off .switch-l,html.side-off .switch{display:none}html.side-off .nav{padding:8px 14px}html.side-off .nav button{justify-content:center;padding:11px 0}html.side-off .nav .badge{position:absolute;top:5px;inset-inline-end:7px;min-width:8px;width:8px;height:8px;padding:0;border-radius:50%;font-size:0;overflow:hidden}html.side-off .nav>.ui-pill:before{display:none}html.side-off .side-foot{padding:10px 14px}html.side-off .ev-btn{font-size:0;gap:0;padding:11px 0}}@media(prefers-reduced-motion:reduce){.in-up{animation:none}.app,.ring,.pbar i{transition:none}}.emp-tabs{display:none}
 @media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:transparent}.emp-tabs button{position:relative;z-index:1}.emp-tabs .badge{display:inline-grid;margin-inline-start:5px;vertical-align:middle;min-width:20px;height:20px;border-radius:10px;font-size:11.5px}.emp-tabs>.ui-pill{height:3px;background:var(--sky);border-radius:3px 3px 0 0}}
 .emp-sub{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
 .emp-sub button{min-height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-weight:500;font-size:14px}
@@ -4633,6 +4633,11 @@ ACT.navgo = function (t) { go(t.dataset.v) };
   function place() {
     for (const [sel, mode] of TARGETS)
       document.querySelectorAll(sel).forEach((box, i) => slide(box, mode, sel + '#' + i));
+    if (document.documentElement.classList.contains('side-off'))
+      document.querySelectorAll('.nav button').forEach(b => {
+        const s = b.querySelector('span');
+        if (s && !b.title) b.title = s.textContent.trim();
+      });
   }
 
   // ظهور المحتوى: ينزل بهدوء عند تغيّر الصفحة فقط، لا مع كل حفظ أو مزامنة
@@ -4647,9 +4652,56 @@ ACT.navgo = function (t) { go(t.dataset.v) };
     const first = sig === null;
     sig = now;
     if (first) return;
-    view.classList.remove('view-in');
-    view.offsetWidth;
-    view.classList.add('view-in');
+    openView(view);
+  }
+
+  // فتح الصفحة: البطاقات تظهر واحدة ورا الثانية، والأشرطة والحلقات والأرقام تبدأ من الصفر
+  function openView(view) {
+    if (reduce()) return;
+    let nodes = [...view.querySelectorAll('.card')];
+    if (nodes.length < 2) nodes = [...view.children];
+    nodes = nodes.filter(n => n.offsetWidth).slice(0, 14);
+    nodes.forEach((n, i) => { n.style.setProperty('--d', i * 45 + 'ms'); n.classList.add('in-up') });
+
+    view.querySelectorAll('.pbar > i').forEach(el => {
+      const w = el.style.width; if (!w || w === '0%') return;
+      el.style.transition = 'none'; el.style.width = '0%';
+      el.getBoundingClientRect();
+      el.style.transition = 'width .9s cubic-bezier(.22,.8,.3,1) .15s';
+      el.style.width = w;
+    });
+
+    view.querySelectorAll('.ring').forEach(el => {
+      const p = getComputedStyle(el).getPropertyValue('--p').trim();
+      if (!p || p === '0') return;
+      const had = el.style.getPropertyValue('--p');
+      el.style.setProperty('--p', '0'); el.getBoundingClientRect();
+      requestAnimationFrame(() => { had ? el.style.setProperty('--p', had) : el.style.removeProperty('--p') });
+    });
+
+    view.querySelectorAll('.kpi .v, .ring b').forEach(countUp);
+  }
+
+  // عدّ تصاعدي لأول رقم داخل العنصر، مع الحفاظ على بقية النص وعلى العناصر الداخلية
+  function countUp(el) {
+    const node = [...el.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.nodeValue));
+    if (!node) return;
+    const txt = node.nodeValue, m = txt.match(/\d[\d,]*(\.\d+)?/);
+    if (!m) return;
+    const target = parseFloat(m[0].replace(/,/g, ''));
+    if (!isFinite(target) || target <= 0 || target >= 1e9) return;
+    const dec = (m[0].split('.')[1] || '').length, grp = m[0].includes(',');
+    const pre = txt.slice(0, m.index), post = txt.slice(m.index + m[0].length);
+    const fmtN = v => (grp ? v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+                           : v.toFixed(dec));
+    const t0 = performance.now(), dur = 700;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      node.nodeValue = pre + fmtN(target * e) + post;
+      if (k < 1) requestAnimationFrame(step);
+    };
+    node.nodeValue = pre + fmtN(0) + post;
+    requestAnimationFrame(step);
   }
 
   // الرسم يستبدل الصفحة كاملة، والنوافذ المنبثقة ترسم نفسها، فنراقب التغيّر بدل ربطه بدالة واحدة

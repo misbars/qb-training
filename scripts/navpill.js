@@ -43,6 +43,11 @@
   function place() {
     for (const [sel, mode] of TARGETS)
       document.querySelectorAll(sel).forEach((box, i) => slide(box, mode, sel + '#' + i));
+    if (document.documentElement.classList.contains('side-off'))
+      document.querySelectorAll('.nav button').forEach(b => {
+        const s = b.querySelector('span');
+        if (s && !b.title) b.title = s.textContent.trim();
+      });
   }
 
   // ظهور المحتوى: ينزل بهدوء عند تغيّر الصفحة فقط، لا مع كل حفظ أو مزامنة
@@ -57,9 +62,56 @@
     const first = sig === null;
     sig = now;
     if (first) return;
-    view.classList.remove('view-in');
-    view.offsetWidth;
-    view.classList.add('view-in');
+    openView(view);
+  }
+
+  // فتح الصفحة: البطاقات تظهر واحدة ورا الثانية، والأشرطة والحلقات والأرقام تبدأ من الصفر
+  function openView(view) {
+    if (reduce()) return;
+    let nodes = [...view.querySelectorAll('.card')];
+    if (nodes.length < 2) nodes = [...view.children];
+    nodes = nodes.filter(n => n.offsetWidth).slice(0, 14);
+    nodes.forEach((n, i) => { n.style.setProperty('--d', i * 45 + 'ms'); n.classList.add('in-up') });
+
+    view.querySelectorAll('.pbar > i').forEach(el => {
+      const w = el.style.width; if (!w || w === '0%') return;
+      el.style.transition = 'none'; el.style.width = '0%';
+      el.getBoundingClientRect();
+      el.style.transition = 'width .9s cubic-bezier(.22,.8,.3,1) .15s';
+      el.style.width = w;
+    });
+
+    view.querySelectorAll('.ring').forEach(el => {
+      const p = getComputedStyle(el).getPropertyValue('--p').trim();
+      if (!p || p === '0') return;
+      const had = el.style.getPropertyValue('--p');
+      el.style.setProperty('--p', '0'); el.getBoundingClientRect();
+      requestAnimationFrame(() => { had ? el.style.setProperty('--p', had) : el.style.removeProperty('--p') });
+    });
+
+    view.querySelectorAll('.kpi .v, .ring b').forEach(countUp);
+  }
+
+  // عدّ تصاعدي لأول رقم داخل العنصر، مع الحفاظ على بقية النص وعلى العناصر الداخلية
+  function countUp(el) {
+    const node = [...el.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.nodeValue));
+    if (!node) return;
+    const txt = node.nodeValue, m = txt.match(/\d[\d,]*(\.\d+)?/);
+    if (!m) return;
+    const target = parseFloat(m[0].replace(/,/g, ''));
+    if (!isFinite(target) || target <= 0 || target >= 1e9) return;
+    const dec = (m[0].split('.')[1] || '').length, grp = m[0].includes(',');
+    const pre = txt.slice(0, m.index), post = txt.slice(m.index + m[0].length);
+    const fmtN = v => (grp ? v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+                           : v.toFixed(dec));
+    const t0 = performance.now(), dur = 700;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      node.nodeValue = pre + fmtN(target * e) + post;
+      if (k < 1) requestAnimationFrame(step);
+    };
+    node.nodeValue = pre + fmtN(0) + post;
+    requestAnimationFrame(step);
   }
 
   // الرسم يستبدل الصفحة كاملة، والنوافذ المنبثقة ترسم نفسها، فنراقب التغيّر بدل ربطه بدالة واحدة
