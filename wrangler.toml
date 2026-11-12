@@ -1,6 +1,14 @@
 name = "qb-training"
 main = "src/worker.js"
 compatibility_date = "2025-06-01"
+workers_dev = true
+
+# النطاقات المخصّصة: كل جهة تأخذ نطاقًا فرعيًا باسمها
+routes = [
+  { pattern = "dallearn.com", custom_domain = true },
+  { pattern = "www.dallearn.com", custom_domain = true },
+  { pattern = "qb.dallearn.com", custom_domain = true }
+]
 
 [assets]
 directory = "./public"
@@ -10,7 +18,7 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "qb-training-db"
-database_id = "b71ed1f4-aa18-4c4c-90a6-64bd12c41735"
+database_id = "ba3d1083-39e3-4c56-bcb6-ab889ef5ebc5"
 migrations_dir = "migrations"
 
 [[rules]]
