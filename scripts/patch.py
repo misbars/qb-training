@@ -231,7 +231,7 @@ td.small.num,td .small.num{white-space:nowrap}
 .ring span{font-size:12px;line-height:1.3;display:block;max-width:84px;margin-inline:auto}
 .chart text{font-size:13px}
 .mini{font-size:12px}
-.tabs{scrollbar-width:thin;-webkit-mask-image:linear-gradient(to left,#000 92%,transparent);mask-image:linear-gradient(to left,#000 92%,transparent)}
+.tabs{position:relative}.tabs button{position:relative;z-index:1}.tabs button.on{border-bottom-color:transparent}.tabs>.ui-pill{height:3px;background:var(--teal);border-radius:3px 3px 0 0}.tabs{scrollbar-width:thin;-webkit-mask-image:linear-gradient(to left,#000 92%,transparent);mask-image:linear-gradient(to left,#000 92%,transparent)}
 @media(max-width:900px){.tbl-wrap table{min-width:680px}.tbl-wrap td{min-width:110px}.tabs button{padding:10px 12px;font-size:14px}.ring{width:104px;height:104px}.ring div{width:82px;height:82px}.ring b{font-size:22px}}
 """,1)
 
@@ -259,11 +259,11 @@ for a_,b_ in R11:
 h=h.replace("${pg('تقييم كفاياتي',","${pg('تقييم مهاراتي',")
 h=h.replace('/* ===== خط ثمانية ===== */','/* ===== خط ثمانية ===== */'+"""
 /* ===== شاشة الموظف ===== */
-.ui-pill{position:absolute;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{inset-inline:12px;top:0;border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}.emp-tabs{display:none}
-@media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:transparent}.emp-tabs button{position:relative;z-index:1}.emp-tabs .badge{display:inline-grid;margin-inline-start:5px;vertical-align:middle;min-width:20px;height:20px;border-radius:10px;font-size:11.5px}.emp-tabs>.ui-pill{left:0;right:auto;bottom:0;top:auto;height:3px;background:var(--sky);border-radius:3px 3px 0 0}}
+.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}.emp-tabs{display:none}
+@media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:transparent}.emp-tabs button{position:relative;z-index:1}.emp-tabs .badge{display:inline-grid;margin-inline-start:5px;vertical-align:middle;min-width:20px;height:20px;border-radius:10px;font-size:11.5px}.emp-tabs>.ui-pill{height:3px;background:var(--sky);border-radius:3px 3px 0 0}}
 .emp-sub{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
 .emp-sub button{min-height:40px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);font-weight:500;font-size:14px}
-.emp-sub button.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.emp-sub button.on{background:transparent;border-color:transparent;color:#fff;font-weight:600}.emp-sub{position:relative}.emp-sub button{position:relative;z-index:1}.emp-sub>.ui-pill{border-radius:99px;background:var(--navy)}
 .emp-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
 .emp-head h1{font-family:var(--display);font-size:30px;color:var(--navy);line-height:1.3}
 .emp-head p{color:var(--ink-2);font-size:16px;margin-top:2px}.emp-head p b{color:var(--navy)}
