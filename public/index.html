@@ -1611,7 +1611,7 @@ function vInbox(){
   <div class="note warn" style="margin-bottom:14px">هذا صندوق داخل المنصة. الإرسال الفعلي إلى Outlook يتطلب ربط Microsoft Graph من خادم، وهو غير مُفعَّل في هذا النموذج.</div>
   <div class="card mail"><div class="mail-l">${L.length?L.map(x=>`<div class="mi ${x.unread?'unread':''} ${m&&m.id===x.id?'on':''}" data-act="openmail" data-id="${x.id}" tabindex="0"><b><span>${esc(x.from)}</span><small>${fmtS(x.date)}</small></b><span style="color:var(--ink)">${esc(x.subj)}</span></div>`).join(''):'<div class="empty">لا توجد رسائل</div>'}</div>
   <div class="mail-r">${m?`<div class="eml-meta"><div><b>${esc(m.subj)}</b></div><div>من: ${esc(m.from)}</div><div>إلى: <span class="num">${esc(u.email)}</span> · ${fmt(m.date)}</div></div>
-   <div class="eml"><div class="hd"><div class="pattern"></div><img class="logo-w" src="${LOGO}" alt="" style="height:50px"><span style="color:var(--sky);font-size:13px">منصة التطوير والتدريب</span></div><div class="bd"><h4>${esc(m.title)}</h4>${m.body}${m.cta?`<p style="margin-top:18px"><button class="btn" data-act="mailgo" data-id="${m.id}">${esc(m.cta)}</button></p>`:''}</div><div class="ft">رسالة آلية من منصة التطوير والتدريب — الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة.</div></div>`:'<div class="empty">اختر رسالة</div>'}</div></div>`;
+   <div class="eml"><div class="hd"><div class="pattern"></div><img class="logo-w" src="${LOGO}" alt="" style="height:50px"><span style="color:var(--sky);font-size:13px">منصة التطوير والتدريب</span></div><div class="bd"><h4>${esc(m.title)}</h4>${safeHtml(m.body)}${m.cta?`<p style="margin-top:18px"><button class="btn" data-act="mailgo" data-id="${m.id}">${esc(m.cta)}</button></p>`:''}</div><div class="ft">رسالة آلية من منصة التطوير والتدريب — الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة.</div></div>`:'<div class="empty">اختر رسالة</div>'}</div></div>`;
 }
 
 /* ================= الملف الشخصي ================= */
@@ -1740,7 +1740,12 @@ function tickTo(ct){
   }
   if(Date.now()-PL.lastSave>5000)savePlayer();
 }
-function savePlayer(){if(PL.p){PL.p.updated=nowISO();commit('progress');PL.lastSave=Date.now();PL.dirtyAt=0;const e=$('#v_sv');if(e)e.textContent='محفوظ'}}
+function savePlayer(){if(PL.p){PL.p.updated=nowISO();commit('progress');PL.lastSave=Date.now();PL.dirtyAt=0;const e=$('#v_sv');if(e)e.textContent='محفوظ';watchTick()}}
+/* الخادم يحتسب المشاهدة بنفسه؛ هذه نبضة تُبلغه بما غُطّي، وهو يمنح بقدر الزمن المنقضي */
+function watchTick(attest){
+  if(!PL.lib||!PL.les)return Promise.resolve(null);
+  return api('/api/progress',{method:'POST',body:JSON.stringify({libId:PL.lib.id,lessonId:PL.les.id,sec:coveredSec(PL.p),attest:!!attest})}).catch(()=>null);
+}
 function detachPlayer(){ytDetach();if(PL.v){try{PL.v.pause()}catch(e){}}if(PL.p)savePlayer();PL.v=null;PL.p=null;PL.lib=null;PL.les=null}
 /* دورة بلا اختبار: تُمنح الشهادة عند إتمام الدروس الإلزامية */
 async function checkAutoComplete(userId,lib){
@@ -1758,7 +1763,12 @@ function attestLesson(lesId){
   if(!lib||!les||les.src!=='youtube'||!lib.settings.allowAttest){toast('غير مسموح');return}
   const pw=ytWaitLeft(getProg(S.me,les.id),les);if(pw===null){toast('افتح الفيديو على يوتيوب أولًا');return}if(pw>0){toast('لم يمضِ الوقت الكافي',`بقي نحو ${Math.ceil(pw/60)} دقيقة`);audit('lesson.attest.denied','lesson',les.id,'قبل انقضاء مدة الدرس');return}
   const p=ensureProg(S.me,les.id,les.dur);p.watched=[[0,Math.ceil(les.dur)]];p.attested=true;p.attestAt=nowISO();p.updated=nowISO();commit('progress');
-  audit('lesson.attest','lesson',les.id,'إقرار ذاتي — غير مُتحقَّق');toast('سُجّل الإقرار','يظهر في التقارير كإقرار غير مُتحقَّق');checkAutoComplete(S.me,lib);draw();
+  const keep={lib:PL.lib,les:PL.les};PL.lib=lib;PL.les=les;
+  watchTick(true).then(r=>{
+    PL.lib=keep.lib;PL.les=keep.les;
+    if(!r){toast('تعذّر تسجيل الإقرار','حاول بعد قليل');return}
+    audit('lesson.attest','lesson',les.id,'إقرار ذاتي — غير مُتحقَّق');toast('سُجّل الإقرار','يظهر في التقارير كإقرار غير مُتحقَّق');checkAutoComplete(S.me,lib);draw();
+  });
 }
 
 /* ---- الاختبار ---- */
@@ -2502,6 +2512,14 @@ function fileCheck(f){
   if(f.size>FILE_MAX)return `حجم الملف يتجاوز الحد المسموح (${(FILE_MAX/1e6).toFixed(1)} م.ب)`;
   if(f.size<200)return 'الملف فارغ أو تالف';
   return '';
+}
+/* جسم الإشعار يُعرض كـHTML؛ يُعقَّم عند العرض أيضًا ليحمي ما خُزِّن قبل فحص الخادم */
+const SAFE_SEL=':not(p):not(br):not(b):not(strong):not(em):not(i):not(u):not(ul):not(ol):not(li):not(span):not(small):not(h4):not(h5)';
+function safeHtml(html){
+  const t=document.createElement('template');t.innerHTML=String(html==null?'':html);
+  for(let i=0;i<60;i++){const bad=t.content.querySelector('*'+SAFE_SEL);if(!bad)break;bad.replaceWith(...bad.childNodes)}
+  t.content.querySelectorAll('*').forEach(e=>[...e.attributes].forEach(a=>{if(a.name!=='class')e.removeAttribute(a.name)}));
+  return t.innerHTML;
 }
 function readDataURL(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('read'));r.readAsDataURL(f)})}
 async function storeFile(f,by){

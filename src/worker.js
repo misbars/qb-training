@@ -132,7 +132,7 @@ async function snapshot(ses, S) {
     const o = readFilter(ses, r.col, JSON.parse(r.data), ctx);
     if (!o) continue;
     if (r.col === 'settings') out.settings = o; else out[r.col].push(o);
-    out.vers[r.col][r.id] = r.ver;
+    out.vers[r.col][o.id || r.id] = r.ver;
   }
   return out;
 }
@@ -143,11 +143,11 @@ async function changes(ses, S, since) {
   const rows = [];
   for (const r of results) {
     if (!COLS.includes(r.col)) continue;
-    // الحذف يُمرَّر بلا بيانات ليُسقط العميل الصف إن كان عنده؛ سجل التدقيق وحده محجوب
-    if (r.deleted) { if (!(r.col === 'audit' && ses.role !== 'sysadmin')) rows.push({ col: r.col, id: r.id, ver: r.ver, deleted: true, by: r.by, data: null }); continue }
+    // الصف المحذوف يحتفظ ببياناته القديمة، فيُرشَّح مثل الحيّ: من لم يكن يراه لا يُعلَم بحذفه
     const o = readFilter(ses, r.col, JSON.parse(r.data), ctx);
     if (!o) continue;
-    rows.push({ col: r.col, id: r.id, ver: r.ver, deleted: false, by: r.by, data: o });
+    if (r.deleted) { rows.push({ col: r.col, id: o.id || r.id, ver: r.ver, deleted: true, by: r.by, data: null }); continue }
+    rows.push({ col: r.col, id: o.id || r.id, ver: r.ver, deleted: false, by: r.by, data: o });
   }
   return { seq: results.length ? results[results.length - 1].seq : Math.max(since, await S.seq()), rows };
 }
@@ -175,17 +175,63 @@ async function put(S, col, id, obj, by) {
   return obj;
 }
 
-// مشاهدة الدروس الإلزامية: نفس قاعدة العميل، محسوبة من صفوف التقدّم المخزّنة
+/* ===== احتساب المشاهدة في الخادم =====
+   صفوف progress يكتبها المشغّل في المتصفح، فمن يرسل watched:[[0,dur]] مباشرة
+   «يُكمل» الدورة بلا مشاهدة. لذلك تُحتسب المشاهدة في مجموعة «watch» التي لا
+   يكتبها العميل إطلاقًا (خارج COLS)، ولا يُضاف فيها إلا ما يسمح به الزمن
+   الحقيقي المنقضي بين نبضة وأخرى. */
+const TICK_RATE = 1.6;   // هامش للتسريع المسموح وفروق التوقيت
+const TICK_GRACE = 3;    // ثوانٍ تسامحًا مرة واحدة منذ فتح الدرس
+
+async function watchRow(S, me, lessonId) {
+  const r = await S.row('watch', me + '|' + lessonId);
+  return (r && !r.deleted) ? r.obj : null;
+}
+
 async function watchDone(S, me, lib) {
   const need = reqLessons(lib);
   if (!need.length) return false;
   const pct = (lib.settings && lib.settings.requiredPct) || (await setts(S)).requiredPct || 100;
   for (const l of need) {
-    const r = await S.row('progress', me + '|' + l.id);
-    const p = r && !r.deleted ? r.obj : null;
-    if (!l.dur || covered(p) / Math.ceil(l.dur) * 100 < pct - 1e-9) return false;
+    if (!l.dur) return false;
+    const w = await watchRow(S, me, l.id);
+    if (!w) return false;
+    if (w.attest) continue;                       // إقرار ذاتي مسموح به في هذه الدورة
+    if ((w.sec || 0) / Math.ceil(l.dur) * 100 < pct - 1e-9) return false;
   }
   return true;
+}
+
+// نبضة المشغّل: الخادم يمنح من الثواني بقدر ما مضى من زمن حقيقي، لا بقدر ما يدّعي العميل
+async function watchTick(ses, S, body) {
+  const me = ses.user.id;
+  const r = await S.row('libs', String(body.libId || ''));
+  if (!r || r.deleted) return json({ error: 'الدورة غير موجودة' }, 404);
+  const lib = r.obj;
+  const les = (lib.modules || []).flatMap(m => m.lessons || []).find(l => l.id === body.lessonId);
+  if (!les) return json({ error: 'الدرس غير موجود في هذه الدورة' }, 404);
+  const dur = Math.ceil(+les.dur || 0);
+  if (!dur) return json({ error: 'مدة الدرس غير محدّدة' }, 400);
+
+  const id = me + '|' + les.id;
+  const prev = await watchRow(S, me, les.id) || { id, userId: me, lessonId: les.id, libId: lib.id, sec: 0, open: now(), tick: null, attest: false };
+  const t = Date.now();
+  const openMs = Date.parse(prev.open || now());
+
+  if (body.attest) {
+    if (!(lib.settings && lib.settings.allowAttest)) return json({ error: 'الإقرار الذاتي غير مفعّل لهذه الدورة' }, 403);
+    if (t - openMs < 0.9 * dur * 1000) return json({ error: 'لم يمضِ الوقت الكافي على فتح الدرس' }, 403);
+    const w = { ...prev, sec: dur, attest: true, tick: now() };
+    await put(S, 'watch', id, w, me);
+    return json({ ok: true, sec: w.sec, dur, attest: true });
+  }
+
+  const claim = Math.max(0, Math.min(dur, Math.floor(+body.sec || 0)));
+  const ceiling = Math.max(0, (t - openMs) / 1000) * TICK_RATE + TICK_GRACE;
+  const sec = Math.min(dur, Math.max(prev.sec || 0, Math.min(claim, ceiling)));
+  const w = { ...prev, sec: Math.floor(sec), tick: now() };
+  await put(S, 'watch', id, w, me);
+  return json({ ok: true, sec: w.sec, dur, done: w.sec >= dur });
 }
 
 async function certNo(S, kind) {
@@ -406,6 +452,7 @@ async function api(req, env, url) {
   const ses = await session(req, S);
   if (!ses) return json({ error: 'انتهت الجلسة، سجّل الدخول من جديد' }, 401);
   if (p === '/api/me') { const a = await S.db.prepare('SELECT must_change FROM auth WHERE user_id=?').bind(ses.user.id).first(); return json({ user: ses.user, role: ses.role, mustChange: !!(a && a.must_change) }) }
+  if (p === '/api/progress' && req.method === 'POST') return watchTick(ses, S, await req.json().catch(() => ({})));
   if (p === '/api/exam' && req.method === 'POST') return examSubmit(ses, S, await req.json().catch(() => ({})));
   if (p === '/api/lib/claim' && req.method === 'POST') return libClaim(ses, S, await req.json().catch(() => ({})));
   if (p === '/api/data') return json(await snapshot(ses, S));

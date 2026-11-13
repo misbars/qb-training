@@ -5,6 +5,7 @@ const ADM_COLS = ['users','depts','jobs','comps'];
 export const changed = (a, b) => { const ks = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]); return [...ks].filter(k => JSON.stringify((a || {})[k]) !== JSON.stringify((b || {})[k])) };
 
 export function authorize(ses, col, oldO, newO, del, ctx) {
+  if (col === 'watch') return 'احتساب المشاهدة من الخادم وحده';
   const team = ctx.team;
   const me = ses.user.id, role = ses.role, row = newO || oldO;
   const diff = changed(oldO, newO);
@@ -98,6 +99,13 @@ const PROJECT = { enrolls: ['id','courseId','status'], completions: ['id','kind'
 // حقول في ملف المستخدم لا تخصّ زملاءه
 const USER_HIDE = ['phone','prefs'];
 
+// جسم الإشعار يُعرض كـHTML، فلا يُقبل إلا بوسوم عرض بسيطة بلا خصائص عدا class
+const MAIL_TAGS = /<\/?(?:p|br|b|strong|em|i|u|ul|ol|li|span|small|h4|h5)(?:\s+class="[A-Za-z0-9 _-]{0,40}")?\s*\/?>/gi;
+const bodyOk = v => !/[<>]/.test(String(v == null ? '' : v).replace(MAIL_TAGS, ''));
+
+// المعرّفات الحقيقية تحمل هوية صاحبها (en_u_fahad_c1)، فتُستبدل في الصفوف المختصرة
+const opaque = s2 => { let h = 2166136261; const t = String(s2); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) } return 'x' + (h >>> 0).toString(36) };
+
 const strip = qs => Array.isArray(qs) ? qs.map(q => { const { ans, ...rest } = q; return rest }) : qs;
 const pick = (o, ks) => { const r = {}; for (const k of ks) if (k in o) r[k] = o[k]; return r };
 const omit = (o, ks) => { const r = { ...o }; for (const k of ks) delete r[k]; return r };
@@ -129,7 +137,7 @@ export function readFilter(ses, col, row, ctx) {
   if (role === 'trainmgr' && TM_COLS.includes(col)) return row;
   if (role === 'linemgr' && ctx.team().includes(subject)) return row;
   if (PRIVATE.includes(col)) return null;
-  if (PROJECT[col]) return pick(row, PROJECT[col]);
+  if (PROJECT[col]) { const o = pick(row, PROJECT[col]); o.id = opaque(row.id); return o }
   return row;
 }
 
@@ -150,8 +158,23 @@ const AHEAD_DAYS = { courses: 1095, plans: 1095, programs: 1095, kpis: 1095, kpi
 
 const dayNum = d => Math.floor(Date.parse(d + 'T00:00:00Z') / 864e5);
 
+// الملفات تُخزَّن كـdata URL؛ النوع والبصمة يُفحصان في الخادم لا في المتصفح وحده
+const FILE_OK = [
+  [/^data:application\/pdf;base64,JVBER/, 'application/pdf'],
+  [/^data:image\/jpeg;base64,\/9j\//, 'image/jpeg'],
+  [/^data:image\/png;base64,iVBOR/, 'image/png']
+];
+
 export function validate(col, obj) {
   if (obj == null) return true;
+  if (col === 'mails' && !bodyOk(obj.body)) return 'نص الإشعار يحتوي وسومًا غير مسموحة';
+  if (col === 'files') {
+    const d = String(obj.data || '');
+    const hit = FILE_OK.find(([re]) => re.test(d));
+    if (!hit) return 'نوع الملف غير مسموح أو لا يطابق محتواه';
+    if (obj.type && obj.type !== hit[1]) return 'نوع الملف المعلن لا يطابق محتواه';
+    if (d.length > 180000) return 'الملف أكبر من الحد المسموح';
+  }
   if (JSON.stringify(obj).length > MAX_DOC) return 'السجل أكبر من الحد المسموح';
   const today = dayNum(new Date().toISOString().slice(0, 10));
   const ahead = AHEAD_DAYS[col] ?? 2;        // يومان هامشًا لفروق المناطق الزمنية
