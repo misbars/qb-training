@@ -108,32 +108,44 @@ function loginView(){
   <div class="brand-l" style="display:flex;flex-direction:column;align-items:center;gap:12px"><img class="logo-w" src="${LOGO}" alt="شعار تحفيظ بريدة" style="height:84px"><div><b style="font-size:30px;font-weight:600;display:block;line-height:1.4">منصة التطوير والتدريب</b><span style="color:#9FB8CA;font-size:14px">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</span></div></div>
   <div><h1>نبني <em>كفاءة</em> من يخدمون كتاب الله، خطوة تدريبية بعد أخرى.</h1><p>احتياج مُحلَّل، وخطة منفّذة، وتعلّم مُتتبَّع فعليًا، وأثر مقيس بأدلة موثّقة.</p></div><div></div>
  </section>
- <section class="login-card"><div class="login-box">
-  <div class="row" style="gap:8px;margin-bottom:10px" role="tablist"><button class="btn ${trainer?'sec':''} sm" role="tab" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button><button class="btn ${trainer?'':'sec'} sm" role="tab" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button></div>
+ <section class="login-card"><form class="login-box" id="lg_form" novalidate>
+  <div class="row" style="gap:8px;margin-bottom:10px" role="tablist"><button type="button" class="btn ${trainer?'sec':''} sm" role="tab" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button><button type="button" class="btn ${trainer?'':'sec'} sm" role="tab" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button></div>
   <h2>${trainer?'بوابة المدربين':'تسجيل الدخول'}</h2><p class="sub">ادخل ببريدك الرسمي وكلمة المرور.</p>
-  <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" placeholder="name@qb.org.sa" autocomplete="username"></div>
-  <div class="field"><label for="lg_pw">كلمة المرور</label><input class="inp" id="lg_pw" type="password" dir="ltr" autocomplete="current-password"></div>
-  <button class="btn" style="width:100%" data-act="login-email" id="lg_btn">تسجيل الدخول</button>
-  <p class="login-note" id="lg_err" role="alert" style="color:var(--bad)"></p>
- </div></section></div>`;
+  <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="name@qb.org.sa" autocomplete="username"></div>
+  <div class="field"><label for="lg_pw">كلمة المرور</label><div class="pw-wrap"><input class="inp" id="lg_pw" type="password" dir="ltr" enterkeyhint="go" autocomplete="current-password"><button type="button" class="pw-eye" data-act="pw-eye" aria-label="إظهار كلمة المرور" aria-pressed="false">${ico('eye')}<svg class="i eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.5 2.6-3.1 4M6.1 6.3C4 7.8 2.4 9.9 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div></div>
+  <p class="lg-err" id="lg_err" role="alert"></p>
+  <button class="btn" type="submit" style="width:100%" id="lg_btn">تسجيل الدخول</button>
+  <button type="button" class="lg-help" data-act="lg-help">نسيت كلمة المرور؟</button>
+ </form></section></div>`;
 }
 Object.assign(ACT,{
   async 'login-email'(){
     const em=fieldVal('lg_email').toLowerCase(),pw=($('#lg_pw')||{}).value||'',err=$('#lg_err'),btn=$('#lg_btn');
-    if(!emailOk(em)){err.textContent='أدخل بريدًا صالحًا';return}
-    if(!pw){err.textContent='أدخل كلمة المرور';return}
+    if(!btn||btn.disabled)return;
+    const fail=m=>{err.textContent=m;err.classList.add('on');const f=!pw?$('#lg_pw'):$('#lg_email');if(f)f.focus()};
+    err.classList.remove('on');
+    if(!emailOk(em)){fail('أدخل بريدًا صالحًا');return}
+    if(!pw){fail('أدخل كلمة المرور');return}
     btn.disabled=true;btn.textContent='جارٍ التحقق…';
     try{
       const r=await api('/api/login',{method:'POST',body:JSON.stringify({email:em,password:pw})});
-      if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');err.textContent='هذه البوابة للمدربين فقط';btn.disabled=false;btn.textContent='تسجيل الدخول';return}
+      if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');fail('هذه البوابة للمدربين فقط');btn.disabled=false;btn.textContent='تسجيل الدخول';return}
       S.role=ROLE_PRI.find(x=>r.user.roles.includes(x));
       S.mustChange=!!r.mustChange;await loadAll();doLogin(r.user.id);if(S.mustChange)askPwChange(true);
-    }catch(e){err.textContent=e.message;btn.disabled=false;btn.textContent='تسجيل الدخول'}
+    }catch(e){fail(e.message);btn.disabled=false;btn.textContent='تسجيل الدخول'}
   },
+  'pw-eye'(t){
+    const w=t.closest('.pw-wrap'),i=w.querySelector('input'),on=i.type==='password';
+    i.type=on?'text':'password';w.classList.toggle('show',on);
+    t.setAttribute('aria-pressed',on?'true':'false');
+    t.setAttribute('aria-label',on?'إخفاء كلمة المرور':'إظهار كلمة المرور');
+    i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}
+  },
+  'lg-help'(){toast('كلمة المرور يصدرها مسؤول النظام','راسل admin@qb.org.sa ليرسل لك كلمة مرور مؤقتة')},
   login(){},
   async logout(){audit('logout','session','');detachPlayer();await flush();try{await api('/api/logout')}catch(e){}S.me=null;S.role=null;P.loaded=false;COLS.forEach(c=>DB[c]=[]);draw()},
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lg_pw')ACT['login-email']()});
+document.addEventListener('submit',e=>{if(e.target&&e.target.id==='lg_form'){e.preventDefault();ACT['login-email']()}});
 """+"".join(open(os.path.join(os.path.dirname(__file__),n),encoding="utf-8").read()+"\n" for n in ("client-extra.js","reports.js","employee.js","tracks.js","nav.js","navpill.js","admplus.js"))+r"""
 """
 boot_a = h.index('(async function boot(){')
@@ -346,6 +358,60 @@ h=h.replace('/* ===== خط ثمانية ===== */','/* ===== خط ثمانية ==
 .emp-choice button:hover{border-color:var(--teal)}.emp-choice .i{width:28px;height:28px;color:var(--teal)}.emp-choice b{font-size:16px;color:var(--navy)}.emp-choice span{font-size:13.5px;color:var(--ink-2)}
 @media(max-width:620px){.emp-choice{grid-template-columns:1fr}.emp-head h1{font-size:26px}.tk{padding:14px}.tk-btn{width:100%}}
 """,1)
+
+# 13) الجوال: إلغاء التقريب بالضغطتين، حجم الحقول، المنطقة الآمنة، أيقونة الشاشة الرئيسية
+_vp='<meta name="viewport" content="width=device-width, initial-scale=1">'
+assert _vp in h, 'viewport meta not found'
+h=h.replace(_vp,r"""<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#072C49">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="منصة التدريب">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">""",1)
+
+# ارتفاع الشاشة الحقيقي على iOS: شريط سفاري يتحرك، فـ dvh بدل vh مع إبقاء البديل
+h=h.replace('min-height:100vh','min-height:100vh;min-height:100dvh')
+
+_m13='/* ===== شاشة الموظف ===== */'
+assert _m13 in h
+h=h.replace(_m13,r"""/* ===== الجوال ===== */
+/* الضغطتان كانتا تقرّبان الصفحة؛ manipulation تلغي إيماءة التقريب وتبقي التكبير بالأصبعين */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+/* سفاري يقرّب الصفحة تلقائيًا عند الكتابة في حقل أصغر من 16px */
+@media(max-width:900px){.inp,input,select,textarea,.gsearch input{font-size:16px}}
+body .content{padding-bottom:calc(34px + env(safe-area-inset-bottom,0px))}
+body .login-card{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
+/* ===== شاشة الدخول ===== */
+.pw-wrap{position:relative}
+.pw-wrap .inp{padding-inline-end:48px}
+.pw-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:40px;height:40px;display:grid;place-items:center;color:var(--ink-3);border-radius:9px}
+.pw-eye:hover{color:var(--teal);background:var(--sand-2)}
+.pw-eye .eye-off{display:none}
+.pw-wrap.show .pw-eye{color:var(--teal)}
+.pw-wrap.show .pw-eye .i:not(.eye-off){display:none}
+.pw-wrap.show .pw-eye .eye-off{display:block}
+.lg-err{display:none;margin:0 0 12px;font-size:13.5px;line-height:1.6;color:#8E2A1F;background:#FBEAE6;border-radius:10px;padding:10px 13px}
+.lg-err.on{display:block}
+.lg-help{display:block;margin:16px auto 0;font-size:13.5px;color:var(--teal);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:900px){
+ .login-art{padding:18px 20px 22px;gap:12px}
+ .login-art .brand-l{gap:8px!important}
+ .login-art .brand-l img{height:54px!important}
+ .login-art .brand-l b{font-size:21px!important;line-height:1.35!important}
+ .login-art .brand-l span{font-size:12px!important}
+ .login-art h1{font-size:15.5px;line-height:1.65}
+ .login-card{padding-top:22px;border-radius:22px 22px 0 0;margin-top:-10px}
+ .login-box h2{font-size:22px}
+ .login-box .sub{margin-bottom:16px;font-size:14px}
+ .login-box .field{margin-bottom:12px}
+ .login-box .btn{min-height:50px}
+}
+@media(max-width:900px) and (max-height:700px){.login-art h1{display:none}.login-art .brand-l img{height:46px!important}}
+/* ===== شاشة الموظف ===== */""",1)
 
 # 12) قائمة موحّدة حسب الصلاحيات
 _s=h.index('<nav class="nav" aria-label="القائمة الرئيسية">');_e=h.index('</nav>',_s)+len('</nav>')

@@ -2,7 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#072C49">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="منصة التدريب">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <title>منصة التطوير والتدريب — جمعية تحفيظ بريدة</title>
 <script src="/app-fonts.js" async></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,7 +38,7 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px;border-radius:8px}
 
 /* ---------- Login ---------- */
-.login{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;background:var(--navy)}
+.login{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:1.05fr .95fr;background:var(--navy)}
 .login-art{position:relative;overflow:hidden;color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(120% 90% at 20% 0%,#0E4A75 0%,var(--navy) 60%)}
 .pattern{position:absolute;inset:0;opacity:.13;background-image:url("/brand-pattern.svg");background-size:142px}
 .login-art>*{position:relative}
@@ -61,7 +70,7 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 .chip-demo{display:inline-block;background:var(--sky-2);color:var(--navy);font-size:12px;padding:2px 10px;border-radius:99px;margin-bottom:14px}
 
 /* ---------- Shell ---------- */
-.app{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.app{display:grid;grid-template-columns:268px 1fr;min-height:100vh;min-height:100dvh}
 .side{background:var(--navy);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;z-index:30}
 .side .pattern{opacity:.1;background-size:132px;height:200px;inset:0 0 auto 0;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
 .brand{position:relative;padding:26px 22px 18px;display:flex;align-items:center;gap:12px}
@@ -331,6 +340,39 @@ tbody tr.click:hover td{background:var(--sky-3)}
 
 td.num,th.num{display:table-cell;text-align:right}
 /* ===== خط ثمانية ===== */
+/* ===== الجوال ===== */
+/* الضغطتان كانتا تقرّبان الصفحة؛ manipulation تلغي إيماءة التقريب وتبقي التكبير بالأصبعين */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+/* سفاري يقرّب الصفحة تلقائيًا عند الكتابة في حقل أصغر من 16px */
+@media(max-width:900px){.inp,input,select,textarea,.gsearch input{font-size:16px}}
+body .content{padding-bottom:calc(34px + env(safe-area-inset-bottom,0px))}
+body .login-card{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
+/* ===== شاشة الدخول ===== */
+.pw-wrap{position:relative}
+.pw-wrap .inp{padding-inline-end:48px}
+.pw-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:40px;height:40px;display:grid;place-items:center;color:var(--ink-3);border-radius:9px}
+.pw-eye:hover{color:var(--teal);background:var(--sand-2)}
+.pw-eye .eye-off{display:none}
+.pw-wrap.show .pw-eye{color:var(--teal)}
+.pw-wrap.show .pw-eye .i:not(.eye-off){display:none}
+.pw-wrap.show .pw-eye .eye-off{display:block}
+.lg-err{display:none;margin:0 0 12px;font-size:13.5px;line-height:1.6;color:#8E2A1F;background:#FBEAE6;border-radius:10px;padding:10px 13px}
+.lg-err.on{display:block}
+.lg-help{display:block;margin:16px auto 0;font-size:13.5px;color:var(--teal);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:900px){
+ .login-art{padding:18px 20px 22px;gap:12px}
+ .login-art .brand-l{gap:8px!important}
+ .login-art .brand-l img{height:54px!important}
+ .login-art .brand-l b{font-size:21px!important;line-height:1.35!important}
+ .login-art .brand-l span{font-size:12px!important}
+ .login-art h1{font-size:15.5px;line-height:1.65}
+ .login-card{padding-top:22px;border-radius:22px 22px 0 0;margin-top:-10px}
+ .login-box h2{font-size:22px}
+ .login-box .sub{margin-bottom:16px;font-size:14px}
+ .login-box .field{margin-bottom:12px}
+ .login-box .btn{min-height:50px}
+}
+@media(max-width:900px) and (max-height:700px){.login-art h1{display:none}.login-art .brand-l img{height:46px!important}}
 /* ===== شاشة الموظف ===== */
 .adm-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 2px}.adm-bar .inp{width:auto;min-width:140px}.adm-search{position:relative;flex:1;min-width:230px}.adm-search .inp{width:100%}.urow-menu{position:absolute;inset-inline-end:0;top:calc(100% - 4px);z-index:40;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(7,44,73,.16);padding:5px;display:flex;flex-direction:column;min-width:190px;text-align:start}.urow-menu button{padding:9px 12px;border-radius:7px;font-size:13.5px;color:var(--navy);text-align:start;white-space:nowrap}.urow-menu button:hover{background:var(--sand-2)}@media(max-width:700px){.adm-bar .inp,.adm-search{width:100%;flex:1 1 100%}}.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}@property --p{syntax:"<number>";inherits:false;initial-value:0}@keyframes inUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.in-up{animation:inUp .4s cubic-bezier(.22,.8,.3,1) both;animation-delay:var(--d,0ms)}.ring{transition:--p .9s cubic-bezier(.22,.8,.3,1) .15s}.side-toggle{display:none}@media(min-width:901px){.app{grid-template-columns:var(--sidew,268px) 1fr;transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1)}.side-toggle{display:grid}html.side-off{--sidew:76px}html.side-off .brand{padding:22px 0 16px;justify-content:center}html.side-off .brand img{height:40px}html.side-off .brand div,html.side-off .nav-h,html.side-off .nav button span,html.side-off .save-st,html.side-off .switch-l,html.side-off .switch{display:none}html.side-off .nav{padding:8px 14px}html.side-off .nav button{justify-content:center;padding:11px 0}html.side-off .nav .badge{position:absolute;top:5px;inset-inline-end:7px;min-width:8px;width:8px;height:8px;padding:0;border-radius:50%;font-size:0;overflow:hidden}html.side-off .nav>.ui-pill:before{display:none}html.side-off .side-foot{padding:10px 14px}html.side-off .ev-btn{font-size:0;gap:0;padding:11px 0}}@media(prefers-reduced-motion:reduce){.in-up{animation:none}.app,.ring,.pbar i{transition:none}}.emp-tabs{display:none}
 @media(max-width:900px){.emp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--navy);padding:0 8px;position:sticky;top:0;z-index:20}.emp-tabs button{min-height:46px;color:#CFE0EA;font-size:14.5px;font-weight:500;border-bottom:3px solid transparent}.emp-tabs button.on{color:#fff;font-weight:700;border-bottom-color:transparent}.emp-tabs button{position:relative;z-index:1}.emp-tabs .badge{display:inline-grid;margin-inline-start:5px;vertical-align:middle;min-width:20px;height:20px;border-radius:10px;font-size:11.5px}.emp-tabs>.ui-pill{height:3px;background:var(--sky);border-radius:3px 3px 0 0}}
@@ -3771,39 +3813,51 @@ Object.assign(VIEWS,VIEWS2);Object.assign(ACT,ACT2);
 
 /* ================= الدخول الحقيقي (خادم) ================= */
 function loginView(){
-  if(S.booting)return `<div style="min-height:100vh;display:grid;place-items:center;color:var(--ink-2)">جارٍ الاتصال بالخادم…</div>`;
+  if(S.booting)return `<div style="min-height:100vh;min-height:100dvh;display:grid;place-items:center;color:var(--ink-2)">جارٍ الاتصال بالخادم…</div>`;
   const trainer=S.portal==='trainer';
   return `<div class="login">
  <section class="login-art"><div class="pattern"></div>
   <div class="brand-l" style="display:flex;flex-direction:column;align-items:center;gap:12px"><img class="logo-w" src="${LOGO}" alt="شعار تحفيظ بريدة" style="height:84px"><div><b style="font-size:30px;font-weight:600;display:block;line-height:1.4">منصة التطوير والتدريب</b><span style="color:#9FB8CA;font-size:14px">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</span></div></div>
   <div><h1>نبني <em>كفاءة</em> من يخدمون كتاب الله، خطوة تدريبية بعد أخرى.</h1><p>احتياج مُحلَّل، وخطة منفّذة، وتعلّم مُتتبَّع فعليًا، وأثر مقيس بأدلة موثّقة.</p></div><div></div>
  </section>
- <section class="login-card"><div class="login-box">
-  <div class="row" style="gap:8px;margin-bottom:10px" role="tablist"><button class="btn ${trainer?'sec':''} sm" role="tab" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button><button class="btn ${trainer?'':'sec'} sm" role="tab" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button></div>
+ <section class="login-card"><form class="login-box" id="lg_form" novalidate>
+  <div class="row" style="gap:8px;margin-bottom:10px" role="tablist"><button type="button" class="btn ${trainer?'sec':''} sm" role="tab" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button><button type="button" class="btn ${trainer?'':'sec'} sm" role="tab" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button></div>
   <h2>${trainer?'بوابة المدربين':'تسجيل الدخول'}</h2><p class="sub">ادخل ببريدك الرسمي وكلمة المرور.</p>
-  <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" placeholder="name@qb.org.sa" autocomplete="username"></div>
-  <div class="field"><label for="lg_pw">كلمة المرور</label><input class="inp" id="lg_pw" type="password" dir="ltr" autocomplete="current-password"></div>
-  <button class="btn" style="width:100%" data-act="login-email" id="lg_btn">تسجيل الدخول</button>
-  <p class="login-note" id="lg_err" role="alert" style="color:var(--bad)"></p>
- </div></section></div>`;
+  <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="name@qb.org.sa" autocomplete="username"></div>
+  <div class="field"><label for="lg_pw">كلمة المرور</label><div class="pw-wrap"><input class="inp" id="lg_pw" type="password" dir="ltr" enterkeyhint="go" autocomplete="current-password"><button type="button" class="pw-eye" data-act="pw-eye" aria-label="إظهار كلمة المرور" aria-pressed="false">${ico('eye')}<svg class="i eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.5 2.6-3.1 4M6.1 6.3C4 7.8 2.4 9.9 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div></div>
+  <p class="lg-err" id="lg_err" role="alert"></p>
+  <button class="btn" type="submit" style="width:100%" id="lg_btn">تسجيل الدخول</button>
+  <button type="button" class="lg-help" data-act="lg-help">نسيت كلمة المرور؟</button>
+ </form></section></div>`;
 }
 Object.assign(ACT,{
   async 'login-email'(){
     const em=fieldVal('lg_email').toLowerCase(),pw=($('#lg_pw')||{}).value||'',err=$('#lg_err'),btn=$('#lg_btn');
-    if(!emailOk(em)){err.textContent='أدخل بريدًا صالحًا';return}
-    if(!pw){err.textContent='أدخل كلمة المرور';return}
+    if(!btn||btn.disabled)return;
+    const fail=m=>{err.textContent=m;err.classList.add('on');const f=!pw?$('#lg_pw'):$('#lg_email');if(f)f.focus()};
+    err.classList.remove('on');
+    if(!emailOk(em)){fail('أدخل بريدًا صالحًا');return}
+    if(!pw){fail('أدخل كلمة المرور');return}
     btn.disabled=true;btn.textContent='جارٍ التحقق…';
     try{
       const r=await api('/api/login',{method:'POST',body:JSON.stringify({email:em,password:pw})});
-      if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');err.textContent='هذه البوابة للمدربين فقط';btn.disabled=false;btn.textContent='تسجيل الدخول';return}
+      if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');fail('هذه البوابة للمدربين فقط');btn.disabled=false;btn.textContent='تسجيل الدخول';return}
       S.role=ROLE_PRI.find(x=>r.user.roles.includes(x));
       S.mustChange=!!r.mustChange;await loadAll();doLogin(r.user.id);if(S.mustChange)askPwChange(true);
-    }catch(e){err.textContent=e.message;btn.disabled=false;btn.textContent='تسجيل الدخول'}
+    }catch(e){fail(e.message);btn.disabled=false;btn.textContent='تسجيل الدخول'}
   },
+  'pw-eye'(t){
+    const w=t.closest('.pw-wrap'),i=w.querySelector('input'),on=i.type==='password';
+    i.type=on?'text':'password';w.classList.toggle('show',on);
+    t.setAttribute('aria-pressed',on?'true':'false');
+    t.setAttribute('aria-label',on?'إخفاء كلمة المرور':'إظهار كلمة المرور');
+    i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}
+  },
+  'lg-help'(){toast('كلمة المرور يصدرها مسؤول النظام','راسل admin@qb.org.sa ليرسل لك كلمة مرور مؤقتة')},
   login(){},
   async logout(){audit('logout','session','');detachPlayer();await flush();try{await api('/api/logout')}catch(e){}S.me=null;S.role=null;P.loaded=false;COLS.forEach(c=>DB[c]=[]);draw()},
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lg_pw')ACT['login-email']()});
+document.addEventListener('submit',e=>{if(e.target&&e.target.id==='lg_form'){e.preventDefault();ACT['login-email']()}});
 /* ================= كلمات المرور وتأكيد الإيقاف ================= */
 function miniModal(title,body,actions){
   $('#layer').innerHTML=`<div class="mask" role="dialog" aria-modal="true"><div class="modal"><div class="m-h"><div class="pattern"></div><h3>${esc(title)}</h3><button class="m-x" data-act="mm-close" aria-label="إغلاق">${ico('x')}</button></div><div class="m-b">${body}</div><div class="m-f">${actions||'<button class="btn sec" data-act="mm-close">إغلاق</button>'}</div></div></div>`;
