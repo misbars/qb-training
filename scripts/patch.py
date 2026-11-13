@@ -268,39 +268,39 @@ h=h.replace("${pg('تقييم كفاياتي',","${pg('تقييم مهاراتي
 import re as _re
 _cert_old = _re.search(r"^  mask\(`\$\{mHead\('شهادة إتمام تدريبي'\)\}.*$", h, _re.M)
 assert _cert_old, 'cert line not found'
-_CERT = r"""  const meta=[['التاريخ',fmt(x.date)],['الساعات التدريبية',num(x.hours)+' ساعات'],['المدرب',t?t.name:'—']];
+_CERT = r"""  const line=[`بواقع <b style="color:var(--navy);font-weight:600">${num(x.hours)} ساعات تدريبية</b>`,
+              `بتاريخ <b style="color:var(--navy);font-weight:600">${fmt(x.date)}</b>`]
+             .concat(t?[`بإشراف <b style="color:var(--navy);font-weight:600">${esc(t.name)}</b>`]:[]).join('<span style="color:var(--sand);margin:0 9px">◆</span>');
   mask(`${mHead('شهادة إتمام تدريبي')}<div class="m-b" style="background:var(--sand)">
    <div id="certbox" style="width:100%;max-width:780px;margin:0 auto;aspect-ratio:297/210;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--sand);border-radius:12px;overflow:hidden">
     <div style="height:13px;flex:none;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:48px"></div>
-    <div style="position:relative;flex:1;min-height:0;overflow:hidden;padding:18px 34px 18px;display:flex;flex-direction:column">
-     <div style="position:absolute;inset:0;background-image:url('/brand-pattern.svg');background-size:175px;opacity:.05"></div>
+    <div style="position:relative;flex:1;min-height:0;overflow:hidden;padding:20px 38px 18px;display:flex;flex-direction:column">
+     <div style="position:absolute;inset:0;background-image:url('/brand-pattern.svg');background-size:180px;opacity:.05"></div>
+     <div style="position:absolute;top:18px;inset-inline-start:30px;text-align:center">
+      <div id="certqr" style="width:54px;height:54px"></div>
+      <div class="num" style="font-size:8.5px;color:var(--ink-3);letter-spacing:.03em;margin-top:4px;line-height:1.2">${esc(x.cert)}</div>
+     </div>
      <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column;text-align:center">
-      <img src="${LOGO}" alt="" style="height:48px;width:auto;align-self:center;flex:none">
+      <img src="${LOGO}" alt="" style="height:50px;width:auto;align-self:center;flex:none">
       <div style="margin-top:5px;font-size:12px;color:var(--ink-2);flex:none">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div>
-      <div style="font-size:13px;font-weight:600;color:var(--navy);letter-spacing:.08em;margin-top:10px;flex:none">شهادة إتمام تدريبي</div>
-      <div style="display:flex;align-items:center;gap:9px;margin:8px auto 0;max-width:300px;width:100%;flex:none">
+      <div style="font-size:13px;font-weight:600;color:var(--navy);letter-spacing:.09em;margin-top:11px;flex:none">شهادة إتمام تدريبي</div>
+      <div style="display:flex;align-items:center;gap:9px;margin:9px auto 0;max-width:300px;width:100%;flex:none">
        <i style="flex:1;height:1px;background:var(--sand)"></i>
        <i style="width:6px;height:6px;background:var(--teal);transform:rotate(45deg)"></i>
        <i style="flex:1;height:1px;background:var(--sand)"></i>
       </div>
-      <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:4px 0">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:6px 0">
        <div style="font-size:12px;color:var(--teal);letter-spacing:.04em">تشهد الجمعية بأن</div>
        <div style="font-size:30px;font-weight:600;color:var(--navy);margin:7px 0;line-height:1.3">${esc(u.name)}</div>
        <div style="font-size:12px;color:var(--ink-2)">قد أتمّ بنجاح متطلبات</div>
-       <div style="font-size:19px;font-weight:600;color:var(--teal);margin-top:8px;line-height:1.5">${esc(titleOf(x.kind,x.refId))}</div>
+       <div style="font-size:20px;font-weight:600;color:var(--teal);margin:7px 0 13px;line-height:1.5">${esc(titleOf(x.kind,x.refId))}</div>
+       <div style="font-size:12px;color:var(--ink-2);line-height:2">${line}</div>
       </div>
-      <div style="flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--sand);border:1px solid var(--sand);border-radius:9px;overflow:hidden">
-       ${meta.map(([l,v])=>`<div style="background:var(--sand-2);padding:9px 6px"><div style="font-size:10px;color:var(--ink-3)">${l}</div><div style="font-size:12.5px;font-weight:600;color:var(--navy);margin-top:2px">${esc(String(v))}</div></div>`).join('')}
-      </div>
-      <div style="flex:none;display:flex;justify-content:space-between;gap:26px;margin:14px 0 0">
-       ${['مدير التدريب','ختم الجمعية'].map(l=>`<div style="flex:1"><i style="display:block;height:1px;background:var(--navy);opacity:.3;margin-bottom:6px"></i><span style="font-size:10.5px;color:var(--ink-3)">${l}</span></div>`).join('')}
-      </div>
-      <div style="flex:none;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;text-align:start">
-       <div><div id="certqr" style="width:58px;height:58px"></div>
-        <div class="num" style="font-size:9px;color:var(--ink-3);letter-spacing:.04em;margin-top:5px;line-height:1.2">${esc(x.cert)}</div></div>
-       ${x.demo?`<span style="font-size:10px;color:#7A5410;background:#FBEFD9;border-radius:99px;padding:3px 10px">شهادة تجريبية</span>`:''}
+      <div style="flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
+       ${['مدير التدريب','ختم الجمعية'].map(l=>`<div style="width:170px"><i style="display:block;height:1px;background:var(--navy);opacity:.28;margin-bottom:7px"></i><span style="font-size:11px;color:var(--ink-3)">${l}</span></div>`).join('')}
       </div>
      </div>
+     ${x.demo?`<div style="position:absolute;top:22px;inset-inline-end:30px;font-size:10px;color:#7A5410;background:#FBEFD9;border-radius:99px;padding:3px 11px">شهادة تجريبية</div>`:''}
     </div>
     <div style="height:13px;flex:none;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:48px"></div>
    </div></div>
