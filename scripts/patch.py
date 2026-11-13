@@ -122,7 +122,11 @@ Object.assign(ACT,{
   async 'login-email'(){
     const em=fieldVal('lg_email').toLowerCase(),pw=($('#lg_pw')||{}).value||'',err=$('#lg_err'),btn=$('#lg_btn');
     if(!btn||btn.disabled)return;
-    const fail=m=>{err.textContent=m;err.classList.add('on');const f=!pw?$('#lg_pw'):$('#lg_email');if(f)f.focus()};
+    const fail=m=>{
+      err.textContent=m;err.classList.remove('on');err.offsetWidth;err.classList.add('on');
+      const f=!pw?$('#lg_pw'):$('#lg_email');
+      if(f){f.classList.add('bad');setTimeout(()=>f.classList.remove('bad'),1400);f.focus()}
+    };
     err.classList.remove('on');
     if(!emailOk(em)){fail('أدخل بريدًا صالحًا');return}
     if(!pw){fail('أدخل كلمة المرور');return}
@@ -131,7 +135,10 @@ Object.assign(ACT,{
       const r=await api('/api/login',{method:'POST',body:JSON.stringify({email:em,password:pw})});
       if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');fail('هذه البوابة للمدربين فقط');btn.disabled=false;btn.textContent='تسجيل الدخول';return}
       S.role=ROLE_PRI.find(x=>r.user.roles.includes(x));
-      S.mustChange=!!r.mustChange;await loadAll();doLogin(r.user.id);if(S.mustChange)askPwChange(true);
+      S.mustChange=!!r.mustChange;await loadAll();
+      const lg=document.querySelector('.login');
+      if(lg&&!matchMedia('(prefers-reduced-motion: reduce)').matches){lg.classList.add('out');await new Promise(r2=>setTimeout(r2,240))}
+      doLogin(r.user.id);if(S.mustChange)askPwChange(true);
     }catch(e){fail(e.message);btn.disabled=false;btn.textContent='تسجيل الدخول'}
   },
   'pw-eye'(t){
@@ -411,6 +418,74 @@ body .login-card{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
  .login-box .btn{min-height:50px}
 }
 @media(max-width:900px) and (max-height:700px){.login-art h1{display:none}.login-art .brand-l img{height:46px!important}}
+/* ===== حركة شاشة الدخول ===== */
+/* الخلفية الكحلية تمتد تحت شريط سفاري أيضًا */
+html:has(.login),body:has(.login){background:var(--navy)}
+.login-art::before,.login-art::after{content:"";position:absolute;border-radius:50%;pointer-events:none;filter:blur(64px)}
+.login-art::before{width:52vmin;height:52vmin;background:#0E7C9B;opacity:.55;top:-14%;inset-inline-start:-14%}
+.login-art::after{width:44vmin;height:44vmin;background:var(--sky);opacity:.2;bottom:-16%;inset-inline-end:-12%}
+.login-art .brand-l{position:relative}
+.login-box .inp{transition:border-color .2s,box-shadow .25s}
+.login-box .inp:focus{outline:2px solid transparent;outline-offset:0;border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,116,151,.14)}
+.login-box .field:focus-within label{color:var(--teal)}
+.login-box .field label{transition:color .2s}
+.login-box .btn{transition:transform .14s cubic-bezier(.4,0,.2,1),box-shadow .22s,filter .2s}
+.login-box .btn:active{transform:scale(.985)}
+.login-box .btn:not(.sec):not(.sec):hover{box-shadow:0 10px 24px -10px rgba(0,116,151,.7)}
+.login-box .btn[disabled]{position:relative;overflow:hidden;opacity:1}
+.pw-eye{transition:color .18s,background .18s,transform .18s}
+.pw-eye:active{transform:translateY(-50%) scale(.9)}
+.lg-help{transition:color .18s,opacity .18s}
+.lg-help:active{opacity:.6}
+.inp.bad{border-color:#C36F61!important;box-shadow:0 0 0 4px rgba(195,111,97,.16)!important}
+
+@media(prefers-reduced-motion:no-preference){
+ @keyframes lgPop{from{opacity:0;transform:scale(.84)}to{opacity:1;transform:scale(1)}}
+ @keyframes lgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+ @keyframes lgSheet{from{opacity:0;transform:translateY(46px)}to{opacity:1;transform:none}}
+ @keyframes lgSide{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:none}}
+ @keyframes lgDrift{from{background-position:0 0}to{background-position:142px 82px}}
+ @keyframes lgAur1{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(14%,12%,0) scale(1.18)}}
+ @keyframes lgAur2{0%{transform:translate3d(0,0,0) scale(1.1)}100%{transform:translate3d(-12%,-14%,0) scale(1)}}
+ @keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+ @keyframes lgSheen{0%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+ @keyframes lgSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+ @keyframes lgErr{0%{opacity:0;transform:translateY(-8px)}60%{opacity:1;transform:translateY(0)}70%{transform:translateX(5px)}80%{transform:translateX(-4px)}90%{transform:translateX(2px)}100%{transform:none}}
+
+ /* الزخرفة تنساب ببطء، والهالتان تتنفّسان */
+ .login-art .pattern{animation:lgDrift 64s linear infinite}
+ .login-art::before{animation:lgAur1 19s ease-in-out infinite alternate}
+ .login-art::after{animation:lgAur2 24s ease-in-out infinite alternate}
+
+ /* دخول المشهد: الشعار ثم الاسم ثم الجملة، والبطاقة تطلع من تحت */
+ .login-art .brand-l img{animation:lgPop .72s cubic-bezier(.2,.9,.3,1.25) both,lgFloat 7s ease-in-out 1.2s infinite}
+ .login-art .brand-l>div{animation:lgUp .6s cubic-bezier(.22,.8,.3,1) .14s both}
+ .login-art h1{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .26s both}
+ .login-art p{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .36s both}
+ .login-art .stats-row{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .44s both}
+ /* لمعة تمرّ على الشعار مرة واحدة */
+ .login-art .brand-l::after{content:"";position:absolute;inset:-6% -14%;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.22) 50%,transparent 60%);animation:lgSheen 1.45s cubic-bezier(.4,0,.2,1) .55s 1 both;pointer-events:none}
+ .login-card{animation:lgSide .66s cubic-bezier(.2,.8,.25,1) .1s both}
+ @media(max-width:900px){.login-card{animation-name:lgSheet;animation-delay:.18s}}
+ /* عناصر النموذج واحدة ورا الثانية */
+ .login-box>*{animation:lgUp .52s cubic-bezier(.22,.8,.3,1) both}
+ .login-box>*:nth-child(1){animation-delay:.30s}
+ .login-box>*:nth-child(2){animation-delay:.37s}
+ .login-box>*:nth-child(3){animation-delay:.42s}
+ .login-box>*:nth-child(4){animation-delay:.47s}
+ .login-box>*:nth-child(5){animation-delay:.52s}
+ .login-box>*:nth-child(6){animation-delay:.52s}
+ .login-box>*:nth-child(7){animation-delay:.57s}
+ .login-box>*:nth-child(8){animation-delay:.62s}
+ .lg-err{animation:none}
+ .lg-err.on{animation:lgErr .52s cubic-bezier(.3,.8,.3,1) both}
+ /* شريط ضوئي يمرّ على الزر أثناء التحقق */
+ .login-box .btn[disabled]::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:lgSweep 1.05s linear infinite}
+ /* نجاح الدخول: المشهد ينسحب قبل ما تُرسم المنصة */
+ .login.out .login-card{opacity:0;transform:translateY(16px);transition:opacity .26s ease-in,transform .26s ease-in}
+ .login.out .login-art{opacity:.45;transition:opacity .26s ease-in}
+ .login.out .login-art .brand-l img{transform:scale(.94);transition:transform .26s ease-in}
+}
 /* ===== شاشة الموظف ===== */""",1)
 
 # 12) قائمة موحّدة حسب الصلاحيات
