@@ -281,20 +281,20 @@ _CERT = r"""  const line=[`بواقع <b style="color:var(--navy);font-weight:60
       <div class="num" style="font-size:8.5px;color:var(--ink-3);letter-spacing:.03em;margin-top:4px;line-height:1.2">${esc(x.cert)}</div>
      </div>
      <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column;text-align:center">
-      <img src="${LOGO}" alt="" style="height:50px;width:auto;align-self:center;flex:none">
-      <div style="margin-top:5px;font-size:12px;color:var(--ink-2);flex:none">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div>
-      <div style="font-size:13px;font-weight:600;color:var(--navy);letter-spacing:.09em;margin-top:11px;flex:none">شهادة إتمام تدريبي</div>
-      <div style="display:flex;align-items:center;gap:9px;margin:9px auto 0;max-width:300px;width:100%;flex:none">
+      <img src="${LOGO}" alt="" style="height:58px;width:auto;align-self:center;flex:none">
+      <div style="margin-top:6px;font-size:13px;color:var(--ink-2);flex:none">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div>
+      <div style="font-size:14.5px;font-weight:600;color:var(--navy);letter-spacing:.1em;margin-top:12px;flex:none">شهادة إتمام تدريبي</div>
+      <div style="display:flex;align-items:center;gap:9px;margin:9px auto 0;max-width:360px;width:100%;flex:none">
        <i style="flex:1;height:1px;background:var(--sand)"></i>
        <i style="width:6px;height:6px;background:var(--teal);transform:rotate(45deg)"></i>
        <i style="flex:1;height:1px;background:var(--sand)"></i>
       </div>
       <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:6px 0">
-       <div style="font-size:12px;color:var(--teal);letter-spacing:.04em">تشهد الجمعية بأن</div>
-       <div style="font-size:30px;font-weight:600;color:var(--navy);margin:7px 0;line-height:1.3">${esc(u.name)}</div>
-       <div style="font-size:12px;color:var(--ink-2)">قد أتمّ بنجاح متطلبات</div>
-       <div style="font-size:20px;font-weight:600;color:var(--teal);margin:7px 0 13px;line-height:1.5">${esc(titleOf(x.kind,x.refId))}</div>
-       <div style="font-size:12px;color:var(--ink-2);line-height:2">${line}</div>
+       <div style="font-size:14px;color:var(--teal);letter-spacing:.04em">تشهد الجمعية بأن</div>
+       <div style="font-size:42px;font-weight:600;color:var(--navy);margin:10px 0;line-height:1.3">${esc(u.name)}</div>
+       <div style="font-size:14px;color:var(--ink-2)">قد أتمّ بنجاح متطلبات</div>
+       <div style="font-size:27px;font-weight:600;color:var(--teal);margin:9px 0 16px;line-height:1.45">${esc(titleOf(x.kind,x.refId))}</div>
+       <div style="font-size:13.5px;color:var(--ink-2);line-height:2">${line}</div>
       </div>
       <div style="flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:30px">
        ${['مدير التدريب','ختم الجمعية'].map(l=>`<div style="width:170px"><i style="display:block;height:1px;background:var(--navy);opacity:.28;margin-bottom:7px"></i><span style="font-size:11px;color:var(--ink-3)">${l}</span></div>`).join('')}
