@@ -7,7 +7,8 @@
     ['.nav', 'box'],        // القائمة الجانبية
     ['.emp-tabs', 'line'],  // شريط تبويبات الجوال
     ['.emp-sub', 'box'],    // تبويبات داخل أقسام الموظف
-    ['.tabs', 'line']       // تبويبات داخل صفحات الإدارة
+    ['.tabs', 'line'],     // تبويبات داخل صفحات الإدارة
+    ['.lg-seg', 'box']      // مفتاح البوابة في شاشة الدخول
   ];
   const LINE = 3;
   const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#072C49">
+<meta name="theme-color" content="#F6F3EE">
 <meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -375,7 +375,7 @@ body .login-card{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
 @media(max-width:900px) and (max-height:700px){.login-art h1{display:none}.login-art .brand-l img{height:46px!important}}
 /* ===== حركة شاشة الدخول ===== */
 /* الخلفية الكحلية تمتد تحت شريط سفاري أيضًا */
-html:has(.login),body:has(.login){background:var(--navy)}
+html:has(.login),body:has(.login){background:var(--sand-2)}
 .login-art::before,.login-art::after{content:"";position:absolute;border-radius:50%;pointer-events:none;filter:blur(64px)}
 .login-art::before{width:52vmin;height:52vmin;background:#0E7C9B;opacity:.55;top:-14%;inset-inline-start:-14%}
 .login-art::after{width:44vmin;height:44vmin;background:var(--sky);opacity:.2;bottom:-16%;inset-inline-end:-12%}
@@ -403,7 +403,7 @@ html:has(.login),body:has(.login){background:var(--navy)}
  @keyframes lgAur1{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(14%,12%,0) scale(1.18)}}
  @keyframes lgAur2{0%{transform:translate3d(0,0,0) scale(1.1)}100%{transform:translate3d(-12%,-14%,0) scale(1)}}
  @keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
- @keyframes lgSheen{0%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+ @keyframes lgSheen{0%{transform:translateX(-130%);opacity:1}92%{opacity:1}100%{transform:translateX(130%);opacity:0}}
  @keyframes lgSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
  @keyframes lgErr{0%{opacity:0;transform:translateY(-8px)}60%{opacity:1;transform:translateY(0)}70%{transform:translateX(5px)}80%{transform:translateX(-4px)}90%{transform:translateX(2px)}100%{transform:none}}
 
@@ -440,6 +440,198 @@ html:has(.login),body:has(.login){background:var(--navy)}
  .login.out .login-card{opacity:0;transform:translateY(16px);transition:opacity .26s ease-in,transform .26s ease-in}
  .login.out .login-art{opacity:.45;transition:opacity .26s ease-in}
  .login.out .login-art .brand-l img{transform:scale(.94);transition:transform .26s ease-in}
+}
+/* ===== شاشة الدخول: نهار، وزخرفة الهوية =====
+   الألوان من دليل الهوية ص١٤: نيلي #072C49 · غامق #007497 · فاتح #9DDAE5 · بني #ECE6DD */
+.lg2{
+ --lg-ink:#072C49; --lg-mut:#6D8394; --lg-acc:#007497; --lg-acc-2:#005B78; --lg-acc-3:#9DDAE5;
+ --lg-edge:rgba(7,44,73,.1);
+ position:relative;min-height:100vh;min-height:100dvh;overflow:hidden;color:var(--lg-ink);
+ background:var(--sand-2);
+ display:flex;flex-direction:column;
+}
+.lg-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lg-bg::before{content:"";position:absolute;inset:0;
+ background:radial-gradient(130% 78% at 50% -8%,#FFFFFF 0%,#FBF9F5 32%,#F4EFE7 66%,#ECE6DD 100%)}
+/* هالتان ضوئيتان */
+.lg-aur{position:absolute;border-radius:50%;filter:blur(70px)}
+.lg-aur.a{width:62vmin;height:62vmin;background:var(--sky);opacity:.45;top:-18%;inset-inline-start:-18%}
+.lg-aur.b{width:46vmin;height:46vmin;background:var(--sand);opacity:.6;bottom:-14%;inset-inline-end:-16%}
+/* زخرفة الهوية: واحدة كبيرة خلف الشعار، وشبكة خافتة تغطي الخلفية */
+.lg-rose{position:absolute;background:url("/brand-motif-l.svg") center/contain no-repeat;opacity:.1}
+.lg-rose.one{width:min(84vw,360px);aspect-ratio:84/96;top:-3%;left:50%;translate:-50% 0;opacity:.07}
+.lg-rose.two{width:min(66vw,300px);aspect-ratio:84/96;bottom:-12%;inset-inline-start:-18%;opacity:.055}
+.lg-mesh{position:absolute;inset:0;background:url("/brand-mesh-l.svg") 0 0/172px;opacity:.06}
+.lg-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(124% 82% at 50% 36%,transparent 54%,rgba(7,44,73,.09) 100%)}
+/* حُبيبات تكسر نعومة التدرّج */
+.lg-grain{position:absolute;inset:0;opacity:.035;mix-blend-mode:multiply;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* شريط زخرفي أعلى الصفحة */
+.lg-band{position:absolute;top:0;inset-inline:0;height:40px;
+ background:url("/brand-band-l.svg") center/auto 40px repeat-x;opacity:.26;
+ border-bottom:1px solid rgba(7,44,73,.07);
+ -webkit-mask-image:linear-gradient(to left,transparent,#000 14%,#000 86%,transparent);
+ mask-image:linear-gradient(to left,transparent,#000 14%,#000 86%,transparent)}
+
+.lg-wrap{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(18px,4vh,34px);
+ width:100%;max-width:440px;margin:0 auto;
+ padding:calc(40px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-left,0px)) calc(26px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-right,0px))}
+
+/* ===== الترويسة ===== */
+.lg-head{text-align:center;display:flex;flex-direction:column;align-items:center}
+.lg-logo{position:relative;width:138px;height:138px;display:grid;place-items:center}
+.lg-logo img{height:76px;width:auto}
+.lg-orbit{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.lg-orbit circle{fill:none;stroke-width:1.4;stroke-linecap:round}
+.lg-orbit .o1{stroke:url(#lgArc);stroke-dasharray:150 320}
+.lg-orbit .o2{stroke:rgba(0,116,151,.22);stroke-dasharray:2 10}
+.lg-kicker{font-size:13.5px;color:var(--lg-mut);letter-spacing:.06em;margin-top:2px}
+.lg2 h1{font-family:var(--display);font-size:clamp(27px,7.4vw,34px);font-weight:700;line-height:1.35;margin-top:4px;
+ background:linear-gradient(180deg,#072C49 28%,#13456B 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lg-org{font-size:14.5px;color:var(--lg-acc);font-weight:600;margin-top:6px}
+.lg-date{margin-top:14px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--lg-mut);
+ border:1px solid rgba(0,116,151,.22);border-radius:99px;padding:5px 14px;background:rgba(255,255,255,.65)}
+.lg-date i{width:5px;height:5px;background:var(--lg-acc);transform:rotate(45deg);flex:none}
+
+/* ===== البطاقة الزجاجية ===== */
+.lg-card{position:relative;width:100%;border-radius:20px;padding:18px;
+ background:linear-gradient(165deg,rgba(255,255,255,.95),rgba(255,255,255,.8));
+ border:1px solid var(--lg-edge);
+ box-shadow:0 22px 52px -34px rgba(7,44,73,.42),inset 0 1px 0 rgba(255,255,255,.9);
+ -webkit-backdrop-filter:blur(14px) saturate(130%);backdrop-filter:blur(14px) saturate(130%)}
+.lg-card::before{content:"";position:absolute;inset:0;border-radius:20px;pointer-events:none;
+ background:linear-gradient(140deg,rgba(255,255,255,.8),transparent 44%)}
+.lg-card>*{position:relative}
+
+/* مفتاح البوابة */
+.lg-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:16px;
+ background:rgba(7,44,73,.045);border:1px solid rgba(7,44,73,.07);border-radius:13px}
+.lg-seg button{position:relative;z-index:1;min-height:40px;border-radius:10px;font-size:14px;font-weight:600;color:var(--lg-mut);transition:color .25s}
+.lg-seg button.on{color:#fff}
+.lg-seg>.ui-pill{border-radius:10px;background:linear-gradient(135deg,#0E8FB5,var(--lg-acc))}
+
+.lg-card .field{display:grid;gap:7px;margin-bottom:13px}
+.lg-card .field label{font-size:13px;font-weight:600;color:var(--lg-mut);transition:color .2s}
+.lg-card .field:focus-within label{color:var(--lg-acc)}
+.lg-card .inp{width:100%;min-height:50px;padding:10px 14px;border-radius:12px;color:var(--lg-ink);
+ background:#fff;border:1px solid rgba(7,44,73,.14);
+ transition:border-color .2s,box-shadow .25s,background .2s}
+.lg-card .inp::placeholder{color:rgba(109,131,148,.6)}
+.lg-card .inp:focus{outline:2px solid transparent;border-color:var(--lg-acc);
+ box-shadow:0 0 0 4px rgba(0,116,151,.13)}
+.lg-card .inp.bad{border-color:#C36F61!important;box-shadow:0 0 0 4px rgba(195,111,97,.16)!important}
+.lg-card .inp:-webkit-autofill{-webkit-text-fill-color:var(--lg-ink);-webkit-box-shadow:0 0 0 1000px #fff inset;caret-color:var(--lg-ink)}
+.lg-card .pw-eye{color:var(--lg-mut)}
+.lg-card .pw-eye:hover,.lg-card .pw-wrap.show .pw-eye{color:var(--lg-acc);background:rgba(7,44,73,.05)}
+
+.lg-err{display:none;margin:0 0 12px;font-size:13.5px;line-height:1.6;color:#A4473A;
+ background:rgba(195,111,97,.1);border:1px solid rgba(195,111,97,.32);border-radius:11px;padding:10px 13px}
+.lg-err.on{display:block}
+
+.lg-go{position:relative;width:100%;min-height:52px;border-radius:13px;overflow:hidden;
+ display:flex;align-items:center;justify-content:center;gap:10px;
+ font-size:16px;font-weight:700;color:#fff;
+ background:linear-gradient(135deg,#0E8FB5 0%,var(--lg-acc) 52%,var(--lg-acc-2) 100%);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+ transition:transform .14s cubic-bezier(.4,0,.2,1),filter .2s}
+.lg-go:hover{filter:brightness(1.06)}
+.lg-go:active{transform:scale(.985)}
+.lg-go .i{width:19px;height:19px;stroke-width:2.1}
+.lg-go[disabled]{opacity:1}
+
+.lg-help{display:block;margin:15px auto 2px;font-size:13.5px;color:var(--lg-mut);font-weight:500;
+ text-decoration:underline;text-underline-offset:4px;text-decoration-color:rgba(0,116,151,.35);transition:color .2s}
+.lg-help:hover{color:var(--lg-acc)}
+
+.lg-foot{text-align:center;font-size:11.5px;line-height:1.9;color:var(--ink-3)}
+.lg-foot b{display:block;font-weight:600;color:var(--ink-2);font-size:12.5px}
+
+/* شاشة الإقلاع بنفس الجو */
+.lg-boot{min-height:100vh;min-height:100dvh;display:grid;place-items:center;background:var(--sand-2);color:var(--ink-3);gap:14px}
+.lg-boot .d{display:flex;gap:6px}
+.lg-boot .d i{width:7px;height:7px;border-radius:50%;background:var(--teal,#007497);opacity:.4}
+
+/* شاشات أقصر: نختصر الترويسة */
+@media(max-height:760px){
+ .lg-wrap{gap:16px;padding-top:calc(26px + env(safe-area-inset-top,0px))}
+ .lg-logo{width:112px;height:112px}.lg-logo img{height:62px}
+ .lg-date{margin-top:10px}
+}
+@media(max-height:680px){
+ .lg-kicker,.lg-date,.lg-foot{display:none}
+ .lg-logo{width:96px;height:96px}.lg-logo img{height:54px}
+}
+@media(max-height:620px){
+ .lg-wrap{gap:12px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+ .lg-logo{width:82px;height:82px}.lg-logo img{height:46px}
+ .lg2 h1{font-size:24px}.lg-org{font-size:13px;margin-top:4px}
+ .lg-card{padding:15px}.lg-seg{margin-bottom:13px}
+ .lg-card .field{margin-bottom:11px;gap:5px}
+ .lg-card .inp{min-height:46px}
+ .lg-go{min-height:48px}.lg-help{margin-top:11px}
+}
+@media(min-width:901px){
+ .lg-wrap{max-width:470px;gap:30px}
+ .lg-card{padding:24px}
+ .lg-rose.one{width:430px;top:-10%}
+}
+
+@media(prefers-reduced-motion:no-preference){
+ @keyframes lgRose{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+ @keyframes lgRose2{from{transform:rotate(360deg)}to{transform:rotate(0)}}
+ @keyframes lgMesh{from{background-position:0 0}to{background-position:168px 97px}}
+ @keyframes lgAurA{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(16%,13%,0) scale(1.2)}}
+ @keyframes lgAurB{0%{transform:translate3d(0,0,0) scale(1.12)}100%{transform:translate3d(-14%,-16%,0) scale(1)}}
+ @keyframes lgSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+ @keyframes lgDraw{from{stroke-dashoffset:470}to{stroke-dashoffset:0}}
+ @keyframes lgPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+ @keyframes lgUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+ @keyframes lgCard{from{opacity:0;transform:translateY(34px) scale(.98)}to{opacity:1;transform:none}}
+ @keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+ @keyframes lgSheen{0%{transform:translateX(-130%);opacity:1}92%{opacity:1}100%{transform:translateX(130%);opacity:0}}
+ @keyframes lgSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+ @keyframes lgErr{0%{opacity:0;transform:translateY(-8px)}60%{opacity:1;transform:translateY(0)}70%{transform:translateX(5px)}80%{transform:translateX(-4px)}90%{transform:translateX(2px)}100%{transform:none}}
+ @keyframes lgDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-5px)}}
+
+ .lg-rose.one{animation:lgRose 150s linear infinite}
+ .lg-rose.two{animation:lgRose2 190s linear infinite}
+ .lg-mesh{animation:lgMesh 70s linear infinite}
+ .lg-aur.a{animation:lgAurA 20s ease-in-out infinite alternate}
+ .lg-aur.b{animation:lgAurB 26s ease-in-out infinite alternate}
+
+ .lg-logo{animation:lgPop .8s cubic-bezier(.2,.9,.3,1.25) both}
+ .lg-logo img{animation:lgFloat 7.5s ease-in-out 1.4s infinite}
+ .lg-orbit{animation:lgSpin 26s linear 1.2s infinite}
+ .lg-orbit .o1{animation:lgDraw 1.5s cubic-bezier(.3,.8,.3,1) .25s both}
+ .lg-logo::after{content:"";position:absolute;inset:8%;pointer-events:none;
+  background:linear-gradient(100deg,transparent 40%,rgba(157,218,229,.45) 50%,transparent 60%);
+  animation:lgSheen 1.6s cubic-bezier(.4,0,.2,1) .6s 1 both}
+ .lg-kicker{animation:lgUp .6s cubic-bezier(.22,.8,.3,1) .22s both}
+ .lg2 h1{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .3s both}
+ .lg-org{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .4s both}
+ .lg-date{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .5s both}
+ .lg-card{animation:lgCard .74s cubic-bezier(.2,.8,.25,1) .42s both}
+ .lg-foot{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .8s both}
+ .lg-card .field,.lg-go,.lg-help,.lg-seg{animation:lgUp .5s cubic-bezier(.22,.8,.3,1) both}
+ .lg-seg{animation-delay:.58s}
+ .lg-card .field:nth-of-type(1){animation-delay:.64s}
+ .lg-card .field:nth-of-type(2){animation-delay:.7s}
+ .lg-go{animation-delay:.76s}
+ .lg-help{animation-delay:.82s}
+ .lg-err.on{animation:lgErr .52s cubic-bezier(.3,.8,.3,1) both}
+ /* بريق يمرّ على البطاقة مرة */
+ .lg-card::after{content:"";position:absolute;inset:0;border-radius:20px;overflow:hidden;pointer-events:none;
+  background:linear-gradient(104deg,transparent 42%,rgba(157,218,229,.3) 50%,transparent 58%);
+  animation:lgSheen 1.9s cubic-bezier(.4,0,.2,1) 1s 1 both}
+ .lg-go[disabled]::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:lgSweep 1s linear infinite}
+ .lg-boot .d i{animation:lgDot 1.1s ease-in-out infinite}
+ .lg-boot .d i:nth-child(2){animation-delay:.14s}
+ .lg-boot .d i:nth-child(3){animation-delay:.28s}
+ /* انسحاب المشهد عند النجاح */
+ .lg2.out .lg-card{opacity:0;transform:translateY(20px) scale(.985);transition:opacity .3s ease-in,transform .3s ease-in}
+ .lg2.out .lg-head{opacity:0;transform:translateY(-14px);transition:opacity .3s ease-in .04s,transform .3s ease-in .04s}
+ .lg2.out .lg-bg{opacity:.5;transition:opacity .3s ease-in}
 }
 /* ===== شاشة الموظف ===== */
 .adm-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 2px}.adm-bar .inp{width:auto;min-width:140px}.adm-search{position:relative;flex:1;min-width:230px}.adm-search .inp{width:100%}.urow-menu{position:absolute;inset-inline-end:0;top:calc(100% - 4px);z-index:40;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(7,44,73,.16);padding:5px;display:flex;flex-direction:column;min-width:190px;text-align:start}.urow-menu button{padding:9px 12px;border-radius:7px;font-size:13.5px;color:var(--navy);text-align:start;white-space:nowrap}.urow-menu button:hover{background:var(--sand-2)}@media(max-width:700px){.adm-bar .inp,.adm-search{width:100%;flex:1 1 100%}}.ui-pill{position:absolute;left:0;top:0;pointer-events:none;z-index:0;transition:transform .34s cubic-bezier(.4,0,.2,1),height .34s cubic-bezier(.4,0,.2,1),width .34s cubic-bezier(.4,0,.2,1)}.nav>.ui-pill{border-radius:10px;background:rgba(157,218,229,.16)}.nav>.ui-pill:before{content:"";position:absolute;inset-inline-start:-12px;top:10px;bottom:10px;width:4px;background:var(--sky);border-radius:4px}.nav button{z-index:1}.nav button.on{background:transparent}.nav button.on:before{display:none}@media(prefers-reduced-motion:reduce){.ui-pill{transition:none}}@property --p{syntax:"<number>";inherits:false;initial-value:0}@keyframes inUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.in-up{animation:inUp .4s cubic-bezier(.22,.8,.3,1) both;animation-delay:var(--d,0ms)}.ring{transition:--p .9s cubic-bezier(.22,.8,.3,1) .15s}.side-toggle{display:none}@media(min-width:901px){.app{grid-template-columns:var(--sidew,268px) 1fr;transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1)}.side-toggle{display:grid}html.side-off{--sidew:76px}html.side-off .brand{padding:22px 0 16px;justify-content:center}html.side-off .brand img{height:40px}html.side-off .brand div,html.side-off .nav-h,html.side-off .nav button span,html.side-off .save-st,html.side-off .switch-l,html.side-off .switch{display:none}html.side-off .nav{padding:8px 14px}html.side-off .nav button{justify-content:center;padding:11px 0}html.side-off .nav .badge{position:absolute;top:5px;inset-inline-end:7px;min-width:8px;width:8px;height:8px;padding:0;border-radius:50%;font-size:0;overflow:hidden}html.side-off .nav>.ui-pill:before{display:none}html.side-off .side-foot{padding:10px 14px}html.side-off .ev-btn{font-size:0;gap:0;padding:11px 0}}@media(prefers-reduced-motion:reduce){.in-up{animation:none}.app,.ring,.pbar i{transition:none}}.emp-tabs{display:none}
@@ -3881,22 +4073,48 @@ Object.assign(VIEWS,VIEWS2);Object.assign(ACT,ACT2);
 
 /* ================= الدخول الحقيقي (خادم) ================= */
 function loginView(){
-  if(S.booting)return `<div style="min-height:100vh;min-height:100dvh;display:grid;place-items:center;color:var(--ink-2)">جارٍ الاتصال بالخادم…</div>`;
+  if(S.booting)return `<div class="lg-boot"><div class="d"><i></i><i></i><i></i></div><div>جارٍ الاتصال بالخادم…</div></div>`;
   const trainer=S.portal==='trainer';
-  return `<div class="login">
- <section class="login-art"><div class="pattern"></div>
-  <div class="brand-l" style="display:flex;flex-direction:column;align-items:center;gap:12px"><img class="logo-w" src="${LOGO}" alt="شعار تحفيظ بريدة" style="height:84px"><div><b style="font-size:30px;font-weight:600;display:block;line-height:1.4">منصة التطوير والتدريب</b><span style="color:#9FB8CA;font-size:14px">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</span></div></div>
-  <div><h1>نبني <em>كفاءة</em> من يخدمون كتاب الله، خطوة تدريبية بعد أخرى.</h1><p>احتياج مُحلَّل، وخطة منفّذة، وتعلّم مُتتبَّع فعليًا، وأثر مقيس بأدلة موثّقة.</p></div><div></div>
- </section>
- <section class="login-card"><form class="login-box" id="lg_form" novalidate>
-  <div class="row" style="gap:8px;margin-bottom:10px" role="tablist"><button type="button" class="btn ${trainer?'sec':''} sm" role="tab" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button><button type="button" class="btn ${trainer?'':'sec'} sm" role="tab" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button></div>
-  <h2>${trainer?'بوابة المدربين':'تسجيل الدخول'}</h2><p class="sub">ادخل ببريدك الرسمي وكلمة المرور.</p>
-  <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="name@qb.org.sa" autocomplete="username"></div>
-  <div class="field"><label for="lg_pw">كلمة المرور</label><div class="pw-wrap"><input class="inp" id="lg_pw" type="password" dir="ltr" enterkeyhint="go" autocomplete="current-password"><button type="button" class="pw-eye" data-act="pw-eye" aria-label="إظهار كلمة المرور" aria-pressed="false">${ico('eye')}<svg class="i eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.5 2.6-3.1 4M6.1 6.3C4 7.8 2.4 9.9 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div></div>
-  <p class="lg-err" id="lg_err" role="alert"></p>
-  <button class="btn" type="submit" style="width:100%" id="lg_btn">تسجيل الدخول</button>
-  <button type="button" class="lg-help" data-act="lg-help">نسيت كلمة المرور؟</button>
- </form></section></div>`;
+  let hij='';
+  try{hij=new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date())}catch(e){}
+  return `<div class="login lg2">
+ <div class="lg-bg">
+  <span class="lg-aur a"></span><span class="lg-aur b"></span>
+  <span class="lg-mesh"></span>
+  <span class="lg-rose one"></span><span class="lg-rose two"></span>
+  <span class="lg-grain"></span><span class="lg-band"></span>
+ </div>
+ <main class="lg-wrap">
+  <header class="lg-head">
+   <div class="lg-logo">
+    <svg class="lg-orbit" viewBox="0 0 160 160" aria-hidden="true">
+     <defs><linearGradient id="lgArc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9DDAE5" stop-opacity="0"/><stop offset=".45" stop-color="#007497"/><stop offset="1" stop-color="#9DDAE5" stop-opacity=".25"/>
+     </linearGradient></defs>
+     <circle class="o1" cx="80" cy="80" r="74"/><circle class="o2" cx="80" cy="80" r="66"/>
+    </svg>
+    <img src="${LOGO}" alt="شعار الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة">
+   </div>
+   <span class="lg-kicker">أهلًا وسهلًا بك في</span>
+   <h1>منصة التطوير والتدريب</h1>
+   <p class="lg-org">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</p>
+   ${hij?`<span class="lg-date"><i></i>${esc(hij)} هـ</span>`:''}
+  </header>
+
+  <form class="lg-card" id="lg_form" novalidate>
+   <div class="lg-seg" role="tablist">
+    <button type="button" role="tab" class="${trainer?'':'on'}" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button>
+    <button type="button" role="tab" class="${trainer?'on':''}" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button>
+   </div>
+   <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="name@qb.org.sa" autocomplete="username"></div>
+   <div class="field"><label for="lg_pw">كلمة المرور</label><div class="pw-wrap"><input class="inp" id="lg_pw" type="password" dir="ltr" enterkeyhint="go" autocomplete="current-password"><button type="button" class="pw-eye" data-act="pw-eye" aria-label="إظهار كلمة المرور" aria-pressed="false">${ico('eye')}<svg class="i eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.5 2.6-3.1 4M6.1 6.3C4 7.8 2.4 9.9 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div></div>
+   <p class="lg-err" id="lg_err" role="alert"></p>
+   <button class="lg-go" type="submit" id="lg_btn"><span class="t">${trainer?'دخول المدرب':'تسجيل الدخول'}</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
+   <button type="button" class="lg-help" data-act="lg-help">نسيت كلمة المرور؟</button>
+  </form>
+
+  <footer class="lg-foot"><b>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</b>إدارة التطوير والتدريب · جميع الحقوق محفوظة ${new Date().getFullYear()}</footer>
+ </main></div>`;
 }
 Object.assign(ACT,{
   async 'login-email'(){
@@ -3910,16 +4128,16 @@ Object.assign(ACT,{
     err.classList.remove('on');
     if(!emailOk(em)){fail('أدخل بريدًا صالحًا');return}
     if(!pw){fail('أدخل كلمة المرور');return}
-    btn.disabled=true;btn.textContent='جارٍ التحقق…';
+    const lab=btn.querySelector('.t')||btn;const lab0=lab.textContent;btn.disabled=true;lab.textContent='جارٍ التحقق…';
     try{
       const r=await api('/api/login',{method:'POST',body:JSON.stringify({email:em,password:pw})});
-      if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');fail('هذه البوابة للمدربين فقط');btn.disabled=false;btn.textContent='تسجيل الدخول';return}
+      if(S.portal==='trainer'&&!r.user.roles.includes('trainer')){await api('/api/logout');fail('هذه البوابة للمدربين فقط');btn.disabled=false;lab.textContent=lab0;return}
       S.role=ROLE_PRI.find(x=>r.user.roles.includes(x));
       S.mustChange=!!r.mustChange;await loadAll();
-      const lg=document.querySelector('.login');
+      const lg=document.querySelector('.lg2');
       if(lg&&!matchMedia('(prefers-reduced-motion: reduce)').matches){lg.classList.add('out');await new Promise(r2=>setTimeout(r2,240))}
       doLogin(r.user.id);if(S.mustChange)askPwChange(true);
-    }catch(e){fail(e.message);btn.disabled=false;btn.textContent='تسجيل الدخول'}
+    }catch(e){fail(e.message);btn.disabled=false;lab.textContent=lab0}
   },
   'pw-eye'(t){
     const w=t.closest('.pw-wrap'),i=w.querySelector('input'),on=i.type==='password';
@@ -4763,7 +4981,8 @@ ACT.navgo = function (t) { go(t.dataset.v) };
     ['.nav', 'box'],        // القائمة الجانبية
     ['.emp-tabs', 'line'],  // شريط تبويبات الجوال
     ['.emp-sub', 'box'],    // تبويبات داخل أقسام الموظف
-    ['.tabs', 'line']       // تبويبات داخل صفحات الإدارة
+    ['.tabs', 'line'],     // تبويبات داخل صفحات الإدارة
+    ['.lg-seg', 'box']      // مفتاح البوابة في شاشة الدخول
   ];
   const LINE = 3;
   const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
