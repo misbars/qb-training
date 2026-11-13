@@ -151,7 +151,7 @@ async function certQr(id) {
     await loadScript(CDN.qr);
     if (!document.getElementById('certqr')) return;
     box.innerHTML = '';
-    new QRCode(box, { text: d.url, width: 74, height: 74, colorDark: '#072C49', colorLight: '#FBFAF7', correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(box, { text: d.url, width: 58, height: 58, colorDark: '#072C49', colorLight: '#FBFAF7', correctLevel: QRCode.CorrectLevel.M });
     box.title = d.url;
     if (cap) cap.style.display = '';
   } catch (e) { /* الشهادة تبقى صالحة بدون الرمز */ }
