@@ -119,7 +119,8 @@ async function session(req, S) {
 async function readCtx(ses, S) {
   const teamIds = ses.role === 'linemgr'
     ? (await S.all('users')).filter(u => u.managerId === ses.user.id).map(u => u.id) : [];
-  return { team: () => teamIds };
+  // المعرّف المبهم كان قابلًا للعكس بجدول (فضاء المعرّفات صغير ومعروف)؛ يُملَّح بسرّ الخادم
+  return { team: () => teamIds, salt: await vSecret(S) };
 }
 
 async function snapshot(ses, S) {
@@ -165,14 +166,25 @@ async function rowsOf(S, col) { return S.all(col) }
 
 // كتابة صف من الخادم بنفس آلية المزامنة: عدّاد يتقدّم وإصدار يزيد
 async function put(S, col, id, obj, by) {
-  const cur = await S.row(col, id), ver = (cur ? cur.ver : 0) + 1;
-  await S.db.batch([
+  const cur = await S.row(col, id), curVer = cur ? cur.ver : 0;
+  // شرط rows.ver يجعل الكتابة ذرّية: طلبان متوازيان لا ينجح منهما إلا واحد
+  const res = await S.db.batch([
     S.db.prepare("UPDATE meta SET v = CAST(v AS INTEGER) + 1 WHERE k='seq'"),
     S.db.prepare(`INSERT INTO rows(col,id,data,ver,seq,deleted,at,by) VALUES(?,?,?,?,(SELECT CAST(v AS INTEGER) FROM meta WHERE k='seq'),0,?,?)
-      ON CONFLICT(col,id) DO UPDATE SET data=excluded.data, ver=excluded.ver, seq=excluded.seq, deleted=0, at=excluded.at, by=excluded.by`)
-      .bind(col, id, JSON.stringify(obj), ver, now(), by)
+      ON CONFLICT(col,id) DO UPDATE SET data=excluded.data, ver=excluded.ver, seq=excluded.seq, deleted=0, at=excluded.at, by=excluded.by WHERE rows.ver=?`)
+      .bind(col, id, JSON.stringify(obj), curVer + 1, now(), by, curVer)
   ]);
-  return obj;
+  return res[1].meta.changes ? obj : null;
+}
+
+// إدراج لا يدهس صفًّا قائمًا: يُرجِع false إن كان المعرّف محجوزًا
+async function putNew(S, col, id, obj, by) {
+  const res = await S.db.batch([
+    S.db.prepare("UPDATE meta SET v = CAST(v AS INTEGER) + 1 WHERE k='seq'"),
+    S.db.prepare(`INSERT INTO rows(col,id,data,ver,seq,deleted,at,by) VALUES(?,?,?,1,(SELECT CAST(v AS INTEGER) FROM meta WHERE k='seq'),0,?,?)
+      ON CONFLICT(col,id) DO NOTHING`).bind(col, id, JSON.stringify(obj), now(), by)
+  ]);
+  return !!res[1].meta.changes;
 }
 
 /* ===== احتساب المشاهدة في الخادم =====
@@ -249,9 +261,12 @@ async function issueLibCompletion(S, me, lib) {
   const all = await rowsOf(S, 'completions');
   const had = all.find(c => c.userId === me && c.kind === 'l' && c.refId === lib.id);
   if (had) return had;
-  const id = 'cp_' + rand(6);
+  const id = 'cp_' + me + '_l_' + lib.id;          // حتمي: المفتاح نفسه لا يُدرَج مرتين
   const cp = { id, userId: me, kind: 'l', refId: lib.id, date: today(), hours: +lib.creditHours || 0, cert: await certNo(S, 'l'), demo: false };
-  await put(S, 'completions', id, cp, me);
+  if (!await putNew(S, 'completions', id, cp, me)) {
+    const ex = await S.row('completions', id);
+    return ex && !ex.deleted ? ex.obj : cp;
+  }
   await S.log(me, 'employee', 'insert', 'completions', id, 1, 'إصدار شهادة: ' + lib.title);
   await notifyRow(S, me, 'تم إصدار شهادة: ' + lib.title, 'تهانينا على إتمام الدورة',
     `<p>أُصدرت شهادتك رقم <b class="num">${cp.cert}</b>.</p>`, 'سجل الإنجاز', 'record');
@@ -279,8 +294,9 @@ async function examSubmit(ses, S, body) {
   if (kind === 'pre') {
     const tests = (await rowsOf(S, 'tests')).filter(t => t.userId === me && t.ref === 'l' && t.refId === lib.id && t.kind === 'pre');
     if (tests.length) return json({ error: 'الاختبار القبلي يُؤدّى مرة واحدة' }, 409);
-    const id = 't_' + rand(6);
-    await put(S, 'tests', id, { id, userId: me, ref: 'l', refId: lib.id, kind: 'pre', score, at: today(), demo: false }, me);
+    const id = `t_${me}_l_${lib.id}_pre`;
+    if (!await putNew(S, 'tests', id, { id, userId: me, ref: 'l', refId: lib.id, kind: 'pre', score, at: today(), demo: false }, me))
+      return json({ error: 'الاختبار القبلي يُؤدّى مرة واحدة' }, 409);
     return json({ ok: true, score });
   }
 
@@ -301,10 +317,12 @@ async function examSubmit(ses, S, body) {
   if (inRound.length > 0 && !retake) return json({ error: 'إعادة الاختبار غير مسموحة' }, 403);
 
   const passed = score >= passScore;
-  const aid = 'at_' + rand(6);
-  await put(S, 'attempts', aid, { id: aid, userId: me, libId: lib.id, kind: 'post', n: mine.length + 1, round, score, passed, at: now(), answers: ans, demo: false }, me);
-  const tid = 't_' + rand(6);
-  await put(S, 'tests', tid, { id: tid, userId: me, ref: 'l', refId: lib.id, kind: 'post', score, at: today(), demo: false }, me);
+  const n = inRound.length + 1;
+  const aid = `at_${me}_${lib.id}_${round}_${n}`;   // رقم المحاولة محجوز بالمعرّف نفسه
+  if (!await putNew(S, 'attempts', aid, { id: aid, userId: me, libId: lib.id, kind: 'post', n, round, score, passed, at: now(), answers: ans, demo: false }, me))
+    return json({ error: 'محاولة أخرى تُسجَّل الآن، أعد المحاولة بعد لحظات' }, 409);
+  const tid = `t_${me}_l_${lib.id}_post_${round}_${n}`;
+  await putNew(S, 'tests', tid, { id: tid, userId: me, ref: 'l', refId: lib.id, kind: 'post', score, at: today(), demo: false }, me);
   await S.log(me, ses.role, 'exam', 'attempts', aid, 1, `${lib.title}: ${score}%`);
   const completion = passed ? await issueLibCompletion(S, me, lib) : null;
   return json({ ok: true, score, passed, passScore, attempts: inRound.length + 1, maxA, completion });
@@ -323,15 +341,17 @@ async function libClaim(ses, S, body) {
 }
 
 async function sync(ses, S, ops) {
-  const teamIds = ses.role === 'linemgr' ? (await S.all('users')).filter(u => u.managerId === ses.user.id).map(u => u.id) : [];
-  const ctx = { team: () => teamIds };
+  const ctx = await readCtx(ses, S);
+  // ردود التعارض والرفض كانت تُعيد الصف كاملًا، فتلتف على ترشيح القراءة:
+  // يكفي إرسال عملية بإصدار خاطئ على أي معرّف لاستخراج محتواه. تُرشَّح الآن.
+  const vis = (col, o) => (o ? readFilter(ses, col, o, ctx) : null) || null;
   const results = [];
   for (const op of (ops || []).slice(0, 500)) {
     const { col, id } = op;
     if (!COLS.includes(col) || !id) { results.push({ col, id, ok: false, reason: 'مجموعة غير معروفة' }); continue }
     const cur = await S.row(col, id), curObj = cur && !cur.deleted ? cur.obj : null, curVer = cur ? cur.ver : 0;
     if ((op.base || 0) !== curVer && !(col === 'audit' && !curObj)) {
-      results.push({ col, id, ok: false, conflict: true, reason: 'تم تعديل هذا السجل من مستخدم آخر قبل حفظك', ver: curVer, data: curObj, deleted: !!(cur && cur.deleted) });
+      results.push({ col, id, ok: false, conflict: true, reason: 'تم تعديل هذا السجل من مستخدم آخر قبل حفظك', ver: curVer, data: vis(col, curObj), deleted: !!(cur && cur.deleted) });
       await S.log(ses.user.id, ses.role, 'conflict', col, id, 0, 'base ' + (op.base || 0) + ' ≠ ' + curVer);
       continue;
     }
@@ -341,14 +361,14 @@ async function sync(ses, S, ops) {
     if (!del && (!newObj || typeof newObj !== 'object' || (newObj.id !== id && col !== 'settings'))) { results.push({ col, id, ok: false, reason: 'بيانات غير صالحة' }); continue }
     const sane = del ? true : validate(col, newObj);
     if (sane !== true) {
-      results.push({ col, id, ok: false, denied: true, reason: sane, ver: curVer, data: curObj });
+      results.push({ col, id, ok: false, denied: true, reason: sane, ver: curVer, data: vis(col, curObj) });
       await S.log(ses.user.id, ses.role, 'invalid', col, id, 0, sane);
       continue;
     }
     const verdict = authorize(ses, col, curObj, newObj, del, ctx);
     if (verdict === 'skip') { results.push({ col, id, ok: true, ver: curVer }); continue }
     if (verdict !== true) {
-      results.push({ col, id, ok: false, denied: true, reason: verdict, ver: curVer, data: curObj });
+      results.push({ col, id, ok: false, denied: true, reason: verdict, ver: curVer, data: vis(col, curObj) });
       await S.log(ses.user.id, ses.role, 'denied', col, id, 0, verdict + ' | الحقول: ' + changed(curObj, newObj).join(','));
       continue;
     }
@@ -362,7 +382,7 @@ async function sync(ses, S, ops) {
     ]);
     if (!res[1].meta.changes) {
       const fresh = await S.row(col, id);
-      results.push({ col, id, ok: false, conflict: true, reason: 'تم تعديل هذا السجل من مستخدم آخر قبل حفظك', ver: fresh ? fresh.ver : 0, data: fresh && !fresh.deleted ? fresh.obj : null, deleted: !!(fresh && fresh.deleted) });
+      results.push({ col, id, ok: false, conflict: true, reason: 'تم تعديل هذا السجل من مستخدم آخر قبل حفظك', ver: fresh ? fresh.ver : 0, data: fresh && !fresh.deleted ? vis(col, fresh.obj) : null, deleted: !!(fresh && fresh.deleted) });
       continue;
     }
     if (col !== 'audit') await S.log(ses.user.id, ses.role, del ? 'delete' : (curObj ? 'update' : 'insert'), col, id, 1, changed(curObj, newObj).slice(0, 8).join(','));

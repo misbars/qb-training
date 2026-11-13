@@ -2128,7 +2128,7 @@ async function storeFile(f,by){
     DB.files.push(rec);commit('files');return {ok:true,id:rec.id};
   }catch(e){return {ok:false,msg:'تعذّرت قراءة الملف'}}
 }
-const fileLink=id=>{const f=fileById(id);return f?`<a class="flink" href="${f.data}" download="${esc(f.name)}" target="_blank" rel="noopener">${ico('clip')}${esc(f.name)} <span class="muted num">(${Math.round(f.size/1024)} ك.ب)</span></a>`:'<span class="muted">ملف غير متاح</span>'};
+const fileLink=id=>{const f=fileById(id);return f?`<a class="flink" href="${esc(f.data)}" download="${esc(f.name)}" target="_blank" rel="noopener">${ico('clip')}${esc(f.name)} <span class="muted num">(${Math.round(f.size/1024)} ك.ب)</span></a>`:'<span class="muted">ملف غير متاح</span>'};
 
 /* ---------- التسجيل في الدورات المسجلة ---------- */
 const libEnrOf=(u,l)=>DB.libenr.find(e=>e.userId===u&&e.libId===l&&e.status!=='cancelled');

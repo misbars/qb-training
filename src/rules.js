@@ -104,7 +104,9 @@ const MAIL_TAGS = /<\/?(?:p|br|b|strong|em|i|u|ul|ol|li|span|small|h4|h5)(?:\s+c
 const bodyOk = v => !/[<>]/.test(String(v == null ? '' : v).replace(MAIL_TAGS, ''));
 
 // المعرّفات الحقيقية تحمل هوية صاحبها (en_u_fahad_c1)، فتُستبدل في الصفوف المختصرة
-const opaque = s2 => { let h = 2166136261; const t = String(s2); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) } return 'x' + (h >>> 0).toString(36) };
+const fnv = (t, seed) => { let h = seed; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) } return (h >>> 0).toString(36) };
+// بسرّ الخادم كمِلح، و64 بتًا بدل 32: لا جدول عكسي ولا تصادم عملي
+const opaque = (id, salt) => 'x' + fnv(salt + '|' + id, 2166136261) + fnv(id + '|' + salt, 1099511627);
 
 const strip = qs => Array.isArray(qs) ? qs.map(q => { const { ans, ...rest } = q; return rest }) : qs;
 const pick = (o, ks) => { const r = {}; for (const k of ks) if (k in o) r[k] = o[k]; return r };
@@ -137,7 +139,7 @@ export function readFilter(ses, col, row, ctx) {
   if (role === 'trainmgr' && TM_COLS.includes(col)) return row;
   if (role === 'linemgr' && ctx.team().includes(subject)) return row;
   if (PRIVATE.includes(col)) return null;
-  if (PROJECT[col]) { const o = pick(row, PROJECT[col]); o.id = opaque(row.id); return o }
+  if (PROJECT[col]) { const o = pick(row, PROJECT[col]); o.id = opaque(row.id, ctx.salt || ''); return o }
   return row;
 }
 
@@ -159,14 +161,17 @@ const AHEAD_DAYS = { courses: 1095, plans: 1095, programs: 1095, kpis: 1095, kpi
 const dayNum = d => Math.floor(Date.parse(d + 'T00:00:00Z') / 864e5);
 
 // الملفات تُخزَّن كـdata URL؛ النوع والبصمة يُفحصان في الخادم لا في المتصفح وحده
+// مطابقة كاملة لا بادئة: كانت البادئة تسمح بإلحاق محارف انفلات بعدها
 const FILE_OK = [
-  [/^data:application\/pdf;base64,JVBER/, 'application/pdf'],
-  [/^data:image\/jpeg;base64,\/9j\//, 'image/jpeg'],
-  [/^data:image\/png;base64,iVBOR/, 'image/png']
+  [/^data:application\/pdf;base64,JVBER[A-Za-z0-9+/]*={0,2}$/, 'application/pdf'],
+  [/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/, 'image/jpeg'],
+  [/^data:image\/png;base64,iVBOR[A-Za-z0-9+/]*={0,2}$/, 'image/png']
 ];
 
 export function validate(col, obj) {
   if (obj == null) return true;
+  // المعرّف يُطبع داخل خصائص HTML في الواجهة؛ حصره بمحارف آمنة يقطع الحقن من منبعه
+  if (obj.id != null && !/^[A-Za-z0-9_|.\-]{1,100}$/.test(String(obj.id))) return 'معرّف السجل يحتوي محارف غير مسموحة';
   if (col === 'mails' && !bodyOk(obj.body)) return 'نص الإشعار يحتوي وسومًا غير مسموحة';
   if (col === 'files') {
     const d = String(obj.data || '');
