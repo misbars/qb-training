@@ -1,6 +1,6 @@
 // منصة التطوير والتدريب — خادم Cloudflare Workers + D1
 // دخول حقيقي، صلاحيات تُفحص في الخادم، حفظ على مستوى السجل مع كشف التعارض، ومزامنة حية.
-import { authorize, changed } from './rules.js';
+import { authorize, changed, readFilter } from './rules.js';
 import SCHEMA from '../migrations/0001_init.sql';
 import SEED from '../migrations/0002_seed.sql';
 
@@ -76,14 +76,22 @@ async function session(req, S) {
   return { token: s.token, user: u, role };
 }
 
+// سياق الترشيح: فريق الرئيس المباشر يُحسب مرة واحدة لكل طلب
+async function readCtx(ses, S) {
+  const teamIds = ses.role === 'linemgr'
+    ? (await S.all('users')).filter(u => u.managerId === ses.user.id).map(u => u.id) : [];
+  return { team: () => teamIds };
+}
+
 async function snapshot(ses, S) {
   const { results } = await S.db.prepare('SELECT col,id,data,ver FROM rows WHERE deleted=0').all();
+  const ctx = await readCtx(ses, S);
   const out = { seq: await S.seq(), vers: {} };
   for (const c of COLS) { out[c] = c === 'settings' ? {} : []; out.vers[c] = {} }
   for (const r of results) {
     if (!COLS.includes(r.col)) continue;
-    if (r.col === 'audit' && ses.role !== 'sysadmin') continue;
-    const o = JSON.parse(r.data);
+    const o = readFilter(ses, r.col, JSON.parse(r.data), ctx);
+    if (!o) continue;
     if (r.col === 'settings') out.settings = o; else out[r.col].push(o);
     out.vers[r.col][r.id] = r.ver;
   }
@@ -92,10 +100,17 @@ async function snapshot(ses, S) {
 
 async function changes(ses, S, since) {
   const { results } = await S.db.prepare('SELECT col,id,data,ver,deleted,seq,by FROM rows WHERE seq>? ORDER BY seq LIMIT 2000').bind(since).all();
-  return {
-    seq: results.length ? results[results.length - 1].seq : Math.max(since, await S.seq()),
-    rows: results.filter(r => !(r.col === 'audit' && ses.role !== 'sysadmin')).map(r => ({ col: r.col, id: r.id, ver: r.ver, deleted: !!r.deleted, by: r.by, data: r.deleted ? null : JSON.parse(r.data) }))
-  };
+  const ctx = await readCtx(ses, S);
+  const rows = [];
+  for (const r of results) {
+    if (!COLS.includes(r.col)) continue;
+    // الحذف يُمرَّر بلا بيانات ليُسقط العميل الصف إن كان عنده؛ سجل التدقيق وحده محجوب
+    if (r.deleted) { if (!(r.col === 'audit' && ses.role !== 'sysadmin')) rows.push({ col: r.col, id: r.id, ver: r.ver, deleted: true, by: r.by, data: null }); continue }
+    const o = readFilter(ses, r.col, JSON.parse(r.data), ctx);
+    if (!o) continue;
+    rows.push({ col: r.col, id: r.id, ver: r.ver, deleted: false, by: r.by, data: o });
+  }
+  return { seq: results.length ? results[results.length - 1].seq : Math.max(since, await S.seq()), rows };
 }
 
 async function sync(ses, S, ops) {

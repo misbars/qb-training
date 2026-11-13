@@ -76,3 +76,46 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
   }
 }
 
+
+/* ============ ترشيح القراءة ============
+   الكتابة كانت محميّة، أما القراءة فكانت مفتوحة: كل من يسجّل دخوله
+   يتسلّم كل الصفوف. هنا نقرّر لكل صف: يُرسل كاملًا، أم مختصرًا، أم لا يُرسل.
+
+   المبدأ: الموظف يرى سجلاته، والرئيس المباشر يرى فريقه، ومدير التدريب
+   يرى سجلات التدريب لأنه مسؤول عنها، ومسؤول النظام يرى الكل لأن النسخ
+   الاحتياطي والاستعادة من مهامه. */
+
+// سجلات شخصية لا يراها غير صاحبها ورؤسائه
+const PRIVATE = ['assess','mgrEvals','surveys','attempts','tests','progress','readprog',
+                 'libenr','extreq','visits','retakes','trackprog','files','nominations'];
+
+// سجلات يحتاج الجميع مجاميعها: تُختصر لغير أصحابها بدل أن تُحجب
+// (عدّاد المقاعد يَعُدّ تسجيلات الجميع، وترقيم الشهادات يعتمد على عدد الإنجازات)
+const PROJECT = { enrolls: ['id','courseId','status'], completions: ['id','kind','refId'] };
+
+// حقول في ملف المستخدم لا تخصّ زملاءه
+const USER_HIDE = ['phone','prefs'];
+
+const pick = (o, ks) => { const r = {}; for (const k of ks) if (k in o) r[k] = o[k]; return r };
+const omit = (o, ks) => { const r = { ...o }; for (const k of ks) delete r[k]; return r };
+
+export function readFilter(ses, col, row, ctx) {
+  const me = ses.user.id, role = ses.role;
+  if (role === 'sysadmin') return row;              // الاستعادة والنسخ الاحتياطي تحتاج الكل
+  if (col === 'audit') return null;                 // سجل التدقيق لمسؤول النظام وحده
+  if (col === 'mails') return row.to === me ? row : null;
+  if (col === 'users') return row.id === me ? row : omit(row, USER_HIDE);
+  // التعليق المجهول يحمل هوية كاتبه في بياناته؛ تُزال عن الآخرين
+  if (col === 'comments') return (row.anon && row.userId !== me) ? omit(row, ['userId']) : row;
+
+  const ownerF = OWNER[col];
+  if (!ownerF) return row;                          // الفهارس والإعدادات: مشتركة
+  const subject = row[ownerF] || row.userId || row.empId;
+  const mine = subject === me || row.by === me;
+  if (mine) return row;
+  if (role === 'trainmgr' && TM_COLS.includes(col)) return row;
+  if (role === 'linemgr' && ctx.team().includes(subject)) return row;
+  if (PRIVATE.includes(col)) return null;
+  if (PROJECT[col]) return pick(row, PROJECT[col]);
+  return row;
+}
