@@ -109,18 +109,12 @@ function loginView(){
  <div class="lg-bg">
   <span class="lg-aur a"></span><span class="lg-aur b"></span>
   <span class="lg-mesh"></span>
-  <span class="lg-rose one"></span><span class="lg-rose two"></span>
+  <span class="lg-rose two"></span>
   <span class="lg-grain"></span><span class="lg-band"></span>
  </div>
  <main class="lg-wrap">
   <header class="lg-head">
    <div class="lg-logo">
-    <svg class="lg-orbit" viewBox="0 0 160 160" aria-hidden="true">
-     <defs><linearGradient id="lgArc" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#9DDAE5" stop-opacity="0"/><stop offset=".45" stop-color="#007497"/><stop offset="1" stop-color="#9DDAE5" stop-opacity=".25"/>
-     </linearGradient></defs>
-     <circle class="o1" cx="80" cy="80" r="74"/><circle class="o2" cx="80" cy="80" r="66"/>
-    </svg>
     <img src="${LOGO}" alt="شعار الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة">
    </div>
    <span class="lg-kicker">أهلًا وسهلًا بك في</span>
@@ -130,15 +124,12 @@ function loginView(){
   </header>
 
   <form class="lg-card" id="lg_form" novalidate>
-   <div class="lg-seg" role="tablist">
-    <button type="button" role="tab" class="${trainer?'':'on'}" data-act="portal" data-p="staff" aria-selected="${!trainer}">الموظفون والإدارة</button>
-    <button type="button" role="tab" class="${trainer?'on':''}" data-act="portal" data-p="trainer" aria-selected="${trainer}">بوابة المدربين</button>
-   </div>
    <div class="field"><label for="lg_email">البريد الرسمي</label><input class="inp" id="lg_email" type="email" dir="ltr" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="name@qb.org.sa" autocomplete="username"></div>
    <div class="field"><label for="lg_pw">كلمة المرور</label><div class="pw-wrap"><input class="inp" id="lg_pw" type="password" dir="ltr" enterkeyhint="go" autocomplete="current-password"><button type="button" class="pw-eye" data-act="pw-eye" aria-label="إظهار كلمة المرور" aria-pressed="false">${ico('eye')}<svg class="i eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.5 2.6-3.1 4M6.1 6.3C4 7.8 2.4 9.9 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div></div>
    <p class="lg-err" id="lg_err" role="alert"></p>
-   <button class="lg-go" type="submit" id="lg_btn"><span class="t">${trainer?'دخول المدرب':'تسجيل الدخول'}</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
+   <button class="lg-go" type="submit" id="lg_btn"><span class="t">تسجيل الدخول</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
    <button type="button" class="lg-help" data-act="lg-help">نسيت كلمة المرور؟</button>
+   <p class="lg-hint">الموظفون والمدربون يدخلون من هنا بالبريد الرسمي نفسه.</p>
   </form>
 
   <footer class="lg-foot"><b>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</b>إدارة التطوير والتدريب · جميع الحقوق محفوظة ${new Date().getFullYear()}</footer>
@@ -185,7 +176,6 @@ boot_a = h.index('(async function boot(){')
 boot_b = h.index('})();', boot_a) + len('})();')
 BOOT = r"""(async function boot(){
   S.booting=true;draw();
-  if(location.hash==='#trainers')S.portal='trainer';
   try{const m=await api('/api/me');S.role=m.role;S.mustChange=!!m.mustChange;await loadAll();S.booting=false;doLogin(m.user.id);if(S.mustChange)askPwChange(true)}
   catch(e){S.booting=false;draw()}
   setInterval(poll,3000);
@@ -530,7 +520,6 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-aur.b{width:46vmin;height:46vmin;background:var(--sand);opacity:.6;bottom:-14%;inset-inline-end:-16%}
 /* زخرفة الهوية: واحدة كبيرة خلف الشعار، وشبكة خافتة تغطي الخلفية */
 .lg-rose{position:absolute;background:url("/brand-motif-l.svg") center/contain no-repeat;opacity:.1}
-.lg-rose.one{width:min(84vw,360px);aspect-ratio:84/96;top:-3%;left:50%;translate:-50% 0;opacity:.07}
 .lg-rose.two{width:min(66vw,300px);aspect-ratio:84/96;bottom:-12%;inset-inline-start:-18%;opacity:.055}
 .lg-mesh{position:absolute;inset:0;background:url("/brand-mesh-l.svg") 0 0/172px;opacity:.06}
 .lg-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(124% 82% at 50% 36%,transparent 54%,rgba(7,44,73,.09) 100%)}
@@ -552,10 +541,6 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-head{text-align:center;display:flex;flex-direction:column;align-items:center}
 .lg-logo{position:relative;width:138px;height:138px;display:grid;place-items:center}
 .lg-logo img{height:76px;width:auto}
-.lg-orbit{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.lg-orbit circle{fill:none;stroke-width:1.4;stroke-linecap:round}
-.lg-orbit .o1{stroke:url(#lgArc);stroke-dasharray:150 320}
-.lg-orbit .o2{stroke:rgba(0,116,151,.22);stroke-dasharray:2 10}
 .lg-kicker{font-size:13.5px;color:var(--lg-mut);letter-spacing:.06em;margin-top:2px}
 .lg2 h1{font-family:var(--display);font-size:clamp(27px,7.4vw,34px);font-weight:700;line-height:1.35;margin-top:4px;
  background:linear-gradient(180deg,#072C49 28%,#13456B 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -575,11 +560,6 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-card>*{position:relative}
 
 /* مفتاح البوابة */
-.lg-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:16px;
- background:rgba(7,44,73,.045);border:1px solid rgba(7,44,73,.07);border-radius:13px}
-.lg-seg button{position:relative;z-index:1;min-height:40px;border-radius:10px;font-size:14px;font-weight:600;color:var(--lg-mut);transition:color .25s}
-.lg-seg button.on{color:#fff}
-.lg-seg>.ui-pill{border-radius:10px;background:linear-gradient(135deg,#0E8FB5,var(--lg-acc))}
 
 .lg-card .field{display:grid;gap:7px;margin-bottom:13px}
 .lg-card .field label{font-size:13px;font-weight:600;color:var(--lg-mut);transition:color .2s}
@@ -610,6 +590,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-go .i{width:19px;height:19px;stroke-width:2.1}
 .lg-go[disabled]{opacity:1}
 
+.lg-hint{margin:14px 0 0;text-align:center;font-size:12px;line-height:1.7;color:var(--ink-3)}
 .lg-help{display:block;margin:15px auto 2px;font-size:13.5px;color:var(--lg-mut);font-weight:500;
  text-decoration:underline;text-underline-offset:4px;text-decoration-color:rgba(0,116,151,.35);transition:color .2s}
 .lg-help:hover{color:var(--lg-acc)}
@@ -636,7 +617,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
  .lg-wrap{gap:12px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
  .lg-logo{width:82px;height:82px}.lg-logo img{height:46px}
  .lg2 h1{font-size:24px}.lg-org{font-size:13px;margin-top:4px}
- .lg-card{padding:15px}.lg-seg{margin-bottom:13px}
+ .lg-card{padding:15px}
  .lg-card .field{margin-bottom:11px;gap:5px}
  .lg-card .inp{min-height:46px}
  .lg-go{min-height:48px}.lg-help{margin-top:11px}
@@ -644,8 +625,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 @media(min-width:901px){
  .lg-wrap{max-width:470px;gap:30px}
  .lg-card{padding:24px}
- .lg-rose.one{width:430px;top:-10%}
-}
+ }
 
 @media(prefers-reduced-motion:no-preference){
  @keyframes lgRose{from{transform:rotate(0)}to{transform:rotate(360deg)}}
@@ -658,23 +638,18 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
  @keyframes lgPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
  @keyframes lgUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
  @keyframes lgCard{from{opacity:0;transform:translateY(34px) scale(.98)}to{opacity:1;transform:none}}
- @keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
  @keyframes lgSheen{0%{transform:translateX(-130%);opacity:1}92%{opacity:1}100%{transform:translateX(130%);opacity:0}}
  @keyframes lgSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
  @keyframes lgErr{0%{opacity:0;transform:translateY(-8px)}60%{opacity:1;transform:translateY(0)}70%{transform:translateX(5px)}80%{transform:translateX(-4px)}90%{transform:translateX(2px)}100%{transform:none}}
  @keyframes lgDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-5px)}}
 
- .lg-rose.one{animation:lgRose 150s linear infinite}
- .lg-rose.two{animation:lgRose2 190s linear infinite}
+  .lg-rose.two{animation:lgRose2 190s linear infinite}
  .lg-mesh{animation:lgMesh 70s linear infinite}
  .lg-aur.a{animation:lgAurA 20s ease-in-out infinite alternate}
  .lg-aur.b{animation:lgAurB 26s ease-in-out infinite alternate}
 
  .lg-logo{animation:lgPop .8s cubic-bezier(.2,.9,.3,1.25) both}
- .lg-logo img{animation:lgFloat 7.5s ease-in-out 1.4s infinite}
- .lg-orbit{animation:lgSpin 26s linear 1.2s infinite}
- .lg-orbit .o1{animation:lgDraw 1.5s cubic-bezier(.3,.8,.3,1) .25s both}
- .lg-logo::after{content:"";position:absolute;inset:8%;pointer-events:none;
+   .lg-logo::after{content:"";position:absolute;inset:8%;pointer-events:none;
   background:linear-gradient(100deg,transparent 40%,rgba(157,218,229,.45) 50%,transparent 60%);
   animation:lgSheen 1.6s cubic-bezier(.4,0,.2,1) .6s 1 both}
  .lg-kicker{animation:lgUp .6s cubic-bezier(.22,.8,.3,1) .22s both}
@@ -683,8 +658,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
  .lg-date{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .5s both}
  .lg-card{animation:lgCard .74s cubic-bezier(.2,.8,.25,1) .42s both}
  .lg-foot{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .8s both}
- .lg-card .field,.lg-go,.lg-help,.lg-seg{animation:lgUp .5s cubic-bezier(.22,.8,.3,1) both}
- .lg-seg{animation-delay:.58s}
+ .lg-card .field,.lg-go,.lg-help{animation:lgUp .5s cubic-bezier(.22,.8,.3,1) both}
  .lg-card .field:nth-of-type(1){animation-delay:.64s}
  .lg-card .field:nth-of-type(2){animation-delay:.7s}
  .lg-go{animation-delay:.76s}
