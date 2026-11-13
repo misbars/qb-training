@@ -1288,14 +1288,19 @@ function certModal(id){
       </div>
      </div>
     </div>
-    <div style="position:relative;border-top:1px solid var(--sand);background:var(--sand-2);padding:10px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px">
-     <span style="font-size:11px;color:var(--ink-3)">رقم الشهادة</span>
-     <span class="num" style="font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.06em">${esc(x.cert)}</span>
+    <div style="position:relative;border-top:1px solid var(--sand);background:var(--sand-2);padding:12px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px">
+     <div><div style="font-size:11px;color:var(--ink-3)">رقم الشهادة</div>
+      <div class="num" style="font-size:13px;font-weight:600;color:var(--navy);letter-spacing:.06em">${esc(x.cert)}</div></div>
+     <div style="display:flex;align-items:center;gap:10px">
+      <span id="certqrcap" style="font-size:10.5px;color:var(--ink-3);line-height:1.5;max-width:92px;display:none">امسح الرمز للتحقق من صحة الشهادة</span>
+      <div id="certqr" style="width:74px;height:74px"></div>
+     </div>
     </div>
     ${x.demo?`<div style="position:relative;background:#FBEFD9;color:#7A5410;font-size:11px;text-align:center;padding:5px">شهادة تجريبية — بيانات غير حقيقية</div>`:''}
     <div style="height:16px;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:56px"></div>
    </div></div>
    <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button><button class="btn" data-act="cert-pdf" data-id="${x.id}">تنزيل PDF</button></div>`,'wide');
+  certQr(x.id);
 }
 /* استبيان الرضا (المستوى 1) — منفصل تمامًا عن اختبار التعلّم */
 function rateRows(){return SURVEY_ITEMS.map(([k,l])=>`<div class="rate-row"><span>${l}</span><div class="st" role="radiogroup" aria-label="${l}">${[1,2,3,4,5].map(i=>`<button class="${S._rate.v[k]>=i?'on':''}" data-act="star" data-k="${k}" data-i="${i}" aria-label="${i} من 5">${starSvg}</button>`).join('')}</div></div>`).join('')}
@@ -3389,7 +3394,7 @@ function repDept(){
 }
 
 /* ---- التصدير ---- */
-const CDN={xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',pdfjs:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',pdfWorker:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'};
+const CDN={xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',qr:'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',pdfjs:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',pdfWorker:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'};
 const csvOf=rows=>'﻿'+rows.map(r=>r.map(c=>{const s=String(c??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(',')).join('\r\n');
 async function exportTable(base,sheets,fmtx){
   audit('export','report',base,fmtx);
@@ -4761,6 +4766,24 @@ ACT.navgo = function (t) { go(t.dataset.v) };
   addEventListener('resize', () => { prev.clear(); schedule() });
   schedule();
 })();
+
+/* ================= رمز التحقق على الشهادة ================= */
+// الرمز يفتح صفحة تحقّق عامة؛ الرابط يُطلب من الخادم لأنه يحمل توقيعًا لا يمكن توقّعه.
+async function certQr(id) {
+  const box = document.getElementById('certqr'), cap = document.getElementById('certqrcap');
+  if (!box) return;
+  try {
+    const r = await fetch('/api/cert/link?id=' + encodeURIComponent(id));
+    const d = await r.json();
+    if (!d || !d.url) return;
+    await loadScript(CDN.qr);
+    if (!document.getElementById('certqr')) return;
+    box.innerHTML = '';
+    new QRCode(box, { text: d.url, width: 74, height: 74, colorDark: '#072C49', colorLight: '#FBFAF7', correctLevel: QRCode.CorrectLevel.M });
+    box.title = d.url;
+    if (cap) cap.style.display = '';
+  } catch (e) { /* الشهادة تبقى صالحة بدون الرمز */ }
+}
 
 
 (async function boot(){

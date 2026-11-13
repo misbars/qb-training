@@ -33,6 +33,24 @@ async function hashPw(pw, salt) {
 }
 const tempPassword = () => 'Qb-' + rand(4);
 
+// ===== رمز التحقق من الشهادة =====
+// الرقم المتسلسل وحده يسهل تخمينه، فيُشتق لكل شهادة رمز من سرّ الخادم لا يمكن توقّعه.
+const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const b32 = bytes => [...bytes].map(b => B32[b >> 3] + B32[((b & 7) << 2) | 0]).join('').slice(0, 16);
+async function vSecret(S) {
+  let r = await S.db.prepare("SELECT v FROM meta WHERE k='vsecret'").first();
+  if (!r) {
+    await S.db.prepare("INSERT OR IGNORE INTO meta(k,v) VALUES('vsecret',?)").bind(rand(24)).run();
+    r = await S.db.prepare("SELECT v FROM meta WHERE k='vsecret'").first();
+  }
+  return r.v;
+}
+async function vCode(S, id) {
+  const key = await crypto.subtle.importKey('raw', enc.encode(await vSecret(S)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode('cert:' + id));
+  return b32(new Uint8Array(sig).slice(0, 6)).slice(0, 10);
+}
+
 function json(obj, status = 200, headers = {}) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } });
 }
@@ -207,6 +225,16 @@ async function api(req, env, url) {
   if (p === '/api/data') return json(await snapshot(ses, S));
   if (p === '/api/changes') return json(await changes(ses, S, +url.searchParams.get('since') || 0));
   if (p === '/api/sync' && req.method === 'POST') { const b = await body(); return json(await sync(ses, S, b.ops)) }
+  if (p === '/api/cert/link') {
+    const id = url.searchParams.get('id') || '';
+    const r = await S.row('completions', id);
+    if (!r || r.deleted) return json({ error: 'الشهادة غير موجودة' }, 404);
+    const own = r.obj.userId === ses.user.id;
+    const mgr = ses.role === 'trainmgr' || ses.role === 'sysadmin';
+    const line = ses.role === 'linemgr' && ((await S.user(r.obj.userId)) || {}).managerId === ses.user.id;
+    if (!own && !mgr && !line) return json({ error: 'غير مصرّح' }, 403);
+    return json({ url: url.origin + '/v/' + id + '.' + (await vCode(S, id)) });
+  }
   if (p === '/api/password/reset' && req.method === 'POST') {
     const b = await body();
     if (ses.role !== 'sysadmin') { await S.log(ses.user.id, ses.role, 'denied', 'auth', b.userId, 0, 'reset password'); return json({ error: 'إصدار كلمات المرور لمسؤول النظام فقط' }, 403) }
@@ -243,9 +271,73 @@ async function api(req, env, url) {
   return json({ error: 'not found' }, 404);
 }
 
+// ===== صفحة تحقّق عامة من شهادة: /v/<id>.<code> =====
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const AR_DATE = d => { try { return new Date(d).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' }) } catch (e) { return d } };
+
+function vShell(body, title) {
+  return new Response(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>${esc(title)} — منصة التطوير والتدريب</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+:root{--navy:#072C49;--teal:#007497;--sand:#ECE6DD;--sand2:#F6F3EE;--paper:#FBFAF7;--ink:#14263A;--ink2:#5A6B7C;--ok:#17603A;--okbg:#DDF1E4;--no:#8E2A1F;--nobg:#F7E1DE}
+*{box-sizing:border-box}
+body{margin:0;background:var(--sand);color:var(--ink);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;line-height:1.8;
+ display:grid;place-items:center;min-height:100vh;padding:24px 16px}
+.card{background:var(--paper);border-radius:16px;max-width:520px;width:100%;overflow:hidden;box-shadow:0 18px 50px rgba(7,44,73,.12)}
+.band{height:14px;background:var(--navy) url('/brand-pattern.svg') repeat;background-size:52px}
+.in{padding:26px 26px 22px}
+.tag{display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600}
+.ok{background:var(--okbg);color:var(--ok)}.no{background:var(--nobg);color:var(--no)}
+h1{font-size:19px;margin:16px 0 2px;color:var(--navy);font-weight:700;line-height:1.5}
+.sub{color:var(--ink2);font-size:13px;margin:0}
+dl{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;margin:20px 0 0;font-size:14px}
+dt{color:var(--ink2);font-size:12.5px}
+dd{margin:0;font-weight:600;color:var(--navy)}
+.no-wrap{font-variant-numeric:tabular-nums;letter-spacing:.05em}
+footer{border-top:1px solid var(--sand);background:var(--sand2);padding:12px 26px;font-size:11.5px;color:var(--ink2);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.demo{background:#FBEFD9;color:#7A5410;font-size:12px;padding:8px 26px}
+</style></head><body><div class="card"><div class="band"></div>${body}<div class="band"></div></div></body></html>`,
+   { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+}
+
+async function verifyPage(env, url) {
+  const S = new Store(env.DB);
+  const tok = decodeURIComponent(url.pathname.slice(3));
+  const dot = tok.lastIndexOf('.');
+  const bad = () => vShell(`<div class="in"><span class="tag no">تعذّر التحقق</span>
+    <h1>لم نعثر على شهادة بهذا الرمز</h1>
+    <p class="sub">تأكد من مسح الرمز كاملًا من الشهادة الأصلية. إن استمرت المشكلة فراجع إدارة التدريب في الجمعية.</p></div>
+    <footer><span>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</span><span>منصة التطوير والتدريب</span></footer>`, 'تعذّر التحقق');
+  if (dot < 1) return bad();
+  const id = tok.slice(0, dot), code = tok.slice(dot + 1).toUpperCase();
+  const r = await S.row('completions', id);
+  if (!r || r.deleted) return bad();
+  if (code !== await vCode(S, id)) return bad();
+  const c = r.obj, u = await S.user(c.userId);
+  const ref = await S.row(c.kind === 'l' ? 'libs' : 'courses', c.refId);
+  const course = ref && !ref.deleted ? (ref.obj.title || '—') : '—';
+  return vShell(`<div class="in"><span class="tag ok">شهادة صحيحة</span>
+    <h1>${esc(course)}</h1>
+    <p class="sub">صادرة من الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</p>
+    <dl>
+      <dt>اسم المتدرّب</dt><dd>${esc(u ? u.name : '—')}</dd>
+      <dt>تاريخ الإتمام</dt><dd>${esc(AR_DATE(c.date))}</dd>
+      <dt>الساعات التدريبية</dt><dd>${esc(c.hours)} ساعات</dd>
+      <dt>رقم الشهادة</dt><dd class="no-wrap">${esc(c.cert)}</dd>
+    </dl></div>
+    ${c.demo ? '<div class="demo">هذه شهادة تجريبية من نسخة الاختبار، وبياناتها غير حقيقية.</div>' : ''}
+    <footer><span>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</span><span>منصة التطوير والتدريب</span></footer>`, 'تحقّق من شهادة');
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
+    if (url.pathname.startsWith('/v/')) {
+      try { await ensureReady(env.DB); return await verifyPage(env, url) }
+      catch (e) { console.error(e); return new Response('خطأ في الخادم', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) }
+    }
     if (url.pathname.startsWith('/api/')) {
       try { await ensureReady(env.DB); return await api(req, env, url) }
       catch (e) { console.error(e); return json({ error: 'خطأ في الخادم: ' + String(e && e.message || e).slice(0, 200) }, 500) }

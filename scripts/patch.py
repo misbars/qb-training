@@ -294,15 +294,23 @@ _CERT = r"""  const meta=[['التاريخ',fmt(x.date)],['الساعات الت
       </div>
      </div>
     </div>
-    <div style="position:relative;border-top:1px solid var(--sand);background:var(--sand-2);padding:10px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px">
-     <span style="font-size:11px;color:var(--ink-3)">رقم الشهادة</span>
-     <span class="num" style="font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.06em">${esc(x.cert)}</span>
+    <div style="position:relative;border-top:1px solid var(--sand);background:var(--sand-2);padding:12px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px">
+     <div><div style="font-size:11px;color:var(--ink-3)">رقم الشهادة</div>
+      <div class="num" style="font-size:13px;font-weight:600;color:var(--navy);letter-spacing:.06em">${esc(x.cert)}</div></div>
+     <div style="display:flex;align-items:center;gap:10px">
+      <span id="certqrcap" style="font-size:10.5px;color:var(--ink-3);line-height:1.5;max-width:92px;display:none">امسح الرمز للتحقق من صحة الشهادة</span>
+      <div id="certqr" style="width:74px;height:74px"></div>
+     </div>
     </div>
     ${x.demo?`<div style="position:relative;background:#FBEFD9;color:#7A5410;font-size:11px;text-align:center;padding:5px">شهادة تجريبية — بيانات غير حقيقية</div>`:''}
     <div style="height:16px;background:var(--navy);background-image:url('/brand-pattern.svg');background-size:56px"></div>
    </div></div>
-   <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button><button class="btn" data-act="cert-pdf" data-id="${x.id}">تنزيل PDF</button></div>`,'wide');"""
+   <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button><button class="btn" data-act="cert-pdf" data-id="${x.id}">تنزيل PDF</button></div>`,'wide');
+  certQr(x.id);"""
 h = h[:_cert_old.start()] + _CERT + h[_cert_old.end():]
+_qa = "pdfjs:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'"
+assert _qa in h, 'CDN list not found'
+h = h.replace(_qa, "qr:'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'," + _qa, 1)
 
 h=h.replace('/* ===== خط ثمانية ===== */','/* ===== خط ثمانية ===== */'+"""
 /* ===== شاشة الموظف ===== */

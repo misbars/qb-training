@@ -138,3 +138,21 @@
   addEventListener('resize', () => { prev.clear(); schedule() });
   schedule();
 })();
+
+/* ================= رمز التحقق على الشهادة ================= */
+// الرمز يفتح صفحة تحقّق عامة؛ الرابط يُطلب من الخادم لأنه يحمل توقيعًا لا يمكن توقّعه.
+async function certQr(id) {
+  const box = document.getElementById('certqr'), cap = document.getElementById('certqrcap');
+  if (!box) return;
+  try {
+    const r = await fetch('/api/cert/link?id=' + encodeURIComponent(id));
+    const d = await r.json();
+    if (!d || !d.url) return;
+    await loadScript(CDN.qr);
+    if (!document.getElementById('certqr')) return;
+    box.innerHTML = '';
+    new QRCode(box, { text: d.url, width: 74, height: 74, colorDark: '#072C49', colorLight: '#FBFAF7', correctLevel: QRCode.CorrectLevel.M });
+    box.title = d.url;
+    if (cap) cap.style.display = '';
+  } catch (e) { /* الشهادة تبقى صالحة بدون الرمز */ }
+}
