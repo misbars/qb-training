@@ -51,6 +51,45 @@ async function vCode(S, id) {
   return b32(new Uint8Array(sig).slice(0, 6)).slice(0, 10);
 }
 
+
+/* ===== ترويسات الأمان =====
+   المنصة كانت تُقدَّم بلا أي ترويسة حماية: قابلة للوضع داخل إطار في موقع
+   آخر، وبلا سياسة محتوى تمنع تحميل نص برمجي من مصدر غريب لو حُقِن. */
+const CSP = [
+  "default-src 'self'",
+  // الصفحة نص برمجي داخلي واحد، فيبقى unsafe-inline؛ والمصادر الخارجية محصورة
+  "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://i.ytimg.com",
+  "media-src 'self' data: blob:",
+  "worker-src 'self' blob:",
+  "connect-src 'self' https://cdnjs.cloudflare.com",
+  "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests"
+].join('; ');
+
+const SEC_HEADERS = {
+  'Content-Security-Policy': CSP,
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+};
+
+function secure(res) {
+  const h = new Headers(res.headers);
+  for (const [k, v] of Object.entries(SEC_HEADERS)) h.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 function json(obj, status = 200, headers = {}) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } });
 }
@@ -482,13 +521,13 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname.startsWith('/v/')) {
-      try { await ensureReady(env.DB); return await verifyPage(env, url) }
-      catch (e) { console.error(e); return new Response('خطأ في الخادم', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) }
+      try { await ensureReady(env.DB); return secure(await verifyPage(env, url)) }
+      catch (e) { console.error(e); return secure(new Response('خطأ في الخادم', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })) }
     }
     if (url.pathname.startsWith('/api/')) {
-      try { await ensureReady(env.DB); return await api(req, env, url) }
-      catch (e) { console.error(e); return json({ error: 'خطأ في الخادم: ' + String(e && e.message || e).slice(0, 200) }, 500) }
+      try { await ensureReady(env.DB); return secure(await api(req, env, url)) }
+      catch (e) { console.error(e); return secure(json({ error: 'خطأ في الخادم: ' + String(e && e.message || e).slice(0, 200) }, 500)) }
     }
-    return env.ASSETS.fetch(req);
+    return secure(await env.ASSETS.fetch(req));
   }
 };
