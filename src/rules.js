@@ -132,3 +132,58 @@ export function readFilter(ses, col, row, ctx) {
   if (PROJECT[col]) return pick(row, PROJECT[col]);
   return row;
 }
+
+/* ============ فحص القيم ============
+   القواعد أعلاه تفحص «من يملك تعديل ماذا»، لا «هل القيمة معقولة». وكان
+   كل تحقق من القيم في المتصفح، فيكفي تجاوزه بنداء مباشر: ساعات سالبة
+   تُنقص رصيد الموظف، وتواريخ سنة 2030، ونصوص بعشرين ألف حرف. */
+
+// حدود الحقول المعروفة: القيمة بين صفر والحد
+const CAP = { hours: 500, score: 100, passScore: 100, requiredPct: 100, pct: 100, maxAttempts: 20,
+              seats: 5000, creditHours: 200, estMin: 20000, exp: 70, dur: 86400, n: 1000,
+              round: 100, days: 400, pages: 5000, maxRate: 4, best: 100 };
+const MAX_STR = 8000;        // أطول نص مقبول في حقل واحد
+const MAX_DOC = 200000;      // أكبر حجم لسجل واحد
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// الدورات والخطط تُجدول مستقبلًا؛ وما عداها لا يُسجَّل بتاريخ آتٍ
+const AHEAD_DAYS = { courses: 1095, plans: 1095, programs: 1095, kpis: 1095, kpiMeas: 1095, tracks: 1095 };
+
+const dayNum = d => Math.floor(Date.parse(d + 'T00:00:00Z') / 864e5);
+
+export function validate(col, obj) {
+  if (obj == null) return true;
+  if (JSON.stringify(obj).length > MAX_DOC) return 'السجل أكبر من الحد المسموح';
+  const today = dayNum(new Date().toISOString().slice(0, 10));
+  const ahead = AHEAD_DAYS[col] ?? 2;        // يومان هامشًا لفروق المناطق الزمنية
+  let bad = null;
+  const walk = (v, key, depth) => {
+    if (bad || depth > 8) return;
+    if (typeof v === 'number') {
+      if (!Number.isFinite(v)) return void (bad = `قيمة غير رقمية في «${key}»`);
+      if (Math.abs(v) > 1e7) return void (bad = `قيمة خارج المدى في «${key}»`);
+      const cap = CAP[key];
+      if (cap !== undefined && (v < 0 || v > cap)) bad = `قيمة «${key}» يجب أن تكون بين 0 و${cap}`;
+      return;
+    }
+    if (typeof v === 'string') {
+      if (v.length > MAX_STR) return void (bad = `نص «${key}» أطول من ${MAX_STR} حرفًا`);
+      if ((key === 'date' || key.endsWith('Date')) && v) {
+        if (!DATE_RE.test(v)) return void (bad = `تاريخ «${key}» غير صالح`);
+        const d = dayNum(v);
+        if (!Number.isFinite(d)) return void (bad = `تاريخ «${key}» غير صالح`);
+        if (d > today + ahead) bad = `تاريخ «${key}» في المستقبل`;
+        else if (d < today - 36500) bad = `تاريخ «${key}» قديم بصورة غير معقولة`;
+      }
+      return;
+    }
+    if (Array.isArray(v)) { if (v.length > 5000) return void (bad = `قائمة «${key}» أطول من الحد`); v.forEach(x => walk(x, key, depth + 1)); return }
+    if (v && typeof v === 'object') for (const k of Object.keys(v)) {
+      const x = v[k];
+      // حقل عددي وصلته قيمة ليست رقمًا (نص أو كائن) — يُرفض بدل أن يُخزَّن ويُفسد الحسابات
+      if (CAP[k] !== undefined && x !== null && x !== undefined && typeof x !== 'number') { bad = `قيمة «${k}» يجب أن تكون رقمًا`; return }
+      walk(x, k, depth + 1);
+    }
+  };
+  walk(obj, col, 0);
+  return bad || true;
+}

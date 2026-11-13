@@ -1,6 +1,6 @@
 // منصة التطوير والتدريب — خادم Cloudflare Workers + D1
 // دخول حقيقي، صلاحيات تُفحص في الخادم، حفظ على مستوى السجل مع كشف التعارض، ومزامنة حية.
-import { authorize, changed, readFilter } from './rules.js';
+import { authorize, changed, readFilter, validate } from './rules.js';
 import SCHEMA from '../migrations/0001_init.sql';
 import SEED from '../migrations/0002_seed.sql';
 
@@ -254,6 +254,12 @@ async function sync(ses, S, ops) {
     if (del && !curObj) { results.push({ col, id, ok: true, ver: curVer }); continue }
     const newObj = del ? null : op.data;
     if (!del && (!newObj || typeof newObj !== 'object' || (newObj.id !== id && col !== 'settings'))) { results.push({ col, id, ok: false, reason: 'بيانات غير صالحة' }); continue }
+    const sane = del ? true : validate(col, newObj);
+    if (sane !== true) {
+      results.push({ col, id, ok: false, denied: true, reason: sane, ver: curVer, data: curObj });
+      await S.log(ses.user.id, ses.role, 'invalid', col, id, 0, sane);
+      continue;
+    }
     const verdict = authorize(ses, col, curObj, newObj, del, ctx);
     if (verdict === 'skip') { results.push({ col, id, ok: true, ver: curVer }); continue }
     if (verdict !== true) {
