@@ -69,7 +69,9 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
         if (!decOk || diff.some(k => ['decidedAt','decidedBy'].includes(k)) || (diff.includes('status') && ['approved','rejected','returned'].includes(newO.status))) return 'لا يعتمد الموظف طلبه بنفسه';
       }
       return true;
-    case 'completions': return ['l','r','lib','reading','read'].includes(newO.kind) ? true : 'إنجاز الدورات الحضورية يصدره مدير التدريب';
+    // الدرجات والشهادات يصدرها الخادم بعد تصحيحه هو؛ لا يكتبها المتدرّب
+    case 'completions': return 'الإنجاز والشهادة يصدرهما الخادم بعد اجتياز الاختبار';
+    case 'attempts': case 'tests': return 'نتيجة الاختبار يسجّلها الخادم بعد تصحيحه';
     case 'mgrEvals': return 'تقييم الأثر للرئيس المباشر فقط';
     case 'trackprog': return diff.includes('acks') ? 'اطلاع الرئيس يكتبه الرئيس المباشر' : true;
     default: return true;
@@ -96,6 +98,7 @@ const PROJECT = { enrolls: ['id','courseId','status'], completions: ['id','kind'
 // حقول في ملف المستخدم لا تخصّ زملاءه
 const USER_HIDE = ['phone','prefs'];
 
+const strip = qs => Array.isArray(qs) ? qs.map(q => { const { ans, ...rest } = q; return rest }) : qs;
 const pick = (o, ks) => { const r = {}; for (const k of ks) if (k in o) r[k] = o[k]; return r };
 const omit = (o, ks) => { const r = { ...o }; for (const k of ks) delete r[k]; return r };
 
@@ -107,6 +110,16 @@ export function readFilter(ses, col, row, ctx) {
   if (col === 'users') return row.id === me ? row : omit(row, USER_HIDE);
   // التعليق المجهول يحمل هوية كاتبه في بياناته؛ تُزال عن الآخرين
   if (col === 'comments') return (row.anon && row.userId !== me) ? omit(row, ['userId']) : row;
+
+  // إجابات الاختبارات لا تغادر الخادم إلا لمن يحرّرها
+  if (col === 'libs') {
+    const editor = role === 'trainmgr' || (role === 'trainer' && ses.user.trainerId && ses.user.trainerId === row.trainerId);
+    return editor ? row : { ...row, quiz: strip(row.quiz), preQuiz: strip(row.preQuiz) };
+  }
+  if (col === 'readings') {
+    if (role === 'trainmgr') return row;
+    return { ...row, sections: (row.sections || []).map(x => ({ ...x, quiz: strip(x.quiz) })) };
+  }
 
   const ownerF = OWNER[col];
   if (!ownerF) return row;                          // الفهارس والإعدادات: مشتركة

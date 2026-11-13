@@ -724,6 +724,7 @@ function examState(userId,lib){
 function gradeQuiz(quiz,answers){
   let ok=0;quiz.forEach((q,i)=>{if(answers[i]===q.ans)ok++});return Math.round(ok/quiz.length*100);
 }
+// التصحيح انتقل إلى الخادم (/api/exam)؛ تبقى هنا للاستخدام الإداري فقط
 function submitExam(userId,lib,answers){
   const st=examState(userId,lib);
   if(!st.open)return {ok:false,msg:st.reason};
@@ -1337,11 +1338,12 @@ function tickTo(ct){
 function savePlayer(){if(PL.p){PL.p.updated=nowISO();commit('progress');PL.lastSave=Date.now();PL.dirtyAt=0;const e=$('#v_sv');if(e)e.textContent='محفوظ'}}
 function detachPlayer(){ytDetach();if(PL.v){try{PL.v.pause()}catch(e){}}if(PL.p)savePlayer();PL.v=null;PL.p=null;PL.lib=null;PL.les=null}
 /* دورة بلا اختبار: تُمنح الشهادة عند إتمام الدروس الإلزامية */
-function checkAutoComplete(userId,lib){
+async function checkAutoComplete(userId,lib){
   if((lib.quiz||[]).length||libPassed(userId,lib.id)||!libWatchDone(userId,lib))return;
-  const cp={id:uid('cp'),userId,kind:'l',refId:lib.id,date:TODAY(),hours:lib.creditHours||0,cert:issueCert(userId,'l',lib.id),demo:false};
-  DB.completions.push(cp);commit('completions');audit('lib.complete','completion',cp.id,lib.title+' (بلا اختبار)');
-  notify(userId,`تم إصدار شهادة: ${lib.title}`,'تهانينا على إتمام الدورة',`<p>أتممت جميع الدروس الإلزامية، وأُصدرت شهادتك رقم <b class="num">${cp.cert}</b>.</p>`,'سجل الإنجاز','record');refreshSide();
+  let r;try{r=await api('/api/lib/claim',{method:'POST',body:JSON.stringify({libId:lib.id})})}catch(e){return}
+  await poll();
+  if(r&&r.completion)toast('أُصدرت شهادتك',lib.title+' — رقم '+r.completion.cert);
+  refreshSide();
 }
 /* بوابة الإقرار: لا يُفتح قبل مرور 90% من مدة الدرس منذ فتح الفيديو (مؤشر زمني فقط وليس إثباتًا للمشاهدة) */
 function ytWaitLeft(p,les){if(!p||!p.ytOpened)return null;const need=Math.max(1,Math.round(les.dur*0.9));const el=(Date.now()-new Date(p.ytOpened).getTime())/1000;return Math.max(0,Math.ceil(need-el))}
@@ -1362,11 +1364,13 @@ function startExam(libId){
   S._exam={libId,ans:[]};
   mask(`${mHead('الاختبار النهائي',esc(lib.title))}<div class="m-b"><div class="note" style="margin-bottom:14px">الدرجة المطلوبة <b class="num">${st.passScore}%</b> · هذه محاولتك <b class="num">${st.attempts+1}</b> من <b class="num">${st.maxA}</b>. لا يمكنك التراجع بعد الإرسال.</div>${lib.quiz.map((q,i)=>`<div class="q-i"><b>${i+1}. ${esc(q.q)}</b>${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}" data-act="ans" data-q="${i}"><span>${esc(o)}</span></label>`).join('')}</div>`).join('')}</div><div class="m-f"><button class="btn sec" data-act="close">إلغاء</button><button class="btn" data-act="submitexam">إرسال الإجابات</button></div>`,'wide');
 }
-function doSubmitExam(){
+async function doSubmitExam(){
   const ex=S._exam;if(!ex)return;const lib=libById(ex.libId);
   if(lib.quiz.some((q,i)=>ex.ans[i]==null)){toast('أجب عن جميع الأسئلة');return}
-  const r=submitExam(S.me,lib,ex.ans);
-  if(!r.ok){toast('تعذّر الإرسال',r.msg);closeLayer();draw();return}
+  let r;
+  try{r=await api('/api/exam',{method:'POST',body:JSON.stringify({libId:lib.id,kind:'post',answers:ex.ans})})}
+  catch(e){toast('تعذّر الإرسال',e.message);closeLayer();draw();return}
+  await poll();
   S._exam=null;const st=examState(S.me,lib);
   mask(`${mHead(r.passed?'اجتزت الاختبار':'لم تبلغ درجة النجاح',esc(lib.title))}<div class="m-b" style="text-align:center"><div style="font-size:54px;font-weight:600;color:${r.passed?'var(--ok)':'var(--clay)'}" class="num">${r.score}%</div><p class="muted">الدرجة المطلوبة <span class="num">${st.passScore}%</span></p>${r.passed?`<p style="margin-top:10px">أُصدرت شهادتك رقم <b class="num">${r.completion.cert}</b> وأُضيفت <b class="num">${num(r.completion.hours)}</b> ساعات إلى سجلك.</p>`:`<p style="margin-top:10px">${st.open?`يمكنك إعادة المحاولة (متبقي <b class="num">${st.maxA-st.attempts}</b>).`:esc(st.reason)}</p>`}</div><div class="m-f"><button class="btn sec" data-act="close-draw">إغلاق</button>${r.passed?`<button class="btn gold" data-act="rate" data-kind="l" data-id="${lib.id}">قيّم الدورة</button><button class="btn" data-act="cert" data-id="${r.completion.id}">عرض الشهادة</button>`:''}</div>`);
 }
@@ -1376,12 +1380,14 @@ function preTest(libId){
   S._exam={libId,ans:[],pre:true};
   mask(`${mHead('الاختبار القبلي (اختياري)',esc(lib.title))}<div class="m-b"><div class="note" style="margin-bottom:14px">يُستخدم لقياس تقدّمك بعد الدورة ولا يؤثر في نجاحك.</div>${lib.preQuiz.map((q,i)=>`<div class="q-i"><b>${i+1}. ${esc(q.q)}</b>${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}" data-act="ans" data-q="${i}"><span>${esc(o)}</span></label>`).join('')}</div>`).join('')}</div><div class="m-f"><button class="btn sec" data-act="close">لاحقًا</button><button class="btn" data-act="submitpre">إرسال</button></div>`,'wide');
 }
-function doSubmitPre(){
+async function doSubmitPre(){
   const ex=S._exam;if(!ex||!ex.pre)return;const lib=libById(ex.libId);
   if(lib.preQuiz.some((q,i)=>ex.ans[i]==null)){toast('أجب عن جميع الأسئلة');return}
   if(DB.tests.some(t=>t.userId===S.me&&t.ref==='l'&&t.refId===lib.id&&t.kind==='pre')){toast('أجريته سابقًا');return}
-  const sc=gradeQuiz(lib.preQuiz,ex.ans);DB.tests.push({id:uid('t'),userId:S.me,ref:'l',refId:lib.id,kind:'pre',score:sc,at:TODAY(),demo:false});commit('tests');
-  audit('pretest.submit','lib',lib.id,sc+'%');S._exam=null;closeLayer();toast('سُجّل الاختبار القبلي','سيظهر الفرق بعد إتمام الدورة');draw();
+  try{await api('/api/exam',{method:'POST',body:JSON.stringify({libId:lib.id,kind:'pre',answers:ex.ans})})}
+  catch(e){toast('تعذّر الإرسال',e.message);return}
+  await poll();
+  S._exam=null;closeLayer();toast('سُجّل الاختبار القبلي','سيظهر الفرق بعد إتمام الدورة');draw();
 }
 
 /* ================= إدارة المكتبة (مدير التدريب) ================= */

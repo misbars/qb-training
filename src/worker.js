@@ -113,6 +113,130 @@ async function changes(ses, S, since) {
   return { seq: results.length ? results[results.length - 1].seq : Math.max(since, await S.seq()), rows };
 }
 
+/* ===== التصحيح وإصدار الشهادة في الخادم =====
+   كان العميل يصحّح الاختبار بنفسه ويكتب الدرجة والشهادة والساعات، وإجابات
+   الأسئلة تصله ضمن بيانات الدورة. الآن: الإجابات لا تغادر الخادم (readFilter
+   يحذفها)، والتصحيح والساعات ورقم الشهادة من الخادم وحده. */
+const today = () => new Date().toISOString().slice(0, 10);
+const covered = p => Array.isArray(p && p.watched) ? p.watched.reduce((s, w) => s + (w[1] - w[0]), 0) : 0;
+const reqLessons = lib => (lib.modules || []).flatMap(m => m.lessons || []).filter(l => l.required !== false);
+
+async function setts(S) { const r = await S.row('settings', 'settings'); return (r && !r.deleted) ? r.obj : {} }
+async function rowsOf(S, col) { return S.all(col) }
+
+// كتابة صف من الخادم بنفس آلية المزامنة: عدّاد يتقدّم وإصدار يزيد
+async function put(S, col, id, obj, by) {
+  const cur = await S.row(col, id), ver = (cur ? cur.ver : 0) + 1;
+  await S.db.batch([
+    S.db.prepare("UPDATE meta SET v = CAST(v AS INTEGER) + 1 WHERE k='seq'"),
+    S.db.prepare(`INSERT INTO rows(col,id,data,ver,seq,deleted,at,by) VALUES(?,?,?,?,(SELECT CAST(v AS INTEGER) FROM meta WHERE k='seq'),0,?,?)
+      ON CONFLICT(col,id) DO UPDATE SET data=excluded.data, ver=excluded.ver, seq=excluded.seq, deleted=0, at=excluded.at, by=excluded.by`)
+      .bind(col, id, JSON.stringify(obj), ver, now(), by)
+  ]);
+  return obj;
+}
+
+// مشاهدة الدروس الإلزامية: نفس قاعدة العميل، محسوبة من صفوف التقدّم المخزّنة
+async function watchDone(S, me, lib) {
+  const need = reqLessons(lib);
+  if (!need.length) return false;
+  const pct = (lib.settings && lib.settings.requiredPct) || (await setts(S)).requiredPct || 100;
+  for (const l of need) {
+    const r = await S.row('progress', me + '|' + l.id);
+    const p = r && !r.deleted ? r.obj : null;
+    if (!l.dur || covered(p) / Math.ceil(l.dur) * 100 < pct - 1e-9) return false;
+  }
+  return true;
+}
+
+async function certNo(S, kind) {
+  const r = await S.db.prepare("SELECT COUNT(*) c FROM rows WHERE col='completions' AND deleted=0").first();
+  return `QB-${new Date().getFullYear()}-${String(kind).toUpperCase()}${String((r ? r.c : 0) + 1).padStart(4, '0')}`;
+}
+
+async function notifyRow(S, to, subj, title, body, cta, go) {
+  const id = 'm_' + rand(6);
+  return put(S, 'mails', id, { id, to, subj, title, body, cta: cta || '', go: go || '', date: today(), at: now(), unread: true, from: 'منصة التطوير والتدريب', demo: false }, to);
+}
+
+// إصدار إنجاز الدورة المسجّلة: مرة واحدة، بساعات الدورة ورقم شهادة من الخادم
+async function issueLibCompletion(S, me, lib) {
+  const all = await rowsOf(S, 'completions');
+  const had = all.find(c => c.userId === me && c.kind === 'l' && c.refId === lib.id);
+  if (had) return had;
+  const id = 'cp_' + rand(6);
+  const cp = { id, userId: me, kind: 'l', refId: lib.id, date: today(), hours: +lib.creditHours || 0, cert: await certNo(S, 'l'), demo: false };
+  await put(S, 'completions', id, cp, me);
+  await S.log(me, 'employee', 'insert', 'completions', id, 1, 'إصدار شهادة: ' + lib.title);
+  await notifyRow(S, me, 'تم إصدار شهادة: ' + lib.title, 'تهانينا على إتمام الدورة',
+    `<p>أُصدرت شهادتك رقم <b class="num">${cp.cert}</b>.</p>`, 'سجل الإنجاز', 'record');
+  return cp;
+}
+
+// اختبار المكتبة: الخادم يتحقق من الأهلية ثم يصحّح ويكتب المحاولة والدرجة
+async function examSubmit(ses, S, body) {
+  const me = ses.user.id;
+  const r = await S.row('libs', String(body.libId || ''));
+  if (!r || r.deleted) return json({ error: 'الدورة غير موجودة' }, 404);
+  const lib = r.obj;
+  if (lib.status !== 'published') return json({ error: 'الدورة غير منشورة' }, 403);
+  const kind = body.kind === 'pre' ? 'pre' : 'post';
+  const quiz = (kind === 'pre' ? lib.preQuiz : lib.quiz) || [];
+  if (!quiz.length) return json({ error: 'لا يوجد اختبار لهذه الدورة' }, 400);
+  const ans = Array.isArray(body.answers) ? body.answers : [];
+  if (ans.length !== quiz.length || ans.some(a => !Number.isInteger(a) || a < 0 || a > 9))
+    return json({ error: 'أجب عن جميع الأسئلة' }, 400);
+
+  const st = await setts(S);
+  const q = lib.settings || {};
+  const score = Math.round(quiz.filter((x, i) => ans[i] === x.ans).length / quiz.length * 100);
+
+  if (kind === 'pre') {
+    const tests = (await rowsOf(S, 'tests')).filter(t => t.userId === me && t.ref === 'l' && t.refId === lib.id && t.kind === 'pre');
+    if (tests.length) return json({ error: 'الاختبار القبلي يُؤدّى مرة واحدة' }, 409);
+    const id = 't_' + rand(6);
+    await put(S, 'tests', id, { id, userId: me, ref: 'l', refId: lib.id, kind: 'pre', score, at: today(), demo: false }, me);
+    return json({ ok: true, score });
+  }
+
+  const comps = await rowsOf(S, 'completions');
+  if (comps.some(c => c.userId === me && c.kind === 'l' && c.refId === lib.id))
+    return json({ error: 'اجتزت هذا الاختبار سابقًا' }, 409);
+  if (!await watchDone(S, me, lib))
+    return json({ error: 'يجب إكمال مشاهدة جميع الدروس الإلزامية أولًا' }, 403);
+
+  const retakes = (await rowsOf(S, 'retakes')).filter(x => x.userId === me && (x.libId === lib.id || x.refId === lib.id));
+  const round = retakes.filter(x => x.status === 'approved').length;
+  const mine = (await rowsOf(S, 'attempts')).filter(a => a.userId === me && a.libId === lib.id && a.kind === 'post');
+  const inRound = mine.filter(a => (a.round || 0) === round);
+  const maxA = q.maxAttempts ?? st.maxAttempts ?? 2;
+  const passScore = q.passScore ?? st.passScore ?? 70;
+  const retake = q.allowRetake ?? st.allowRetake ?? true;
+  if (inRound.length >= maxA) return json({ error: 'استُنفدت المحاولات المسموحة' }, 403);
+  if (inRound.length > 0 && !retake) return json({ error: 'إعادة الاختبار غير مسموحة' }, 403);
+
+  const passed = score >= passScore;
+  const aid = 'at_' + rand(6);
+  await put(S, 'attempts', aid, { id: aid, userId: me, libId: lib.id, kind: 'post', n: mine.length + 1, round, score, passed, at: now(), answers: ans, demo: false }, me);
+  const tid = 't_' + rand(6);
+  await put(S, 'tests', tid, { id: tid, userId: me, ref: 'l', refId: lib.id, kind: 'post', score, at: today(), demo: false }, me);
+  await S.log(me, ses.role, 'exam', 'attempts', aid, 1, `${lib.title}: ${score}%`);
+  const completion = passed ? await issueLibCompletion(S, me, lib) : null;
+  return json({ ok: true, score, passed, passScore, attempts: inRound.length + 1, maxA, completion });
+}
+
+// دورة بلا اختبار: الشهادة تُمنح عند إتمام الدروس الإلزامية، والخادم هو من يتحقق
+async function libClaim(ses, S, body) {
+  const me = ses.user.id;
+  const r = await S.row('libs', String(body.libId || ''));
+  if (!r || r.deleted) return json({ error: 'الدورة غير موجودة' }, 404);
+  const lib = r.obj;
+  if (lib.status !== 'published') return json({ error: 'الدورة غير منشورة' }, 403);
+  if ((lib.quiz || []).length) return json({ error: 'هذه الدورة تتطلّب اجتياز الاختبار' }, 403);
+  if (!await watchDone(S, me, lib)) return json({ error: 'لم تكتمل مشاهدة الدروس الإلزامية' }, 403);
+  return json({ ok: true, completion: await issueLibCompletion(S, me, lib) });
+}
+
 async function sync(ses, S, ops) {
   const teamIds = ses.role === 'linemgr' ? (await S.all('users')).filter(u => u.managerId === ses.user.id).map(u => u.id) : [];
   const ctx = { team: () => teamIds };
@@ -237,6 +361,8 @@ async function api(req, env, url) {
   const ses = await session(req, S);
   if (!ses) return json({ error: 'انتهت الجلسة، سجّل الدخول من جديد' }, 401);
   if (p === '/api/me') { const a = await S.db.prepare('SELECT must_change FROM auth WHERE user_id=?').bind(ses.user.id).first(); return json({ user: ses.user, role: ses.role, mustChange: !!(a && a.must_change) }) }
+  if (p === '/api/exam' && req.method === 'POST') return examSubmit(ses, S, await req.json().catch(() => ({})));
+  if (p === '/api/lib/claim' && req.method === 'POST') return libClaim(ses, S, await req.json().catch(() => ({})));
   if (p === '/api/data') return json(await snapshot(ses, S));
   if (p === '/api/changes') return json(await changes(ses, S, +url.searchParams.get('since') || 0));
   if (p === '/api/sync' && req.method === 'POST') { const b = await body(); return json(await sync(ses, S, b.ops)) }
