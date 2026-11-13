@@ -489,7 +489,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-date i{width:5px;height:5px;background:var(--lg-acc);transform:rotate(45deg);flex:none}
 
 /* ===== البطاقة الزجاجية ===== */
-.lg-card{position:relative;width:100%;border-radius:20px;padding:18px;
+.lg-card{position:relative;width:100%;border-radius:20px;padding:18px;overflow:hidden;
  background:linear-gradient(165deg,rgba(255,255,255,.95),rgba(255,255,255,.8));
  border:1px solid var(--lg-edge);
  box-shadow:0 22px 52px -34px rgba(7,44,73,.42),inset 0 1px 0 rgba(255,255,255,.9);
@@ -588,10 +588,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
  .lg-aur.b{animation:lgAurB 26s ease-in-out infinite alternate}
 
  .lg-logo{animation:lgPop .8s cubic-bezier(.2,.9,.3,1.25) both}
-   .lg-logo::after{content:"";position:absolute;inset:8%;pointer-events:none;
-  background:linear-gradient(100deg,transparent 40%,rgba(157,218,229,.45) 50%,transparent 60%);
-  animation:lgSheen 1.6s cubic-bezier(.4,0,.2,1) .6s 1 both}
- .lg-kicker{animation:lgUp .6s cubic-bezier(.22,.8,.3,1) .22s both}
+   .lg-kicker{animation:lgUp .6s cubic-bezier(.22,.8,.3,1) .22s both}
  .lg2 h1{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .3s both}
  .lg-org{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .4s both}
  .lg-date{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .5s both}
