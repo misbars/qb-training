@@ -480,8 +480,8 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 /* ===== الترويسة ===== */
 .lg-head{text-align:center;display:flex;flex-direction:column;align-items:center}
 .dal-w{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
-.dal-w b{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:46px;font-weight:700;line-height:1;color:var(--lg-ink);letter-spacing:-1px}
-.dal-w span{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:15px;font-weight:400;color:var(--lg-acc);letter-spacing:.5px}
+.dal-w b{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:40px;font-weight:700;line-height:1;color:#317294;letter-spacing:-1px;white-space:nowrap}
+.dal-w span{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:14px;font-weight:400;color:#317294;letter-spacing:.5px}
 .lg-logo{position:relative;display:flex;flex-direction:row-reverse;align-items:center;gap:16px;margin-bottom:6px}
 .lg-logo img{height:76px;width:auto}
 /* شعار الجمعية في الرأسين الداكنين: العلامة بيضاء بحجم مناسب */
@@ -551,7 +551,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 /* شاشات أقصر: نختصر الترويسة */
 @media(max-height:760px){
  .lg-wrap{gap:16px;padding-top:calc(26px + env(safe-area-inset-top,0px))}
- .lg-logo{gap:12px}.lg-logo img{height:62px}.dal-w b{font-size:38px}.dal-w span{font-size:13px}
+ .lg-logo{gap:12px}.lg-logo img{height:62px}.dal-w b{font-size:30px}.dal-w span{font-size:12px}
  .lg-date{margin-top:10px}
 }
 @media(max-height:680px){
@@ -4099,7 +4099,7 @@ function loginView(){
   <header class="lg-head">
    <div class="lg-logo">
     <img src="/dal.svg" alt="شعار منصة دال">
-    <div class="dal-w"><b>دال</b><span>تعلّم مستمر</span></div>
+    <div class="dal-w"><b>منصة دال</b><span>تعلّم مستمر</span></div>
    </div>
    <span class="lg-kicker">أهلًا وسهلًا بك في</span>
    <h1>منصة التطوير والتدريب</h1>
