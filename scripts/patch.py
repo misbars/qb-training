@@ -118,7 +118,6 @@ function loginView(){
     <img src="/dal.svg" alt="شعار منصة دال">
     <div class="dal-w"><b>منصة دال</b><span>تعلّم مستمر</span></div>
    </div>
-   <span class="lg-kicker">أهلًا وسهلًا بك في</span>
    <h1>منصة التطوير والتدريب</h1>
    <p class="lg-org">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</p>
    ${hij?`<span class="lg-date"><i></i>${esc(hij)}</span>`:''}
@@ -548,8 +547,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-logo img{height:76px;width:auto;transform:translateY(-9.8%)}
 /* شعار الجمعية في الرأسين الداكنين: العلامة بيضاء بحجم مناسب */
 .logo-w.dal{height:30px!important;width:auto}
-.lg-kicker{font-size:13.5px;color:var(--lg-mut);letter-spacing:.06em;margin-top:2px}
-.lg2 h1{font-family:var(--display);font-size:clamp(27px,7.4vw,34px);font-weight:700;line-height:1.35;margin-top:4px;
+.lg2 h1{font-family:var(--display);font-size:clamp(27px,7.4vw,34px);font-weight:700;line-height:1.35;margin-top:10px;
  background:linear-gradient(180deg,#072C49 28%,#13456B 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lg-org{font-size:14.5px;color:var(--lg-acc);font-weight:600;margin-top:6px}
 .lg-date{margin-top:14px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--lg-mut);
@@ -617,7 +615,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
  .lg-date{margin-top:10px}
 }
 @media(max-height:680px){
- .lg-kicker,.lg-date,.lg-foot{display:none}
+ .lg-date,.lg-foot{display:none}
  .lg-logo{gap:10px}.lg-logo img{height:54px}.dal-w b{font-size:27px}.dal-w span{font-size:11px}
 }
 @media(max-height:620px){
@@ -656,10 +654,9 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
  .lg-aur.b{animation:lgAurB 26s ease-in-out infinite alternate}
 
  .lg-logo{animation:lgPop .8s cubic-bezier(.2,.9,.3,1.25) both}
-   .lg-kicker{animation:lgUp .6s cubic-bezier(.22,.8,.3,1) .22s both}
- .lg2 h1{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .3s both}
- .lg-org{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .4s both}
- .lg-date{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .5s both}
+ .lg2 h1{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .22s both}
+ .lg-org{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .32s both}
+ .lg-date{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .42s both}
  .lg-card{animation:lgCard .74s cubic-bezier(.2,.8,.25,1) .42s both}
  .lg-foot{animation:lgUp .7s cubic-bezier(.22,.8,.3,1) .8s both}
  .lg-card .field,.lg-go,.lg-help{animation:lgUp .5s cubic-bezier(.22,.8,.3,1) both}
