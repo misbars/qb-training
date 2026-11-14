@@ -115,7 +115,8 @@ function loginView(){
  <main class="lg-wrap">
   <header class="lg-head">
    <div class="lg-logo">
-    <img src="${LOGO}" alt="شعار الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة">
+    <img src="/dal.svg" alt="شعار منصة دال">
+    <div class="dal-w"><b>دال</b><span>تعلّم مستمر</span></div>
    </div>
    <span class="lg-kicker">أهلًا وسهلًا بك في</span>
    <h1>منصة التطوير والتدريب</h1>
@@ -391,9 +392,10 @@ h=h.replace(_vp,r"""<meta name="viewport" content="width=device-width, initial-s
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="منصة التدريب">
+<meta name="apple-mobile-web-app-title" content="دال">
 <link rel="apple-touch-icon" href="/icon-180.png">
-<link rel="icon" href="/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
 <link rel="manifest" href="/manifest.webmanifest">""",1)
 
 # ارتفاع الشاشة الحقيقي على iOS: شريط سفاري يتحرك، فـ dvh بدل vh مع إبقاء البديل
@@ -539,8 +541,13 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 
 /* ===== الترويسة ===== */
 .lg-head{text-align:center;display:flex;flex-direction:column;align-items:center}
-.lg-logo{position:relative;width:138px;height:138px;display:grid;place-items:center}
+.dal-w{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.dal-w b{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:46px;font-weight:700;line-height:1;color:var(--lg-ink);letter-spacing:-1px}
+.dal-w span{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:15px;font-weight:400;color:var(--lg-acc);letter-spacing:.5px}
+.lg-logo{position:relative;display:flex;flex-direction:row-reverse;align-items:center;gap:16px;margin-bottom:6px}
 .lg-logo img{height:76px;width:auto}
+/* شعار الجمعية في الرأسين الداكنين: العلامة بيضاء بحجم مناسب */
+.logo-w.dal{height:30px!important;width:auto}
 .lg-kicker{font-size:13.5px;color:var(--lg-mut);letter-spacing:.06em;margin-top:2px}
 .lg2 h1{font-family:var(--display);font-size:clamp(27px,7.4vw,34px);font-weight:700;line-height:1.35;margin-top:4px;
  background:linear-gradient(180deg,#072C49 28%,#13456B 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -606,7 +613,7 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 /* شاشات أقصر: نختصر الترويسة */
 @media(max-height:760px){
  .lg-wrap{gap:16px;padding-top:calc(26px + env(safe-area-inset-top,0px))}
- .lg-logo{width:112px;height:112px}.lg-logo img{height:62px}
+ .lg-logo{gap:12px}.lg-logo img{height:62px}.dal-w b{font-size:38px}.dal-w span{font-size:13px}
  .lg-date{margin-top:10px}
 }
 @media(max-height:680px){
