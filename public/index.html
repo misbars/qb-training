@@ -482,8 +482,8 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .dal-w{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .dal-w b{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:40px;font-weight:700;line-height:1;color:#007497;letter-spacing:-1px;white-space:nowrap}
 .dal-w span{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:14px;font-weight:400;color:#007497;letter-spacing:.5px}
-.lg-logo{position:relative;display:flex;flex-direction:row-reverse;align-items:center;gap:16px;margin-bottom:6px}
-.lg-logo img{height:76px;width:auto}
+.lg-logo{position:relative;display:flex;flex-direction:row;align-items:center;gap:16px;margin-bottom:6px}
+.lg-logo img{height:76px;width:auto;transform:translateY(-9.8%)}
 /* شعار الجمعية في الرأسين الداكنين: العلامة بيضاء بحجم مناسب */
 .logo-w.dal{height:30px!important;width:auto}
 .lg-kicker{font-size:13.5px;color:var(--lg-mut);letter-spacing:.06em;margin-top:2px}
@@ -556,11 +556,11 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 }
 @media(max-height:680px){
  .lg-kicker,.lg-date,.lg-foot{display:none}
- .lg-logo{width:96px;height:96px}.lg-logo img{height:54px}
+ .lg-logo{gap:10px}.lg-logo img{height:54px}.dal-w b{font-size:27px}.dal-w span{font-size:11px}
 }
 @media(max-height:620px){
  .lg-wrap{gap:12px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
- .lg-logo{width:82px;height:82px}.lg-logo img{height:46px}
+ .lg-logo{gap:9px}.lg-logo img{height:46px}.dal-w b{font-size:23px}.dal-w span{font-size:10px}
  .lg2 h1{font-size:24px}.lg-org{font-size:13px;margin-top:4px}
  .lg-card{padding:15px}
  .lg-card .field{margin-bottom:11px;gap:5px}
