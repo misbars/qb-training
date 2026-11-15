@@ -735,136 +735,24 @@ const HM_FAQ=[
  ['هل تُحتسب المشاهدة خارج المنصة؟','لا. مشاهدة الدرس تُحتسب داخل المنصة فقط، لأن التقدّم يُقاس من المشغّل نفسه.'],
  ['دخلت دورة خارج الجمعية، هل أوثّقها هنا؟','نعم، من «الدورات الخارجية» ترفع شهادتك ويعتمدها رئيسك المباشر ثم إدارة التدريب.']
 ];
-const HM_STORY='لكل موظف في الجمعية طريق يتعلّم فيه، وكان هذا الطريق موزّعًا بين الورق والرسائل والذاكرة. جمعَته [منصة دال] في مكان واحد: ما تحتاج تعلّمه، ومتى تبدأ، وكيف [تُثبت] أنك أتقنته.';
-/* كلمة كلمة لا حرفًا حرفًا: الحرف العربي متّصل، وتقطيعه يكسر الكلمة */
-function hmWords(t){
-  return t.split(/\s+/).map(w=>{
-    const key=/^\[.*\]$/.test(w)||/^\[/.test(w)||/\]$/.test(w);
-    return `<span class="${/\[|\]/.test(w)?'k':''}">${w.replace(/[\[\]]/g,'')}</span>`;
-  }).join(' ');
-}
 function hmNum(v){
   if(v==null)return '<span class="hm-sk"></span>';
   try{return new Intl.NumberFormat('ar-SA-u-nu-latn').format(v)}catch(e){return String(v)}
 }
-/* ===== حركة الصفحة الرئيسية: حلقة requestAnimationFrame واحدة =====
-   شمسة الهوية تدور وتتبع سرعة التمرير · فقرة تضيء كلمة كلمة ·
-   أرقام تعدّ من الصفر · هالة تتبع المؤشر على الحاسب.          */
-let HM=null;
-const hmClamp=(v,a,b)=>v<a?a:v>b?b:v;
-function detachHome(){
-  if(!HM)return;
-  if(HM.raf)cancelAnimationFrame(HM.raf);
-  if(HM.io)HM.io.disconnect();
-  if(HM.ac)HM.ac.abort();
-  HM=null;
-}
+/* الأقسام تظهر حين تصل إليها، لا كلها دفعة واحدة عند التحميل */
 function attachHome(){
-  detachHome();
-  const root=document.querySelector('.hm');
-  if(!root)return;
-  const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const rv=[...document.querySelectorAll('.hm-rv')];
-  const shamsas=[...document.querySelectorAll('.hm-sh i')];
-  const words=[...document.querySelectorAll('.hm-words span')];
-  const para=document.querySelector('.hm-words');
-  const nums=[...document.querySelectorAll('.hm-stat b[data-n]')];
-  const cur=document.querySelector('.hm-cur');
-
-  // تقليل الحركة: كل شيء في صورته النهائية، بلا حلقة ولا مستمعات
-  if(calm){
-    rv.forEach(e=>e.classList.add('in'));
-    words.forEach(w=>w.classList.add('on'));
-    nums.forEach(b=>b.textContent=hmNum(+b.dataset.n));
-    return;
+  if(HMIO){HMIO.disconnect();HMIO=null}
+  const els=document.querySelectorAll('.hm-rv');
+  if(!els.length)return;
+  if(!('IntersectionObserver' in window)||matchMedia('(prefers-reduced-motion:reduce)').matches){
+    els.forEach(e=>e.classList.add('in'));return;
   }
-
-  HM={raf:0,io:null,ac:new AbortController(),ang:0,spd:4,sc:1,
-      lastY:scrollY,lastT:performance.now(),mx:innerWidth/2,my:innerHeight/2,
-      cx:innerWidth/2,cy:innerHeight/2,tweens:[]};
-  const sig=HM.ac.signal;
-
-  // ١) ظهور الأقسام + ٣) بدء العدّ عند الوصول (وتصفيره عند الخروج ليعيد)
-  if('IntersectionObserver' in window){
-    HM.io=new IntersectionObserver(rows=>{
-      rows.forEach(r=>{
-        const el=r.target;
-        if(el.classList.contains('hm-rv')){
-          if(r.isIntersecting){el.classList.add('in');HM.io.unobserve(el)}
-          return;
-        }
-        const to=+el.dataset.n||0;
-        if(r.isIntersecting){
-          if(el._t)return;
-          const ms=to<100?2400:to<1000?3400:4500;
-          el._t={el,to,t0:performance.now(),ms};HM.tweens.push(el._t);
-        }else{
-          HM.tweens=HM.tweens.filter(t=>t.el!==el);
-          el._t=null;el.textContent=hmNum(0);
-        }
-      });
-    },{rootMargin:'0px 0px -12% 0px',threshold:[.08,.35]});
-    rv.forEach(e=>HM.io.observe(e));
-    nums.forEach(e=>{e.textContent=hmNum(0);HM.io.observe(e)});
-  }else{
-    rv.forEach(e=>e.classList.add('in'));
-    nums.forEach(b=>b.textContent=hmNum(+b.dataset.n));
-  }
-
-  // ٤) هالة تتبع المؤشر — الحاسب وحده
-  const fine=matchMedia('(hover:hover) and (pointer:fine)').matches;
-  if(fine&&cur){
-    cur.classList.add('on');
-    addEventListener('pointermove',e=>{HM.mx=e.clientX;HM.my=e.clientY},{passive:true,signal:sig});
-    root.addEventListener('pointermove',e=>{
-      const c=e.target.closest&&e.target.closest('.hm-card,.hm-who-c,.hm-step,.hm-stat');
-      if(!c)return;const r=c.getBoundingClientRect();
-      c.style.setProperty('--cx',(e.clientX-r.left)+'px');
-      c.style.setProperty('--cy',(e.clientY-r.top)+'px');
-    },{passive:true,signal:sig});
-  }
-
-  // الحلقة الوحيدة
-  const step=t=>{
-    const dt=Math.min(.05,(t-HM.lastT)/1000)||.016; HM.lastT=t;
-
-    // ١) الشمسة: تسارع سريع وتباطؤ بطيء، ولا تقف أبدًا
-    const v=Math.abs(scrollY-HM.lastY)/dt; HM.lastY=scrollY;
-    const target=4+Math.min(70,v*.045);
-    HM.spd+=(target-HM.spd)*(1-Math.exp(-dt*(target>HM.spd?6:1.6)));
-    HM.ang=(HM.ang+HM.spd*dt)%360;
-    HM.sc+=((1+Math.min(scrollY/innerHeight,2)*.08)-HM.sc)*(1-Math.exp(-dt*4));
-    const tf=`translate3d(-50%,-50%,0) rotate(${HM.ang.toFixed(2)}deg) scale(${HM.sc.toFixed(4)})`;
-    for(const el of shamsas)el.style.transform=tf;
-
-    // ٢) الفقرة تضيء بقدر تقدّمها في الشاشة، وتنطفئ إن رجع الزائر
-    if(para&&words.length){
-      const r=para.getBoundingClientRect();
-      const p=hmClamp((innerHeight*.8-r.top)/(r.height+innerHeight*.35),0,1);
-      const n=Math.round(p*words.length);
-      for(let i=0;i<words.length;i++)words[i].classList.toggle('on',i<n);
-    }
-
-    // ٣) تقدّم العدّادات مع تباطؤ في النهاية
-    if(HM.tweens.length){
-      HM.tweens=HM.tweens.filter(tw=>{
-        const k=hmClamp((t-tw.t0)/tw.ms,0,1);
-        const e=1-Math.pow(1-k,3);
-        tw.el.textContent=hmNum(Math.round(tw.to*e));
-        return k<1;
-      });
-    }
-
-    // ٤) الهالة تلحق المؤشر بتنعيم
-    if(fine&&cur){
-      const a=1-Math.exp(-dt*7);
-      HM.cx+=(HM.mx-HM.cx)*a; HM.cy+=(HM.my-HM.cy)*a;
-      cur.style.transform=`translate3d(${(HM.cx-260).toFixed(1)}px,${(HM.cy-260).toFixed(1)}px,0)`;
-    }
-    HM.raf=requestAnimationFrame(step);
-  };
-  HM.raf=requestAnimationFrame(step);
+  HMIO=new IntersectionObserver((rows,o)=>{
+    rows.forEach(r=>{if(r.isIntersecting){r.target.classList.add('in');o.unobserve(r.target)}})
+  },{rootMargin:'0px 0px -12% 0px',threshold:.08});
+  els.forEach(e=>HMIO.observe(e));
 }
+let HMIO=null;
 function homeView(){
   const st=S.pub||{};
   const ALL=[['courses','دورة ومادة تدريبية'],['tracks','مسار تدريبي'],
@@ -872,8 +760,6 @@ function homeView(){
   // قبل وصول الأرقام نعرض الأربع كهياكل؛ بعد وصولها نُسقط ما قيمته صفر
   const cards=S.pub?ALL.filter(([k])=>+st[k]>0):ALL;
   return `<div class="hm${cards.length?'':' hm-bare'}">
- <div class="hm-sh page" aria-hidden="true"><i></i></div>
- <div class="hm-cur" aria-hidden="true"></div>
  <header class="hm-top">
   <button class="hm-brand" type="button" data-act="to-home" aria-label="منصة دال — الرئيسية">
    <img src="/dal.svg?v=2" alt=""><b>منصة دال</b></button>
@@ -886,7 +772,7 @@ function homeView(){
  </header>
 
  <section class="hm-hero">
-  <div class="hm-hbg"><span class="hm-mesh"></span><span class="hm-glow a"></span><span class="hm-glow b"></span><span class="hm-sh hero"><i></i></span></div>
+  <div class="hm-hbg"><span class="hm-mesh"></span><span class="hm-glow a"></span><span class="hm-glow b"></span></div>
   <div class="hm-in hm-hwrap">
    <div class="hm-copy">
     <span class="hm-eye"><i></i>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</span>
@@ -900,7 +786,7 @@ function homeView(){
  </section>
 
  ${cards.length?`<section class="hm-in hm-stats" style="--n:${cards.length}" aria-label="أرقام المنصة">
-  ${cards.map(([k,l],i)=>`<div class="hm-stat" style="--d:${i*70}ms"><b ${S.pub?`data-n="${+st[k]||0}"`:''}>${hmNum(st[k])}</b><span>${l}</span></div>`).join('')}
+  ${cards.map(([k,l],i)=>`<div class="hm-stat" style="--d:${i*70}ms"><b>${hmNum(st[k])}</b><span>${l}</span></div>`).join('')}
  </section>`:''}
 
  <section class="hm-in hm-steps" id="hm-steps">
@@ -910,10 +796,6 @@ function homeView(){
     <svg class="hm-ic" viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>
     <h3>${t}</h3><p>${d}</p></article>`).join('')}
   </div>
- </section>
-
- <section class="hm-in hm-story">
-  <p class="hm-words">${hmWords(HM_STORY)}</p>
  </section>
 
  <section class="hm-band" id="hm-feat">
@@ -994,7 +876,7 @@ h=h.replace(_lgw,r"""<button class="lg-back" data-act="to-home"><svg class="i" v
 # البوّابة: الرئيسية قبل الدخول
 _dr="$('#root').innerHTML=S.me&&U(S.me)?shell():loginView();"
 assert _dr in h, 'draw root'
-h=h.replace(_dr,"$('#root').innerHTML=S.me&&U(S.me)?shell():(S.gate==='login'?loginView():homeView());\n  if(!S.me&&S.gate!=='login')attachHome();else detachHome();",1)
+h=h.replace(_dr,"$('#root').innerHTML=S.me&&U(S.me)?shell():(S.gate==='login'?loginView():homeView());\n  if(!S.me&&S.gate!=='login')attachHome();",1)
 
 # إجراءات التنقّل بين البوّابة والدخول
 _pact=" portal(t){S.portal=t.dataset.p;draw()},"
@@ -1037,7 +919,7 @@ h=h.replace(_m14,r"""/* ===== الشاشة الرئيسية العامة ===== *
 .hm-hero{position:relative;overflow:hidden;color:#fff;
  background:linear-gradient(155deg,#0B3A5E 0%,var(--navy) 46%,#04223A 100%)}
 .hm-hbg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.hm-mesh{position:absolute;inset:0;background:url("/brand-mesh-l.svg") 0 0/172px;opacity:.04;filter:invert(1)}
+.hm-mesh{position:absolute;inset:0;background:url("/brand-mesh-l.svg") 0 0/172px;opacity:.07;filter:invert(1)}
 .hm-glow{position:absolute;border-radius:50%;filter:blur(90px)}
 .hm-glow.a{width:58vmin;height:58vmin;background:#0E6E90;opacity:.5;top:-22%;inset-inline-end:-14%}
 .hm-glow.b{width:40vmin;height:40vmin;background:#9DDAE5;opacity:.14;bottom:-20%;inset-inline-start:-10%}
@@ -1176,49 +1058,6 @@ section[id]{scroll-margin-top:72px}
 .hm-rv{opacity:0;transform:translateY(18px)}
 .hm-rv.in{opacity:1;transform:none;transition:opacity .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms),transform .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms)}
 @media(prefers-reduced-motion:reduce){.hm-rv{opacity:1;transform:none}html{scroll-behavior:auto}}
-/* ===== الحركة: شمسة الهوية، الفقرة المضيئة، الهالة ===== */
-/* الشمسة: «النموذج الأول» من دليل هوية الجمعية، قناعًا لا صورة، فتُلوَّن لكل أرضية */
-.hm-sh{position:fixed;inset:0;pointer-events:none;z-index:0;contain:strict}
-.hm-sh i{position:absolute;top:50%;inset-inline-start:50%;display:block;
- width:140vmin;aspect-ratio:84/96;will-change:transform;
- transform:translate3d(-50%,-50%,0);
- -webkit-mask:url("/brand-motif-l.svg") center/contain no-repeat;
-         mask:url("/brand-motif-l.svg") center/contain no-repeat}
-.hm-sh.page i{background:#5B8DA5;opacity:.1}
-.hm-sh.hero{position:absolute}
-.hm-sh.hero i{background:var(--sky);opacity:.13}
-
-/* المحتوى فوق الشمسة، وأرضيات الأقسام تمرّرها بدل أن تحجبها */
-.hm-top,.hm-hero,.hm-stats,.hm-steps,.hm-story,.hm-band,.hm-who,.hm-cta-band,.hm-foot{position:relative;z-index:1}
-.hm-band{background:rgba(236,230,221,.45)}
-.hm-band.alt{background:transparent}
-
-/* فقرة تضيء كلمة كلمة */
-.hm-story{padding-block:clamp(40px,6vw,76px)}
-.hm-words{max-width:46ch;margin-inline:auto;text-align:center;
- font-family:var(--display);font-size:clamp(18px,2.6vw,26px);line-height:2;font-weight:600}
-.hm-words span{color:rgba(7,44,73,.16);transition:color .5s ease}
-.hm-words span.on{color:var(--navy)}
-.hm-words span.k.on{color:var(--teal)}
-
-/* هالة تتبع المؤشر — الحاسب وحده */
-.hm-cur{display:none}
-.hm-cur.on{display:block;position:fixed;top:0;inset-inline-start:0;width:520px;height:520px;border-radius:50%;
- pointer-events:none;z-index:0;will-change:transform;
- background:radial-gradient(circle,rgba(0,116,151,.13),transparent 70%)}
-.hm-card,.hm-who-c,.hm-step,.hm-stat{position:relative;overflow:hidden}
-.hm-card::after,.hm-who-c::after,.hm-step::after,.hm-stat::after{content:"";position:absolute;inset:0;
- pointer-events:none;opacity:0;transition:opacity .25s ease;
- background:radial-gradient(260px circle at var(--cx,50%) var(--cy,50%),rgba(0,116,151,.09),transparent 62%)}
-.hm-card:hover::after,.hm-who-c:hover::after,.hm-step:hover::after,.hm-stat:hover::after{opacity:1}
-
-/* تقليل الحركة: لا دوران ولا هالة، والكلمات والأرقام في صورتها النهائية */
-@media(prefers-reduced-motion:reduce){
- .hm-sh,.hm-cur{display:none}
- .hm-words span{color:var(--navy)}
- .hm-words span.k{color:var(--teal)}
-}
-
 /* تُكتب بعد القواعد الأساسية لأن المتأخر يغلب عند تساوي الأولوية */
 @media(max-width:860px){
  .hm-nav{display:none}
