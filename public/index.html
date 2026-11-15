@@ -511,6 +511,26 @@ section[id]{scroll-margin-top:72px}
 .hm-rv{opacity:0;transform:translateY(18px)}
 .hm-rv.in{opacity:1;transform:none;transition:opacity .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms),transform .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms)}
 @media(prefers-reduced-motion:reduce){.hm-rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+/* ===== إصلاح النسب ===== */
+/* الرحلة: رأسية على الحاسب، أفقية على الجوال */
+.hm-journey.row{display:none}
+/* متى ما تكدّس العمودان صارت الرأسية هدرًا للارتفاع */
+@media(max-width:860px){
+ .hm-journey{display:none}
+ .hm-journey.row{display:block;max-width:380px;margin-top:4px}
+}
+@media(max-width:560px){
+ .hm-journey.row{max-width:330px;margin-top:2px}
+ .hm-journey.row text{font-size:11px}
+ .hm-hwrap{padding-block:26px 74px}
+ .hm-copy h1{font-size:30px}
+ .hm-copy p{font-size:14.5px}
+}
+/* بطاقتا الأرقام كانتا تُمدّان على العرض كله: رقم واحد في 530px */
+.hm-stats{max-width:calc(var(--n,4) * 300px);margin-inline:auto}
+/* البطل: العمودان كانا متباعدين ووسطه فراغ ميت */
+.hm-hwrap{max-width:980px;margin-inline:auto}
+
 /* نقش الهوية «النموذج الأول» ساكنًا خلف الأقسام، كما في شاشة الدخول */
 .hm-pat{position:absolute;inset:0;pointer-events:none;z-index:0;
  background:url("/brand-mesh-l.svg") 0 0/172px;opacity:.06}
@@ -1657,7 +1677,7 @@ function homeView(){
     <button class="hm-cta" data-act="to-login">ابدأ الآن
      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
    </div>
-   ${hmPath()}
+   ${hmPath()}${hmPathRow()}
   </div>
  </section>
 
@@ -1721,6 +1741,26 @@ function homeView(){
  </footer>
 </div>`;
 }
+/* الجوال: الرحلة نفسها أفقية — الرأسية تأكل 354px من شاشة 844px */
+function hmPathRow(){
+  const D='M295 36C268 36 239 48 212 48 185 48 156 36 129 36 102 36 73 48 46 48';
+  const N=[[295,36,'المسار'],[212,48,'الدورة'],[129,36,'الاختبار'],[46,48,'الشهادة']];
+  return `<svg class="hm-journey row" viewBox="0 0 340 104" role="img" aria-label="رحلة المتدرّب: المسار ثم الدورة ثم الاختبار ثم الشهادة">
+  <path id="hmTrackR" d="${D}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="2" stroke-linecap="round"/>
+  <path class="hm-draw" d="${D}" pathLength="1" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round"/>
+  <circle class="hm-spark" r="4" fill="#9DDAE5">
+   <animateMotion dur="9s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1" keyTimes="0;1"><mpath href="#hmTrackR" xlink:href="#hmTrackR"/></animateMotion>
+  </circle>
+  ${N.map(([x,y,l],i)=>`<g class="hm-node" style="--d:${700+i*220}ms">
+    <circle cx="${x}" cy="${y}" r="23" fill="#fff"/>
+    <g transform="translate(${x-9.5} ${y-9.5}) scale(.79)" fill="none" stroke="#007497" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${HM_PICS[i]}</g>
+    <text x="${x}" y="${y+40}" text-anchor="middle">${l}</text></g>`).join('')}
+ </svg>`;
+}
+const HM_PICS=['<path d="M4 7h16M4 12h10M4 17h7"/>',
+  '<path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H11v18H5.5A2.5 2.5 0 0 1 3 18.5z"/><path d="M21 5.5A2.5 2.5 0 0 0 18.5 3H13v18h5.5a2.5 2.5 0 0 0 2.5-2.5z"/>',
+  '<path d="M9 11l2.5 2.5L16 9"/><path d="M5 4h14v16l-7-3-7 3z"/>',
+  '<circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.2L17 21l-1.5-7.5"/>'];
 /* رحلة المتدرّب: مسار واحد يُرسم، وأربع محطات تظهر تباعًا، ونقطة تسير عليه */
 function hmPath(){
   const D='M62 52C146 52 236 80 236 140 236 204 78 188 78 252 78 312 168 302 232 356';
