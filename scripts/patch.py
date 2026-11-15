@@ -115,7 +115,7 @@ function loginView(){
  <main class="lg-wrap">
   <header class="lg-head">
    <div class="lg-logo">
-    <img src="/dal.svg" alt="شعار منصة دال">
+    <img src="/dal.svg?v=2" alt="شعار منصة دال">
     <h1 class="dal-w"><b>منصة دال</b> <span>تعلّم مستمر</span></h1>
    </div>
    ${hij?`<span class="lg-date"><i></i>${esc(hij)}</span>`:''}
@@ -715,7 +715,7 @@ function homeView(){
   return `<div class="hm${cards.length?'':' hm-bare'}">
  <header class="hm-top">
   <button class="hm-brand" type="button" data-act="to-home" aria-label="منصة دال — الرئيسية">
-   <img src="/dal.svg" alt=""><b>منصة دال</b></button>
+   <img src="/dal.svg?v=2" alt=""><b>منصة دال</b></button>
   <button class="hm-login" data-act="to-login">تسجيل الدخول
    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
  </header>
@@ -814,7 +814,7 @@ h=h.replace(_m14,r"""/* ===== الشاشة الرئيسية العامة ===== *
  padding-top:calc(10px + env(safe-area-inset-top,0px));
  background:rgba(251,250,247,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
  border-bottom:1px solid rgba(7,44,73,.08)}
-.hm-brand{display:flex;flex-direction:row-reverse;align-items:center;gap:9px;text-decoration:none;color:var(--navy)}
+.hm-brand{display:flex;flex-direction:row;align-items:center;gap:9px;text-decoration:none;color:var(--navy)}
 .hm-brand img{height:34px;width:auto}
 .hm-brand b{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:19px;color:var(--teal);white-space:nowrap}
 .hm-login{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 18px;border-radius:11px;

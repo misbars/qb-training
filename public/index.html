@@ -359,7 +359,7 @@ body .login-card{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
  padding-top:calc(10px + env(safe-area-inset-top,0px));
  background:rgba(251,250,247,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
  border-bottom:1px solid rgba(7,44,73,.08)}
-.hm-brand{display:flex;flex-direction:row-reverse;align-items:center;gap:9px;text-decoration:none;color:var(--navy)}
+.hm-brand{display:flex;flex-direction:row;align-items:center;gap:9px;text-decoration:none;color:var(--navy)}
 .hm-brand img{height:34px;width:auto}
 .hm-brand b{font-family:'Noto Kufi Arabic','Readex Pro',Tahoma,sans-serif;font-size:19px;color:var(--teal);white-space:nowrap}
 .hm-login{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 18px;border-radius:11px;
@@ -1514,7 +1514,7 @@ function homeView(){
   return `<div class="hm${cards.length?'':' hm-bare'}">
  <header class="hm-top">
   <button class="hm-brand" type="button" data-act="to-home" aria-label="منصة دال — الرئيسية">
-   <img src="/dal.svg" alt=""><b>منصة دال</b></button>
+   <img src="/dal.svg?v=2" alt=""><b>منصة دال</b></button>
   <button class="hm-login" data-act="to-login">تسجيل الدخول
    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
  </header>
@@ -1613,7 +1613,7 @@ function shell(){
   return `${hasDemo()&&S.showDemo?`<div class="demo-bar"><b>${ico('alert').replace('class="i "','class="i " style="width:16px;height:16px;vertical-align:-3px"')} بيانات تجريبية</b><span>الأسماء والأرقام المعروضة مولَّدة لأغراض التقييم وموسومة بوضوح، وليست نتائج تشغيل حقيقية.</span>${can('report.view')||S.role==='sysadmin'?'<button data-act="demo-toggle">إخفاء البيانات التجريبية من العرض</button>':''}</div>`:(hasDemo()&&!S.showDemo?`<div class="demo-bar"><b>العرض بلا بيانات تجريبية</b><button data-act="demo-toggle">إظهار البيانات التجريبية</button></div>`:'')}
   <div class="app">
   <aside class="side ${S.nav?'open':''}" id="side"><div class="pattern"></div>
-   <div class="brand"><img class="logo-w dal" src="/dal-white.svg" alt="دال"><div><b>منصة التطوير والتدريب</b><span>تحفيظ بريدة</span></div></div>
+   <div class="brand"><img class="logo-w dal" src="/dal-white.svg?v=2" alt="دال"><div><b>منصة التطوير والتدريب</b><span>تحفيظ بريدة</span></div></div>
    ${unifiedNavHtml()}
    <div class="side-foot">
     <div class="save-st" id="savest">${saveStHtml()}</div>
@@ -1817,7 +1817,7 @@ function vInbox(){
   <div class="note warn" style="margin-bottom:14px">هذا صندوق داخل المنصة. الإرسال الفعلي إلى Outlook يتطلب ربط Microsoft Graph من خادم، وهو غير مُفعَّل في هذا النموذج.</div>
   <div class="card mail"><div class="mail-l">${L.length?L.map(x=>`<div class="mi ${x.unread?'unread':''} ${m&&m.id===x.id?'on':''}" data-act="openmail" data-id="${x.id}" tabindex="0"><b><span>${esc(x.from)}</span><small>${fmtS(x.date)}</small></b><span style="color:var(--ink)">${esc(x.subj)}</span></div>`).join(''):'<div class="empty">لا توجد رسائل</div>'}</div>
   <div class="mail-r">${m?`<div class="eml-meta"><div><b>${esc(m.subj)}</b></div><div>من: ${esc(m.from)}</div><div>إلى: <span class="num">${esc(u.email)}</span> · ${fmt(m.date)}</div></div>
-   <div class="eml"><div class="hd"><div class="pattern"></div><img class="logo-w dal" src="/dal-dark.svg" alt="" style="height:50px"><span style="color:var(--sky);font-size:13px">منصة التطوير والتدريب</span></div><div class="bd"><h4>${esc(m.title)}</h4>${safeHtml(m.body)}${m.cta?`<p style="margin-top:18px"><button class="btn" data-act="mailgo" data-id="${m.id}">${esc(m.cta)}</button></p>`:''}</div><div class="ft">رسالة آلية من منصة التطوير والتدريب — الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة.</div></div>`:'<div class="empty">اختر رسالة</div>'}</div></div>`;
+   <div class="eml"><div class="hd"><div class="pattern"></div><img class="logo-w dal" src="/dal-dark.svg?v=2" alt="" style="height:50px"><span style="color:var(--sky);font-size:13px">منصة التطوير والتدريب</span></div><div class="bd"><h4>${esc(m.title)}</h4>${safeHtml(m.body)}${m.cta?`<p style="margin-top:18px"><button class="btn" data-act="mailgo" data-id="${m.id}">${esc(m.cta)}</button></p>`:''}</div><div class="ft">رسالة آلية من منصة التطوير والتدريب — الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة.</div></div>`:'<div class="empty">اختر رسالة</div>'}</div></div>`;
 }
 
 /* ================= الملف الشخصي ================= */
@@ -4301,7 +4301,7 @@ function loginView(){
  <main class="lg-wrap">
   <header class="lg-head">
    <div class="lg-logo">
-    <img src="/dal.svg" alt="شعار منصة دال">
+    <img src="/dal.svg?v=2" alt="شعار منصة دال">
     <h1 class="dal-w"><b>منصة دال</b> <span>تعلّم مستمر</span></h1>
    </div>
    ${hij?`<span class="lg-date"><i></i>${esc(hij)}</span>`:''}
