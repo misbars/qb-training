@@ -760,6 +760,7 @@ function homeView(){
   // قبل وصول الأرقام نعرض الأربع كهياكل؛ بعد وصولها نُسقط ما قيمته صفر
   const cards=S.pub?ALL.filter(([k])=>+st[k]>0):ALL;
   return `<div class="hm${cards.length?'':' hm-bare'}">
+ <span class="hm-pat" aria-hidden="true"></span>
  <header class="hm-top">
   <button class="hm-brand" type="button" data-act="to-home" aria-label="منصة دال — الرئيسية">
    <img src="/dal.svg?v=2" alt=""><b>منصة دال</b></button>
@@ -1058,6 +1059,15 @@ section[id]{scroll-margin-top:72px}
 .hm-rv{opacity:0;transform:translateY(18px)}
 .hm-rv.in{opacity:1;transform:none;transition:opacity .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms),transform .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms)}
 @media(prefers-reduced-motion:reduce){.hm-rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+/* نقش الهوية «النموذج الأول» ساكنًا خلف الأقسام، كما في شاشة الدخول */
+.hm-pat{position:absolute;inset:0;pointer-events:none;z-index:0;
+ background:url("/brand-mesh-l.svg") 0 0/172px;opacity:.06}
+.hm{position:relative}
+/* المحتوى فوق النقش، وأرضيات الأقسام تمرّره بدل أن تحجبه */
+.hm-top,.hm-hero,.hm-stats,.hm-steps,.hm-band,.hm-who,.hm-cta-band,.hm-foot{position:relative;z-index:1}
+.hm-band{background:rgba(236,230,221,.5)}
+.hm-band.alt{background:transparent}
+
 /* تُكتب بعد القواعد الأساسية لأن المتأخر يغلب عند تساوي الأولوية */
 @media(max-width:860px){
  .hm-nav{display:none}
