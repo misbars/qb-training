@@ -702,10 +702,57 @@ const HM_STEPS=[
  ['شهادتك','تُصدر باسمك وبرقم يمكن التحقق منه، وتُضاف إلى سجل ساعاتك.',
   '<circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.2L17 21l-1.5-7.5"/>']
 ];
+const HM_FEAT=[
+ ['مسارات تدريبية','مسار مرتّب لكل وظيفة: تعرف ما تدرسه أولًا وما يليه، بدل أن تختار على عمياء.',
+  '<path d="M4 7h16M4 12h10M4 17h7"/>'],
+ ['دورات حضورية','تُعلَن مقاعدها، وترشَّح لها أو تسجّل بنفسك، ويصلك إشعار بموعدها ومكانها.',
+  '<path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/>'],
+ ['مكتبة مسجّلة','دروس مصوّرة ومواد للقراءة، تتابعها متى ما توفّر وقتك، ويُحفظ موضعك.',
+  '<path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H11v18H5.5A2.5 2.5 0 0 1 3 18.5z"/><path d="M21 5.5A2.5 2.5 0 0 0 18.5 3H13v18h5.5a2.5 2.5 0 0 0 2.5-2.5z"/>'],
+ ['قياس الأثر','اختبار قبلي وبعدي، واستبانة رضا، وتقييم رئيسك بعد مدة — فيُعرف أثر التدريب لا حضوره.',
+  '<path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 4-6"/>'],
+ ['سجل ساعاتك','كل ساعة اعتُمدت لك محفوظة في مكان واحد، مع شهاداتها، جاهزة للطباعة.',
+  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>'],
+ ['شهادات موثّقة','لكل شهادة رقم ورابط تحقّق، فيستطيع من يطلبها التثبّت منها بنفسه.',
+  '<circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.2L17 21l-1.5-7.5"/>']
+];
+const HM_WHO=[
+ ['الموظف','يرى ما يخصّه: دوراته وساعاته وشهاداته، ومهاراته وأين ينقصه تدريب.','user'],
+ ['الرئيس المباشر','يرشّح فريقه، ويعتمد طلباتهم، ويقيّم أثر التدريب على أدائهم.','users'],
+ ['المدرب','يبني محتواه وأسئلته، ويتابع من أكمل دوراته ونتائجهم.','mic'],
+ ['إدارة التدريب','تخطّط وتقيس: الخطة السنوية، والمؤشرات، والتقارير، واعتماد الساعات.','chart']
+];
+const HM_WHO_IC={
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
+ users:'<circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.2a3.4 3.4 0 0 1 0 5.6"/><path d="M18 14.4A6.5 6.5 0 0 1 21.5 20"/>',
+ mic:'<rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>',
+ chart:'<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12.5" y="7" width="3" height="10"/><rect x="18" y="13" width="3" height="4"/>'
+};
+const HM_FAQ=[
+ ['كيف أدخل إلى المنصة؟','ببريدك الرسمي في الجمعية (‎@qb.org.sa‎) وكلمة المرور التي زوّدك بها مسؤول النظام. والموظفون والمدربون يدخلون من الباب نفسه.'],
+ ['نسيت كلمة المرور، ماذا أفعل؟','اضغط «نسيت كلمة المرور؟» في شاشة الدخول، وتصل إدارة التدريب طلبك فتصدر لك كلمة مؤقتة تغيّرها عند أول دخول.'],
+ ['هل الساعات التي أسجّلها معتمدة؟','نعم. الساعة تُحتسب بعد إكمال متطلبات الدورة واجتياز اختبارها، وتُضاف إلى سجلك باعتماد إدارة التدريب.'],
+ ['هل تُحتسب المشاهدة خارج المنصة؟','لا. مشاهدة الدرس تُحتسب داخل المنصة فقط، لأن التقدّم يُقاس من المشغّل نفسه.'],
+ ['دخلت دورة خارج الجمعية، هل أوثّقها هنا؟','نعم، من «الدورات الخارجية» ترفع شهادتك ويعتمدها رئيسك المباشر ثم إدارة التدريب.']
+];
 function hmNum(v){
   if(v==null)return '<span class="hm-sk"></span>';
   try{return new Intl.NumberFormat('ar-SA-u-nu-latn').format(v)}catch(e){return String(v)}
 }
+/* الأقسام تظهر حين تصل إليها، لا كلها دفعة واحدة عند التحميل */
+function attachHome(){
+  if(HMIO){HMIO.disconnect();HMIO=null}
+  const els=document.querySelectorAll('.hm-rv');
+  if(!els.length)return;
+  if(!('IntersectionObserver' in window)||matchMedia('(prefers-reduced-motion:reduce)').matches){
+    els.forEach(e=>e.classList.add('in'));return;
+  }
+  HMIO=new IntersectionObserver((rows,o)=>{
+    rows.forEach(r=>{if(r.isIntersecting){r.target.classList.add('in');o.unobserve(r.target)}})
+  },{rootMargin:'0px 0px -12% 0px',threshold:.08});
+  els.forEach(e=>HMIO.observe(e));
+}
+let HMIO=null;
 function homeView(){
   const st=S.pub||{};
   const ALL=[['courses','دورة ومادة تدريبية'],['tracks','مسار تدريبي'],
@@ -716,6 +763,10 @@ function homeView(){
  <header class="hm-top">
   <button class="hm-brand" type="button" data-act="to-home" aria-label="منصة دال — الرئيسية">
    <img src="/dal.svg?v=2" alt=""><b>منصة دال</b></button>
+  <nav class="hm-nav" aria-label="أقسام الصفحة">
+   <a href="#hm-steps">الخطوات</a><a href="#hm-feat">ما تجده</a>
+   <a href="#hm-who">لمن المنصة</a><a href="#hm-faq">أسئلة</a>
+  </nav>
   <button class="hm-login" data-act="to-login">تسجيل الدخول
    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
  </header>
@@ -738,12 +789,53 @@ function homeView(){
   ${cards.map(([k,l],i)=>`<div class="hm-stat" style="--d:${i*70}ms"><b>${hmNum(st[k])}</b><span>${l}</span></div>`).join('')}
  </section>`:''}
 
- <section class="hm-in hm-steps">
-  <h2>أربع خطوات، لا أكثر</h2>
+ <section class="hm-in hm-steps" id="hm-steps">
+  <h2 class="hm-rv">أربع خطوات، لا أكثر</h2>
   <div class="hm-grid">
    ${HM_STEPS.map(([t,d,ic],i)=>`<article class="hm-step"><span class="hm-n">${i+1}</span>
     <svg class="hm-ic" viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>
     <h3>${t}</h3><p>${d}</p></article>`).join('')}
+  </div>
+ </section>
+
+ <section class="hm-band" id="hm-feat">
+  <div class="hm-in">
+   <h2 class="hm-rv">ما الذي تجده في المنصة</h2>
+   <p class="hm-lede hm-rv">ليست مكتبة دورات فحسب؛ هي دورة كاملة من اختيار ما تحتاجه إلى إثبات أنك أتقنته.</p>
+   <div class="hm-grid3">
+    ${HM_FEAT.map(([t,d,ic],i)=>`<article class="hm-card hm-rv" style="--d:${i*60}ms">
+      <span class="hm-badge"><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg></span>
+      <h3>${t}</h3><p>${d}</p></article>`).join('')}
+   </div>
+  </div>
+ </section>
+
+ <section class="hm-in hm-who" id="hm-who">
+  <h2 class="hm-rv">لمن هذه المنصة</h2>
+  <p class="hm-lede hm-rv">لكل صفة بابها وصلاحيتها؛ لا يرى أحد ما لا يخصّه.</p>
+  <div class="hm-grid4">
+   ${HM_WHO.map(([t,d,k],i)=>`<article class="hm-who-c hm-rv" style="--d:${i*60}ms">
+     <svg class="hm-ic" viewBox="0 0 24 24" aria-hidden="true">${HM_WHO_IC[k]}</svg>
+     <h3>${t}</h3><p>${d}</p></article>`).join('')}
+  </div>
+ </section>
+
+ <section class="hm-band alt" id="hm-faq">
+  <div class="hm-in hm-faq">
+   <h2 class="hm-rv">أسئلة متكرّرة</h2>
+   <div class="hm-acc">
+    ${HM_FAQ.map(([q,a],i)=>`<details class="hm-rv" style="--d:${i*45}ms"><summary>${q}
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><p>${a}</p></details>`).join('')}
+   </div>
+  </div>
+ </section>
+
+ <section class="hm-cta-band">
+  <div class="hm-in hm-rv">
+   <h2>خطوتك القادمة على بُعد تسجيل دخول</h2>
+   <p>ادخل ببريدك الرسمي، وابدأ من حيث توقّفت.</p>
+   <button class="hm-cta" data-act="to-login">تسجيل الدخول
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
   </div>
  </section>
 
@@ -784,7 +876,7 @@ h=h.replace(_lgw,r"""<button class="lg-back" data-act="to-home"><svg class="i" v
 # البوّابة: الرئيسية قبل الدخول
 _dr="$('#root').innerHTML=S.me&&U(S.me)?shell():loginView();"
 assert _dr in h, 'draw root'
-h=h.replace(_dr,"$('#root').innerHTML=S.me&&U(S.me)?shell():(S.gate==='login'?loginView():homeView());",1)
+h=h.replace(_dr,"$('#root').innerHTML=S.me&&U(S.me)?shell():(S.gate==='login'?loginView():homeView());\n  if(!S.me&&S.gate!=='login')attachHome();",1)
 
 # إجراءات التنقّل بين البوّابة والدخول
 _pact=" portal(t){S.portal=t.dataset.p;draw()},"
@@ -897,16 +989,83 @@ h=h.replace(_m14,r"""/* ===== الشاشة الرئيسية العامة ===== *
  .hm-eye{justify-content:center}
  .hm-journey{max-width:270px;margin-top:10px}
  .hm-stats{grid-template-columns:repeat(min(var(--n,2),2),minmax(0,1fr));margin-top:-62px}
+ .hm-nav{display:none}
+ .hm-grid3,.hm-grid4{grid-template-columns:repeat(2,1fr)}
  .hm-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:520px){
  .hm-brand b{font-size:17px}.hm-brand img{height:30px}
  .hm-login{padding:0 14px;font-size:14px}
- .hm-grid{grid-template-columns:1fr}
+ .hm-grid,.hm-grid3,.hm-grid4{grid-template-columns:1fr}
  .hm-step{padding:18px 16px}
 }
 
+/* قائمة الشريط */
+.hm-nav{display:flex;align-items:center;gap:4px;margin-inline-start:auto;margin-inline-end:10px}
+.hm-nav a{padding:7px 11px;border-radius:9px;font-size:14px;font-weight:600;color:var(--ink-2);text-decoration:none;
+ transition:color .16s ease,background .16s ease}
+.hm-nav a:hover{color:var(--teal);background:var(--sand-2)}
+
+/* أشرطة الأقسام */
+.hm-band{background:var(--sand-2);border-block:1px solid rgba(7,44,73,.06)}
+.hm-band.alt{background:var(--paper);border-bottom:0}
+.hm-band>.hm-in{padding-block:clamp(44px,6vw,72px)}
+.hm-band h2,.hm-who h2,.hm-faq h2{font-family:var(--display);font-size:clamp(21px,3.2vw,28px);font-weight:700;
+ color:var(--navy);text-align:center;margin:0}
+.hm-lede{margin:10px auto 0;max-width:56ch;text-align:center;font-size:14.5px;line-height:1.85;color:var(--ink-2)}
+.hm-band .hm-grid3,.hm-who .hm-grid4{margin-top:clamp(24px,3.4vw,38px)}
+.hm-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.hm-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+.hm-card{background:#fff;border:1px solid rgba(7,44,73,.07);border-radius:16px;padding:22px 20px;
+ transition:transform .22s cubic-bezier(.2,.8,.3,1),box-shadow .22s ease}
+.hm-card:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(7,44,73,.1)}
+.hm-badge{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--sky-3)}
+.hm-badge svg{width:21px;height:21px;stroke:var(--teal);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hm-card h3{margin:13px 0 6px;font-size:16px;font-weight:700;color:var(--navy)}
+.hm-card p{margin:0;font-size:13.5px;line-height:1.8;color:var(--ink-2)}
+
+.hm-who{padding-block:clamp(44px,6vw,72px)}
+.hm-who-c{border:1px solid rgba(7,44,73,.09);border-radius:16px;padding:20px 18px;background:var(--paper);
+ border-top:3px solid var(--teal)}
+.hm-who-c h3{margin:11px 0 6px;font-size:15.5px;font-weight:700;color:var(--navy)}
+.hm-who-c p{margin:0;font-size:13px;line-height:1.8;color:var(--ink-2)}
+
+/* أسئلة */
+.hm-faq{max-width:780px}
+.hm-acc{margin-top:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:10px}
+.hm-acc details{background:var(--sand-2);border:1px solid rgba(7,44,73,.07);border-radius:13px;overflow:hidden}
+.hm-acc summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;
+ padding:15px 17px;font-size:14.5px;font-weight:600;color:var(--navy);list-style:none}
+.hm-acc summary::-webkit-details-marker{display:none}
+.hm-acc summary svg{flex:none;width:18px;height:18px;stroke:var(--teal);fill:none;stroke-width:2.1;
+ stroke-linecap:round;stroke-linejoin:round;transition:transform .22s ease}
+.hm-acc details[open] summary svg{transform:rotate(180deg)}
+.hm-acc details[open] summary{background:#fff}
+.hm-acc p{margin:0;padding:0 17px 16px;font-size:13.5px;line-height:1.85;color:var(--ink-2);background:#fff}
+
+/* شريط ختامي */
+.hm-cta-band{background:linear-gradient(135deg,#0B3A5E,var(--navy));color:#fff;text-align:center}
+.hm-cta-band>.hm-in{padding-block:clamp(40px,5.4vw,64px)}
+.hm-cta-band h2{font-family:var(--display);font-size:clamp(20px,3vw,27px);font-weight:700;margin:0}
+.hm-cta-band p{margin:10px 0 0;font-size:14.5px;color:rgba(255,255,255,.8)}
+.hm-cta-band .hm-cta{margin-top:22px}
+
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:72px}
+
 /* الحركة */
+.hm-rv{opacity:0;transform:translateY(18px)}
+.hm-rv.in{opacity:1;transform:none;transition:opacity .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms),transform .62s cubic-bezier(.22,.8,.3,1) var(--d,0ms)}
+@media(prefers-reduced-motion:reduce){.hm-rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+/* تُكتب بعد القواعد الأساسية لأن المتأخر يغلب عند تساوي الأولوية */
+@media(max-width:860px){
+ .hm-nav{display:none}
+ .hm-grid3,.hm-grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ .hm-grid3,.hm-grid4{grid-template-columns:minmax(0,1fr)}
+}
 @media(prefers-reduced-motion:no-preference){
  .hm-copy>*{animation:hmUp .7s cubic-bezier(.22,.8,.3,1) both}
  .hm-eye{animation-delay:.05s}.hm-copy h1{animation-delay:.14s}
