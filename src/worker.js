@@ -469,6 +469,29 @@ async function api(req, env, url) {
     if (s) { await S.db.prepare('DELETE FROM sessions WHERE token=?').bind(s.token).run(); await S.log(s.user.id, s.role, 'logout', '', '', 1, '') }
     return json({ ok: true }, 200, { 'Set-Cookie': 'qbs=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Strict' });
   }
+  // أرقام الشاشة العامة: لا مُدخلات، GET فقط، أعداد مجمّعة بلا أي بيانات شخصية.
+  // تُخزَّن على الحافة 10 دقائق حتى لا تلمس قاعدة البيانات مع كل زيارة.
+  if (p === '/api/public/stats') {
+    if (req.method !== 'GET') return json({ error: 'غير مسموح' }, 405);
+    const LIVE = "deleted=0 AND COALESCE(json_extract(data,'$.demo'),0)=0";
+    const count = async (...cols) => {
+      const q = cols.map(() => '?').join(',');
+      const r = await S.db.prepare(`SELECT COUNT(*) c FROM rows WHERE col IN (${q}) AND ${LIVE}`).bind(...cols).first();
+      return (r && r.c) || 0;
+    };
+    const hours = async () => {
+      const r = await S.db.prepare(
+        `SELECT SUM(CAST(COALESCE(json_extract(data,'$.hours'),json_extract(data,'$.creditHours'),0) AS REAL)) h
+           FROM rows WHERE col IN ('courses','libs') AND ${LIVE}`
+      ).first();
+      return Math.round((r && r.h) || 0);
+    };
+    const [courses, tracks, certs, hrs] = await Promise.all([
+      count('courses', 'libs'), count('tracks'), count('completions'), hours()
+    ]);
+    return json({ courses, tracks, certs, hours: hrs }, 200, { 'Cache-Control': 'public, max-age=600' });
+  }
+
   const ses = await session(req, S);
   if (!ses) return json({ error: 'انتهت الجلسة، سجّل الدخول من جديد' }, 401);
   if (p === '/api/me') { const a = await S.db.prepare('SELECT must_change FROM auth WHERE user_id=?').bind(ses.user.id).first(); return json({ user: ses.user, role: ses.role, mustChange: !!(a && a.must_change) }) }
