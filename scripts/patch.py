@@ -57,15 +57,21 @@ async function flush(){
   P.busy=true;P.dirty.clear();
   let reverted=[],sent=0;
   try{
-    const ops=ALLC().flatMap(diffCol);
-    if(!ops.length)return;
-    sent=ops.length;
-    const r=await api('/api/sync',{method:'POST',body:JSON.stringify({ops})});
-    r.results.forEach((x,i)=>{
-      const op=ops[i];
-      if(x.ok)setBase(op.col,op.id,op.delete?null:op.data,x.ver);
-      else{applyServerRow(op.col,op.id,x.data,x.ver,x.deleted||!x.data);if(op.col!=='audit')reverted.push(x)}
-    });
+    const all=ALLC().flatMap(diffCol);
+    if(!all.length)return;
+    sent=all.length;
+    /* الخادم يعالج 500 عملية في الطلب الواحد ويُسقط ما زاد بلا خطأ، فكان
+       الحذف الجماعي يبدو ناجحًا ثم تعود البقية مع أول إعادة تحميل.
+       تُرسَل الآن دفعاتٍ حتى تنتهي. */
+    for(let b=0;b<all.length;b+=500){
+      const ops=all.slice(b,b+500);
+      const r=await api('/api/sync',{method:'POST',body:JSON.stringify({ops})});
+      r.results.forEach((x,i)=>{
+        const op=ops[i];
+        if(x.ok)setBase(op.col,op.id,op.delete?null:op.data,x.ver);
+        else{applyServerRow(op.col,op.id,x.data,x.ver,x.deleted||!x.data);if(op.col!=='audit')reverted.push(x)}
+      });
+    }
     P.failed=false;P.online=true;P.msg='محفوظ في الخادم · '+new Date().toLocaleTimeString('ar-SA-u-nu-latn',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
     P.failed=true;P.online=false;P.msg='تعذّر الحفظ في الخادم — سيُعاد المحاولة ('+e.message+')';

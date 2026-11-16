@@ -94,6 +94,11 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
   if (role === 'sysadmin') {
     if (col === 'users' && oldO && oldO.id === me && diff.some(k => ['roles','active'].includes(k))) return 'لا يغيّر مسؤول النظام أدوار حسابه أو حالته بنفسه';
     if (ADM_COLS.includes(col)) return true;
+    // استثناءٌ واحد: حذف صفٍّ موسومٍ «تجريبي». زرّ «حذف البيانات
+    // التجريبية» في شاشة مسؤول النظام كان يُفرِغ الشاشة ولا يبلغ الخادم،
+    // فيُعلَن النجاح ثم تعود البذرة مع أول إعادة تحميل. والفصل بين
+    // الصلاحيات باقٍ: لا إنشاء ولا تعديل، وحذفُ الحقيقي ممنوع كما كان.
+    if (del && oldO && oldO.demo === true) return true;
     return `مسؤول النظام لا يكتب في سجلات التدريب «${col}»`;
   }
   if (role === 'linemgr') {
