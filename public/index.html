@@ -5361,7 +5361,8 @@ function trAxisState(uid, n) {
   const p = trProg(uid) || { axes: {} }, a = Object.assign({}, (p.axes || {})[n] || {}, (p.acks || {})[n] ? { ack: p.acks[n] } : {});
   const cert = trCert(uid, n);
   const course = cert ? (cert.status === 'approved' ? 'done' : cert.status === 'rejected' ? 'rejected' : 'pending') : 'todo';
-  const pod = a.pod ? 'done' : 'todo', card = a.card && a.card.at ? 'done' : 'todo';
+  const ax = TR_AX(n) || {}, hasPod = !!(ax.p && (ax.p.yt || ax.p.t));
+  const pod = (!hasPod || a.pod) ? 'done' : 'todo', card = a.card && a.card.at ? 'done' : 'todo';
   const done = course === 'done' && pod === 'done' && card === 'done';
   const started = course !== 'todo' || pod === 'done' || card === 'done' || !!(a.reflect || '').trim();
   return { course, pod, card, done, started, cert, a };
@@ -5442,10 +5443,10 @@ function vTrackAxis(n) {
    <ol class="tr-howto"><li>افتح الدورة في ${esc(c.pf)} وسجّل مجانًا.</li><li>أكمل الدورة ونزّل شهادة الإتمام.</li><li>ارفع الشهادة هنا، وتنحسب ساعاتها بعد اعتماد إدارة التدريب.</li></ol>
    <div class="row wrap" style="gap:8px"><a class="btn sec" href="${c.url}" target="_blank" rel="noopener">${ico('ext')} افتح الدورة</a>${certBlock}</div>
    ${c.extra ? `<p class="small" style="margin-top:10px">دورة داعمة (اختيارية): <a href="${c.extra.url}" target="_blank" rel="noopener">${esc(c.extra.name)} — ${esc(c.extra.pf)}</a></p>` : ''}</section>
-  <section class="card pad tr-step"><div class="tr-step-h"><span class="tr-sn">2</span><div><h3>الحلقة الصوتية: القناعة</h3><span class="small muted">اسمعها هنا أو في الطريق</span></div></div>
+  ${!(a.p && (a.p.yt || a.p.t)) ? '' : `<section class="card pad tr-step"><div class="tr-step-h"><span class="tr-sn">2</span><div><h3>الحلقة الصوتية: القناعة</h3><span class="small muted">اسمعها هنا أو في الطريق</span></div></div>
    ${trPodcast(a.p, 'ax' + a.n)}
-   <div class="row" style="justify-content:flex-end;margin-top:10px">${st.pod === 'done' ? `<span class="tr-pill tr-ok">${ico('check')} استمعت ${fmt(st.a.pod.slice(0, 10))}</span>` : `<button class="btn" data-act="tr-pod" data-n="${a.n}">${ico('check')} استمعت للحلقة</button>`}</div></section>
-  <section class="card pad tr-step"><div class="tr-step-h"><span class="tr-sn">3</span><div><h3>بطاقة التطبيق: المهارة</h3><span class="small muted">20 دقيقة في جلسة واحدة</span></div></div>
+   <div class="row" style="justify-content:flex-end;margin-top:10px">${st.pod === 'done' && st.a.pod ? `<span class="tr-pill tr-ok">${ico('check')} استمعت ${fmt(String(st.a.pod).slice(0, 10))}</span>` : `<button class="btn" data-act="tr-pod" data-n="${a.n}">${ico('check')} استمعت للحلقة</button>`}</div></section>`}
+  <section class="card pad tr-step"><div class="tr-step-h"><span class="tr-sn">${(a.p && (a.p.yt || a.p.t)) ? 3 : 2}</span><div><h3>بطاقة التطبيق: المهارة</h3><span class="small muted">20 دقيقة في جلسة واحدة</span></div></div>
    <b class="tr-cname">${esc(a.k.t)}</b><p>${esc(a.k.intro)} إن لم يتوفر عمل قائم، اعتبروا البطاقة تمرينًا على المثال.</p>
    <ol class="tr-howto">${a.k.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
    <details class="tr-ex"><summary>مثال تدريبي للتوضيح</summary><p>${esc(a.k.ex)}</p></details>
