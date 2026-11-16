@@ -275,6 +275,35 @@ tbody tr.click:hover td{background:var(--sky-3)}
 @media(max-width:620px){.g4,.g3,.g2{grid-template-columns:1fr}.hero h1{font-size:23px}.hb{grid-template-columns:120px 1fr 42px}.m-b,.m-h{padding:20px}.page-h h1{font-size:23px}.kpi .v{font-size:27px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+/* ===== خط تتبّع الطلب: أين وصل ومع من هو الآن ===== */
+.trk{display:flex;align-items:flex-start;gap:0;list-style:none;margin:12px 0 0;padding:0}
+.trk li{position:relative;flex:1;min-width:0;text-align:center;padding-top:22px;font-size:11.5px;color:var(--ink-3)}
+.trk li::before{content:"";position:absolute;top:7px;inset-inline-start:50%;width:100%;height:2px;background:var(--sand);z-index:0}
+.trk li:last-child::before{display:none}
+.trk li i{position:absolute;top:0;inset-inline-start:50%;transform:translateX(50%);width:15px;height:15px;border-radius:50%;
+ background:#fff;border:2px solid var(--sand);z-index:1}
+.trk li b{display:block;font-weight:600;font-size:11.5px;line-height:1.5;color:inherit;overflow-wrap:anywhere}
+.trk li span,.trk li em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);line-height:1.5}
+.trk li.done{color:var(--teal)}
+.trk li.done i{background:var(--teal);border-color:var(--teal)}
+.trk li.done::before{background:var(--teal)}
+.trk li.now{color:var(--navy)}
+.trk li.now b{font-weight:700}
+.trk li.now i{background:#fff;border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,116,151,.15)}
+.trk-done li.now i{background:var(--teal)}
+.trk-stop li.now{color:#8F3B2B}
+.trk-stop li.now i{border-color:#C0563F;box-shadow:0 0 0 4px rgba(192,86,63,.15)}
+.vs-c{margin-bottom:12px}
+.vs-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.vs-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:560px){
+ .trk{flex-direction:column;gap:2px;align-items:stretch}
+ .trk li{text-align:start;padding:0 0 10px 0;padding-inline-start:26px;min-height:26px}
+ .trk li::before{top:16px;inset-inline-start:7px;width:2px;height:100%}
+ .trk li i{top:1px;inset-inline-start:0;transform:none}
+ .trk li b,.trk li span,.trk li em{display:inline;margin-inline-end:6px}
+}
+
 /* ===== إضافات النسخة 2 ===== */
 .demo-bar{background:#FFF4DC;border-bottom:1px solid #EAD29B;color:#6B4A10;padding:7px 32px;font-size:13px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .demo-bar b{font-weight:600}.demo-bar button{color:#6B4A10;text-decoration:underline;font-size:13px}
@@ -1031,7 +1060,7 @@ const NAV_TITLE={trainer:'مساحة المدرب',employee:'مساحة المو
 const hasDemo=()=>COLS.some(c=>c!=='audit'&&DB[c].some(r=>r.demo));
 
 function shell(){
-  const u=ME(),nav=NAV[S.role],ur=unreadN(),col=S.role==='employee'?'var(--teal)':'var(--navy)';
+  const u=ME(),nav=navOf(),ur=unreadN(),col=S.role==='employee'?'var(--teal)':'var(--navy)';
   const L=mailsOf(S.me).slice(0,4);
   return `${hasDemo()&&S.showDemo?`<div class="demo-bar"><b>${ico('alert').replace('class="i "','class="i " style="width:16px;height:16px;vertical-align:-3px"')} بيانات تجريبية</b><span>الأسماء والأرقام المعروضة مولَّدة لأغراض التقييم وموسومة بوضوح، وليست نتائج تشغيل حقيقية.</span>${can('report.view')||S.role==='sysadmin'?'<button data-act="demo-toggle">إخفاء البيانات التجريبية من العرض</button>':''}</div>`:(hasDemo()&&!S.showDemo?`<div class="demo-bar"><b>العرض بلا بيانات تجريبية</b><button data-act="demo-toggle">إظهار البيانات التجريبية</button></div>`:'')}
   <div class="app">
@@ -2089,7 +2118,14 @@ function toggleTrainer(id){
 const ACT_TYPES={inperson:'التدريب الحضوري',recorded:'الدورات المسجلة',reading:'المواد المقروءة',external:'الدورات الخارجية',visit:'الزيارات الميدانية'};
 const TRAIN_TYPES=['inperson','recorded','external'];   // تُقاس بالساعات التدريبية
 const DEV_TYPES=['reading','visit'];                    // تُقاس بمدد التطوير المهني (مستقلة عن الساعات)
-const ST_AR={completed:'مكتمل',approved:'معتمد',inprogress:'قيد التنفيذ',registered:'مسجّل',pending:'بانتظار الاعتماد',draft:'مسوّدة',submitted:'بانتظار اعتماد الرئيس',returned:'أُعيد للتعديل',rejected:'مرفوض',new:'جديد',answered:'تمت الإجابة'};
+/* بند الاتصال المؤسسي يُضاف لمن عليه العلم، فلا يُمسّ جدول الأدوار */
+function navOf(role){
+  const r=role||S.role;const base=NAV[r]||[];
+  if(r!=='sysadmin'&&isCommApprover(S.me)&&!base.some(x=>x[0]==='commvisits'))
+    return base.slice(0,Math.max(1,base.length-1)).concat([['commvisits','زيارات الاتصال المؤسسي','pin']],base.slice(Math.max(1,base.length-1)));
+  return base;
+}
+const ST_AR={completed:'مكتمل',approved:'معتمد',inprogress:'قيد التنفيذ',registered:'مسجّل',pending:'بانتظار الاعتماد',draft:'مسوّدة',submitted:'بانتظار اعتماد الرئيس',returned:'أُعيد للتعديل',rejected:'مرفوض',new:'جديد',answered:'تمت الإجابة',pending_comm:'بانتظار الاتصال المؤسسي',pending_lm:'بانتظار اعتماد الرئيس',reported:'التقرير بانتظار الرئيس',closed:'مغلقة ومعتمدة'};
 const COUNTED=['completed','approved'];
 const FILE_MAX=1200000,FILE_OK=['application/pdf','image/jpeg','image/png'];
 const trainerUserOf=tid=>DB.users.filter(u=>u.active!==false&&u.roles.includes('trainer')&&u.trainerId===tid);
@@ -2317,6 +2353,83 @@ function decideExt(id,approve,note){
 }
 
 /* ---------- الزيارات الميدانية ---------- */
+/* ===== الاتصال المؤسسي: علمٌ على موظفين موجودين، لا دور جديد ===== */
+const commApprovers=()=>DB.users.filter(u=>u.active!==false&&u.commApprover===true);
+const isCommApprover=uid=>{const u=U(uid);return !!(u&&u.active!==false&&u.commApprover===true)};
+const commOn=()=>DB.settings.commApproval!==false&&commApprovers().length>0;
+/* الزيارة تُحتسب في سجل التطوير حين تُغلق باعتماد التقرير، لا حين يُؤذن بها.
+   و'approved' القديمة تعني في الصفوف السابقة «اعتُمدت الزيارة» فتبقى محتسبة. */
+const visitCounts=v=>v.status==='closed'||(v.status==='approved'&&!v.reqAt);
+
+/* ===== خط تتبّع الطلب: أين وصل، ومع من هو الآن ===== */
+const sinceTxt=iso=>{if(!iso)return '';const n=Math.floor((Date.now()-Date.parse(iso))/864e5);
+  return n<=0?'اليوم':n===1?'منذ يوم':n===2?'منذ يومين':n<=10?`منذ ${n} أيام`:`منذ ${n} يومًا`};
+/* steps: [{t:'العنوان', who:'عند من'}] — cur فهرس المرحلة الحالية، state: wait|done|stop */
+function trackHtml(steps,cur,state,since){
+  return `<ol class="trk trk-${state||'wait'}">${steps.map((x,i)=>{
+    const cls=i<cur?'done':i===cur?'now':'';
+    return `<li class="${cls}"><i></i><b>${esc(x.t)}</b>${i===cur&&x.who?`<span>${esc(x.who)}</span>`:''}${i===cur&&since?`<em>${esc(sinceTxt(since))}</em>`:''}</li>`;
+  }).join('')}</ol>`;
+}
+const firstName=u=>((u&&u.name)||'').split(' ')[0];
+/* مراحل الزيارة بحسب تفعيل الاتصال المؤسسي */
+function visitTrack(v){
+  const u=U(v.userId)||{},mg=U(u.managerId);
+  const st=[{t:'قدّمتَها'}];
+  if(commOn()||v.status==='pending_comm'||(v.decisions||[]).some(d=>d.stage==='comm'))st.push({t:'الاتصال المؤسسي',who:'موافقة مبدئية'});
+  st.push({t:'رئيسك',who:mg?firstName(mg):''},{t:'نفّذ الزيارة'},{t:'التقرير والشاهد'},{t:'مغلقة'});
+  const i=k=>st.findIndex(x=>x.t===k);
+  const M={draft:0,pending_comm:i('الاتصال المؤسسي'),pending_lm:i('رئيسك'),approved:i('نفّذ الزيارة'),
+           reported:i('التقرير والشاهد'),closed:st.length-1,returned:0,rejected:0,submitted:i('رئيسك')};
+  const cur=M[v.status]!=null?M[v.status]:0;
+  const state=v.status==='closed'?'done':['returned','rejected'].includes(v.status)?'stop':'wait';
+  const since=({pending_comm:v.reqAt,pending_lm:v.lmAt,reported:v.repAt})[v.status]||v.at;
+  return trackHtml(st,cur,state,since);
+}
+function enrollTrack(e){
+  const u=U(e.userId)||{},mg=U(u.managerId);
+  const st=[{t:'سجّلتَ'},{t:'رئيسك',who:mg?firstName(mg):''},{t:'إدارة التدريب'},{t:'مؤكَّد'}];
+  const M={pending_lm:1,pending_tm:2,registered:3,approved:3,rejected:1,returned:1};
+  const state=['registered','approved'].includes(e.status)?'done':e.status==='rejected'?'stop':'wait';
+  return trackHtml(st,M[e.status]!=null?M[e.status]:0,state,e.at);
+}
+function extTrack(x){
+  const st=[{t:'قدّمتَها'},{t:'إدارة التدريب',who:'مراجعة واعتماد'},{t:'معتمدة'}];
+  const M={draft:0,pending:1,submitted:1,approved:2,rejected:1,returned:0};
+  const state=x.status==='approved'?'done':['rejected','returned'].includes(x.status)?'stop':'wait';
+  return trackHtml(st,M[x.status]!=null?M[x.status]:0,state,x.at);
+}
+function retakeTrack(r){
+  const st=[{t:'طلبتَها'},{t:'إدارة التدريب',who:'مراجعة'},{t:'معتمدة'}];
+  const M={pending:1,pending_tm:1,approved:2,rejected:1};
+  const state=r.status==='approved'?'done':r.status==='rejected'?'stop':'wait';
+  return trackHtml(st,M[r.status]!=null?M[r.status]:0,state,r.at);
+}
+
+/* طلب الزيارة: يُقدَّم قبل التنفيذ، فتاريخه اليوم أو بعده */
+function validateVisitReq(f){
+  const e=[];
+  if((f.org||'').trim().length<2)e.push('اسم الجهة المراد زيارتها مطلوب');
+  if((f.place||'').trim().length<2)e.push('موقع الزيارة مطلوب');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')||isNaN(D(f.date)))e.push('تاريخ الزيارة المقترح غير صالح');
+  else if(f.date<TODAY())e.push('الزيارة تُطلب قبل تنفيذها، فالتاريخ المقترح لا يكون في الماضي');
+  else if((D(f.date)-D(TODAY()))/864e5>365)e.push('التاريخ المقترح بعيد أكثر من سنة');
+  if((f.goals||'').trim().length<20)e.push('اكتب هدف الزيارة بتفصيل (20 حرفًا على الأقل)');
+  return e;
+}
+/* تقرير ما بعد التنفيذ: الشاهد إلزامي */
+function validateVisitRep(f){
+  const e=[];
+  const a=hhmm(f.start),b=hhmm(f.end);
+  if(a==null)e.push('وقت البداية غير صالح');if(b==null)e.push('وقت النهاية غير صالح');
+  if(a!=null&&b!=null){if(b<=a)e.push('وقت النهاية يجب أن يكون بعد البداية');else if(b-a>840)e.push('مدة الزيارة تتجاوز 14 ساعة؛ راجع الوقتين')}
+  if((f.people||'').trim().length<2)e.push('أسماء من قابلتهم مطلوبة');
+  if((f.topics||'').trim().length<10)e.push('المحاور التي نوقشت مطلوبة');
+  if((f.results||'').trim().length<10)e.push('أبرز النتائج والمخرجات مطلوبة');
+  if((f.recs||'').trim().length<5)e.push('التوصيات مطلوبة');
+  if(!(f.attach||[]).length)e.push('الشاهد مطلوب: أرفق صورة أو مستندًا يثبت الزيارة');
+  return e;
+}
 function validateVisit(f){
   const e=[];
   if((f.org||'').trim().length<2)e.push('اسم الجهة المزارة مطلوب');
@@ -2336,31 +2449,86 @@ const visitDur=f=>{const a=hhmm(f.start),b=hhmm(f.end);return a!=null&&b!=null&&
 function saveVisit(userId,f,submit){
   const u=U(userId);if(!u)return {ok:false,msg:'مستخدم غير معروف'};
   let v=f.id?DB.visits.find(x=>x.id===f.id):null;
-  if(v){if(v.userId!==userId)return {ok:false,msg:'غير مصرّح'};if(!['draft','returned'].includes(v.status))return {ok:false,msg:'لا يمكن تعديل زيارة '+ST_AR[v.status]}}
+  if(v){if(v.userId!==userId)return {ok:false,msg:'غير مصرّح'};if(!['draft','returned'].includes(v.status))return {ok:false,msg:'لا يمكن تعديل طلب '+(ST_AR[v.status]||v.status)}}
   if(submit){
-    const e=validateVisit(f);if(e.length)return {ok:false,msg:e[0],all:e};
+    const e=validateVisitReq(f);if(e.length)return {ok:false,msg:e[0],all:e};
     if(!mgrOfUser(u))return {ok:false,msg:'لا يوجد رئيس مباشر محدد لك في النظام؛ تواصل مع مسؤول النظام'};
-    if(DB.visits.some(x=>x.id!==f.id&&x.userId===userId&&x.status!=='rejected'&&x.org.trim()===f.org.trim()&&x.date===f.date&&x.start===f.start))return {ok:false,msg:'هذه الزيارة مسجّلة مسبقًا (تكرار مرفوض)'};
+    if(commOn()===false&&DB.settings.commApproval!==false&&!commApprovers().length)return {ok:false,msg:'لم يُعيَّن معتمد للاتصال المؤسسي بعد؛ تواصل مع مسؤول النظام'};
+    if(DB.visits.some(x=>x.id!==f.id&&x.userId===userId&&!['rejected','returned'].includes(x.status)&&x.org.trim()===(f.org||'').trim()&&x.date===f.date))return {ok:false,msg:'لك طلب زيارة قائم للجهة نفسها في التاريخ نفسه'};
   }else if(!(f.org||'').trim())return {ok:false,msg:'اكتب اسم الجهة على الأقل لحفظ المسوّدة'};
-  const rec=Object.assign(v||{id:uid('vs'),userId,status:'draft',decisions:[],at:nowISO(),demo:false},{org:(f.org||'').trim(),people:(f.people||'').trim(),date:f.date||'',goals:(f.goals||'').trim(),start:f.start||'',end:f.end||'',durMin:visitDur(f),topics:(f.topics||'').trim(),results:(f.results||'').trim(),recs:(f.recs||'').trim(),attach:f.attach||[]});
+  const rec=Object.assign(v||{id:uid('vs'),userId,status:'draft',decisions:[],at:nowISO(),demo:false},
+    {org:(f.org||'').trim(),place:(f.place||'').trim(),people:(f.people||'').trim(),date:f.date||'',goals:(f.goals||'').trim()});
   if(!v)DB.visits.push(rec);
   if(submit){
-    rec.status='submitted';rec.mgrId=u.managerId;rec.submittedAt=nowISO();rec.decisions.push({at:nowISO(),by:userId,action:'submit',note:''});
+    rec.mgrId=u.managerId;rec.reqAt=nowISO();
+    rec.decisions.push({at:nowISO(),by:userId,action:'submit',stage:'req',note:''});
+    if(commOn()){
+      rec.status='pending_comm';
+      commApprovers().forEach(c=>notify(c.id,`طلب زيارة بانتظار موافقتكم: ${u.name}`,'طلب زيارة ميدانية',
+        `<p>يطلب <b>${esc(u.name)}</b> زيارة <b>${esc(rec.org)}</b> في ${esc(rec.place)} بتاريخ ${fmt(rec.date)}.</p><p>الهدف: ${esc(rec.goals)}</p>`,'مراجعة الطلب','commvisits'));
+    }else{
+      rec.status='pending_lm';rec.lmAt=nowISO();
+      notify(u.managerId,`طلب زيارة بانتظار اعتمادك: ${u.name}`,'طلب زيارة ميدانية',
+        `<p>يطلب <b>${esc(u.name)}</b> زيارة <b>${esc(rec.org)}</b> بتاريخ ${fmt(rec.date)}.</p>`,'مراجعة الطلب','lmvisits');
+    }
     audit('visit.submit','visit',rec.id,`${u.name} — ${rec.org}`);
-    notify(u.managerId,`زيارة ميدانية بانتظار اعتمادك: ${u.name}`,'زيارة ميدانية بانتظار الاعتماد',`<p>${esc(u.name)} زار <b>${esc(rec.org)}</b> بتاريخ ${fmt(rec.date)} (${rec.durMin} دقيقة).</p>`,'مراجعة الزيارة','lmvisits');
   }else audit('visit.save','visit',rec.id,rec.org);
   commit('visits');return {ok:true,visit:rec};
 }
+/* تقرير ما بعد التنفيذ: لا يُقبل إلا على زيارة مُصرَّح بها */
+function saveVisitReport(id,f){
+  const v=DB.visits.find(x=>x.id===id);if(!v)return {ok:false,msg:'الطلب غير موجود'};
+  if(v.userId!==S.me){audit('denied','permission','visit.report',id);return {ok:false,msg:'غير مصرّح'}}
+  if(!['approved','returned_rep'].includes(v.status))return {ok:false,msg:'التقرير يُرفع بعد التصريح بالزيارة فقط'};
+  if(v.date>TODAY())return {ok:false,msg:`موعد الزيارة ${fmt(v.date)}؛ التقرير يُرفع بعد تنفيذها`};
+  const e=validateVisitRep(f);if(e.length)return {ok:false,msg:e[0],all:e};
+  Object.assign(v,{people:(f.people||'').trim(),start:f.start||'',end:f.end||'',durMin:visitDur(f),
+    topics:(f.topics||'').trim(),results:(f.results||'').trim(),recs:(f.recs||'').trim(),attach:(f.attach||[]).slice(),
+    status:'reported',repAt:nowISO()});
+  v.decisions.push({at:nowISO(),by:S.me,action:'report',stage:'rep',note:''});
+  const u=U(v.userId);
+  notify(u.managerId,`تقرير زيارة بانتظار اعتمادك: ${u.name}`,'تقرير زيارة ميدانية',
+    `<p>رفع <b>${esc(u.name)}</b> تقرير زيارته لـ <b>${esc(v.org)}</b> (${minTxt(v.durMin)}) مع الشاهد.</p>`,'مراجعة التقرير','lmvisits');
+  audit('visit.report','visit',v.id,v.org);commit('visits');return {ok:true};
+}
+/* قرار واحد يخدم ثلاث محطات، وكلٌّ يُتحقَّق من صاحبها ومن حالتها */
 function decideVisit(id,action,note){
   const v=DB.visits.find(x=>x.id===id);if(!v)return {ok:false,msg:'الزيارة غير موجودة'};
-  const u=U(v.userId);
-  if(S.role!=='linemgr'||!u||u.managerId!==S.me){audit('denied','permission','visit.decide',id);return {ok:false,msg:'غير مصرّح: الاعتماد للرئيس المباشر للموظف فقط'}}
-  if(v.status!=='submitted')return {ok:false,msg:'الحالة تغيّرت: '+ST_AR[v.status]};
+  const u=U(v.userId);if(!u)return {ok:false,msg:'الموظف غير موجود'};
   if(!['approve','return','reject'].includes(action))return {ok:false,msg:'إجراء غير صالح'};
   note=String(note||'').trim();if(action!=='approve'&&note.length<3)return {ok:false,msg:'اكتب السبب أو الملاحظة'};
-  v.status=action==='approve'?'approved':action==='return'?'returned':'rejected';v.decisions.push({at:nowISO(),by:S.me,action,note});v.decidedAt=nowISO();
-  commit('visits');audit('visit.'+action,'visit',v.id,v.org);
-  notify(v.userId,`${action==='approve'?'اعتماد':action==='return'?'إعادة للتعديل':'رفض'}: زيارتك لـ ${v.org}`,action==='approve'?'أُضيفت الزيارة إلى سجلك':action==='return'?'مطلوب تعديل':'رُفضت الزيارة',`<p>${action==='approve'?'اعتُمدت زيارتك وأُضيفت مدتها إلى سجل التطوير المهني.'+(note?' ملاحظة: '+esc(note):''):'ملاحظات الرئيس المباشر: '+esc(note)}</p>`,'فتح','devp');
+
+  const stage=v.status==='pending_comm'?'comm':['pending_lm','submitted'].includes(v.status)?'lm':v.status==='reported'?'rep':null;
+  if(!stage)return {ok:false,msg:'الحالة تغيّرت: '+(ST_AR[v.status]||v.status)};
+  if(stage==='comm'){
+    if(!isCommApprover(S.me)){audit('denied','permission','visit.decide.comm',id);return {ok:false,msg:'غير مصرّح: الموافقة المبدئية لمعتمد الاتصال المؤسسي'}}
+  }else if(S.role!=='linemgr'||u.managerId!==S.me){
+    audit('denied','permission','visit.decide',id);return {ok:false,msg:'غير مصرّح: الاعتماد للرئيس المباشر للموظف فقط'};
+  }
+
+  v.decisions.push({at:nowISO(),by:S.me,action,stage,note});v.decidedAt=nowISO();
+  let title='',head='',body='';
+  if(action==='reject'){v.status='rejected';title=`رفض: طلب زيارتك لـ ${v.org}`;head='رُفض الطلب';body='السبب: '+esc(note)}
+  else if(action==='return'){v.status='returned';title=`إعادة للتعديل: زيارتك لـ ${v.org}`;head='مطلوب تعديل';body='الملاحظة: '+esc(note)}
+  else if(stage==='comm'){
+    v.status='pending_lm';v.lmAt=nowISO();
+    notify(u.managerId,`طلب زيارة بانتظار اعتمادك: ${u.name}`,'طلب زيارة ميدانية',
+      `<p>وافقت إدارة الاتصال المؤسسي مبدئيًا على زيارة <b>${esc(u.name)}</b> لـ <b>${esc(v.org)}</b> بتاريخ ${fmt(v.date)}، وتنتظر اعتمادك.</p>`,'مراجعة الطلب','lmvisits');
+    title=`موافقة مبدئية: زيارتك لـ ${v.org}`;head='وافق الاتصال المؤسسي';body='الطلب الآن عند رئيسك المباشر للاعتماد.';
+  }else if(stage==='lm'){
+    v.status='approved';v.okAt=nowISO();
+    title=`تصريح: زيارتك لـ ${v.org}`;head='صُرِّح لك بالزيارة';body='نفّذ الزيارة في موعدها، ثم ارفع التقرير والشاهد من صفحة التطوير المهني.';
+  }else{
+    v.status='closed';v.closedAt=nowISO();
+    commApprovers().forEach(c=>notify(c.id,`تقرير زيارة: ${u.name} — ${v.org}`,'تقرير زيارة ميدانية (نسخة للعلم)',
+      `<p>أغلق <b>${esc(u.name)}</b> زيارته لـ <b>${esc(v.org)}</b> في ${esc(v.place||'')} بتاريخ ${fmt(v.date)} (${minTxt(v.durMin)}).</p>`
+      +`<p><b>المحاور:</b> ${esc(v.topics)}</p><p><b>النتائج:</b> ${esc(v.results)}</p><p><b>التوصيات:</b> ${esc(v.recs)}</p>`
+      +`<p><b>الشاهد:</b> ${(v.attach||[]).map(fileLink).join(' ')||'—'}</p>`,'فتح','commvisits'));
+    title=`اعتماد: تقرير زيارتك لـ ${v.org}`;head='أُغلقت الزيارة واعتُمدت';
+    body='اعتُمد تقريرك وأُضيفت مدة الزيارة إلى سجل التطوير المهني، وأُرسلت نسخة لإدارة الاتصال المؤسسي.';
+  }
+  commit('visits');audit('visit.'+stage+'.'+action,'visit',v.id,v.org);
+  notify(v.userId,title,head,`<p>${body}</p>`,'فتح','devp');
   return {ok:true};
 }
 
@@ -2376,7 +2544,7 @@ function actRows(){
   DB.libenr.filter(inc).forEach(e=>{const x=libById(e.libId);if(x&&!libPassed(e.userId,e.libId)){add({type:'recorded',refId:e.libId,userId:e.userId,title:x.title,date:e.at.slice(0,10),status:'inprogress',pct:libPct(e.userId,x),hours:0,durMin:0,field:x.cat,demo:e.demo})}});
   DB.readprog.filter(inc).forEach(p=>{const r=readById(p.readingId);if(!r)return;const st=readStatus(p.userId,r);add({type:'reading',refId:r.id,userId:p.userId,title:r.title,date:(p.doneAt||p.updated||p.startedAt||'').slice(0,10),status:p.done?'completed':'inprogress',pct:st.pct,hours:0,durMin:p.done?(r.estMin||0):0,field:r.cat,demo:p.demo})});
   DB.extreq.filter(inc).forEach(x=>add({type:'external',refId:x.id,userId:x.userId,title:x.title,date:x.date,status:x.status==='approved'?'approved':x.status,hours:x.status==='approved'?x.hours:0,reqHours:x.hours,durMin:0,provider:x.provider,field:x.field,at:x.at,demo:x.demo}));
-  DB.visits.filter(inc).forEach(v=>add({type:'visit',refId:v.id,userId:v.userId,title:'زيارة: '+v.org,date:v.date||(v.at||'').slice(0,10),status:v.status,hours:0,durMin:v.status==='approved'?v.durMin:0,reqMin:v.durMin,org:v.org,at:v.at,demo:v.demo}));
+  DB.visits.filter(inc).forEach(v=>add({type:'visit',refId:v.id,userId:v.userId,title:'زيارة: '+v.org,date:v.date||(v.at||'').slice(0,10),status:v.status,hours:0,durMin:visitCounts(v)?v.durMin:0,reqMin:v.durMin,org:v.org,at:v.at,demo:v.demo}));
   return rows;
 }
 const rowCounted=r=>COUNTED.includes(r.status);
@@ -2532,10 +2700,25 @@ function vDevp(){
   let body='';
   if(t==='ext')body=`<div class="note" style="margin-bottom:14px">لا تُحتسب الدورة الخارجية ضمن إنجازاتك ومؤشراتك قبل أن يعتمدها مدير التدريب بعد مراجعة بياناتها وشهادتها.</div>
    ${my.length?`<div class="card tbl-wrap"><table><thead><tr><th>الدورة</th><th>الجهة</th><th>التنفيذ</th><th>الساعات</th><th>الحالة</th><th>سجل القرارات</th></tr></thead><tbody>${my.map(x=>`<tr><td><b style="color:var(--navy);font-weight:600">${esc(x.title)}</b>${demoTag(x)}<div class="small muted">${fileLink(x.certFile)}</div></td><td>${esc(x.provider)}</td><td>${fmt(x.date)}</td><td class="num">${num(x.hours)}</td><td>${stTag(x.status)}</td><td class="small">${x.decisions.filter(d=>d.action!=='submit').map(d=>`${d.action==='approve'?'اعتماد':'رفض'} ${dateOf(d.at)}${d.note?': '+esc(d.note):''}`).join('<br>')||'—'}</td></tr>`).join('')}</tbody></table></div>`:emptyBox('ext','لم تسجّل أي دورة خارجية بعد.')}`;
-  else if(t==='visits')body=`<div class="note" style="margin-bottom:14px">الزيارة الميدانية وسيلة تطوير مهني؛ لا تُحتسب إلا بعد اعتماد رئيسك المباشر. مدتها تُحسب آليًا من وقتي البداية والنهاية، وتُعرض كمدة تطوير مهني منفصلة عن الساعات التدريبية. <button class="btn ghost sm" data-act="go" data-v="library" data-tab="read">دليل الزيارات الميدانية</button></div>
-   ${vs.length?`<div class="card tbl-wrap"><table><thead><tr><th>الجهة</th><th>التاريخ</th><th>المدة</th><th>الحالة</th><th>ملاحظات الرئيس</th><th></th></tr></thead><tbody>${vs.map(v=>{const d=v.decisions.filter(x=>x.note&&x.action!=='submit').slice(-1)[0];return `<tr><td><b style="color:var(--navy);font-weight:600">${esc(v.org)}</b>${demoTag(v)}</td><td>${v.date?fmt(v.date):'—'}</td><td class="num">${v.durMin?minTxt(v.durMin):'—'}</td><td>${stTag(v.status)}</td><td class="small">${d?esc(d.note):'—'}</td><td><button class="btn ghost sm" data-act="visit-open" data-id="${v.id}">${['draft','returned'].includes(v.status)?'تعديل':'عرض'}</button></td></tr>`}).join('')}</tbody></table></div>`:emptyBox('pin','لم تسجّل أي زيارة ميدانية بعد.')}`;
+  else if(t==='visits')body=`<div class="note" style="margin-bottom:14px">الزيارة تُطلَب قبل تنفيذها: يوافق عليها الاتصال المؤسسي مبدئيًا، ثم يعتمدها رئيسك المباشر، وعندها تنفّذها. وبعد التنفيذ ترفع التقرير والشاهد ليعتمدهما رئيسك، فتُحتسب مدتها في سجل تطويرك المهني وتصل نسخة للاتصال المؤسسي. <button class="btn ghost sm" data-act="go" data-v="library" data-tab="read">دليل الزيارات الميدانية</button></div>
+   ${vs.length?vs.map(v=>{
+     const d=(v.decisions||[]).filter(x=>x.note&&x.action!=='submit'&&x.action!=='report').slice(-1)[0];
+     const canEdit=['draft','returned'].includes(v.status);
+     const canReport=v.status==='approved'&&v.date<=TODAY();
+     const waitDate=v.status==='approved'&&v.date>TODAY();
+     return `<article class="card pad vs-c">
+      <div class="vs-h"><div><b style="color:var(--navy)">${esc(v.org)}</b>${demoTag(v)}
+       <div class="small muted">${v.place?esc(v.place)+' · ':''}${v.date?fmt(v.date):'—'}${v.durMin?' · '+minTxt(v.durMin):''}</div></div>
+       <div>${stTag(v.status)}</div></div>
+      ${visitTrack(v)}
+      ${d?`<div class="note ${['rejected','returned'].includes(v.status)?'warn':''}" style="margin-top:10px">${esc(d.note)}</div>`:''}
+      ${waitDate?`<div class="small muted" style="margin-top:10px">صُرِّح لك بالزيارة. موعدها ${fmt(v.date)}، وبعدها يفتح رفع التقرير.</div>`:''}
+      <div class="vs-a">
+       <button class="btn ghost sm" data-act="visit-open" data-id="${v.id}">${canEdit?'تعديل الطلب':'عرض'}</button>
+       ${canReport?`<button class="btn sm" data-act="visit-report" data-id="${v.id}">أغلقها بالتقرير والشاهد</button>`:''}
+      </div></article>`}).join(''):emptyBox('pin','لم تطلب أي زيارة ميدانية بعد.')}`;
   else{const L=visibleComments();body=L.length?`<div class="card pad">${L.map(c=>cmItem(c,{showTarget:true})).join('')}</div>`:emptyBox('msg','لم ترسل تعليقات بعد. يمكنك إرسال تعليق من صفحة أي دورة مسجلة أو مادة مقروءة.')}
-  return `${pg('التطوير المهني','دورات خارجية وزيارات ميدانية وتعليقاتك على المحتوى.',t==='ext'?`<button class="btn" data-act="ext-new">${ico('plus')}تسجيل دورة خارجية</button>`:t==='visits'?`<button class="btn" data-act="visit-new">${ico('plus')}تسجيل زيارة ميدانية</button>`:'')}${tabsHtml('devp',tabs)}${body}`;
+  return `${pg('التطوير المهني','دورات خارجية وزيارات ميدانية وتعليقاتك على المحتوى.',t==='ext'?`<button class="btn" data-act="ext-new">${ico('plus')}تسجيل دورة خارجية</button>`:t==='visits'?`<button class="btn" data-act="visit-new">${ico('plus')}طلب زيارة ميدانية</button>`:'')}${tabsHtml('devp',tabs)}${body}`;
 }
 function extModal(){
   mask(`${mHead('تسجيل دورة خارجية','تُرسل للمراجعة والاعتماد من مدير التدريب')}<div class="m-b"><div class="fgrid">
@@ -2554,29 +2737,52 @@ function extModal(){
 }
 function visitModal(id){
   const v=id?DB.visits.find(x=>x.id===id&&x.userId===S.me):null;
-  const ro=v&&!['draft','returned'].includes(v.status);const e=v||{org:'',people:'',date:'',goals:'',start:'',end:'',topics:'',results:'',recs:'',attach:[],status:'draft',decisions:[]};
+  const ro=v&&!['draft','returned'].includes(v.status);
+  const e=v||{org:'',place:'',people:'',date:'',goals:'',attach:[],status:'draft',decisions:[]};
   S._vs={id:v?v.id:null,attach:(e.attach||[]).slice()};
   const dis=ro?'disabled':'';
   const mgr=mgrOfUser(ME());
-  mask(`${mHead(ro?'تفاصيل الزيارة الميدانية':'زيارة ميدانية',mgr?`ستُرسل إلى رئيسك المباشر: ${esc(mgr.name)}`:'لا يوجد رئيس مباشر محدد لك')}<div class="m-b">
-  ${v&&v.status==='returned'?`<div class="note warn" style="margin-bottom:12px">أعاد رئيسك الزيارة للتعديل: ${esc((v.decisions.filter(d=>d.action==='return').slice(-1)[0]||{}).note||'')}</div>`:''}
+  const dest=commOn()?'ستُرسل أولًا إلى إدارة الاتصال المؤسسي للموافقة المبدئية، ثم إلى رئيسك المباشر'
+                     :(mgr?`ستُرسل إلى رئيسك المباشر: ${esc(mgr.name)}`:'لا يوجد رئيس مباشر محدد لك');
+  mask(`${mHead(ro?'تفاصيل طلب الزيارة':'طلب زيارة ميدانية',dest)}<div class="m-b">
+  ${v?visitTrack(v):''}
+  ${v&&v.status==='returned'?`<div class="note warn" style="margin:12px 0">أُعيد الطلب للتعديل: ${esc(((v.decisions||[]).filter(d=>d.action==='return').slice(-1)[0]||{}).note||'')}</div>`:''}
+  ${ro?'':'<div class="note" style="margin:12px 0">الزيارة تُطلب <b>قبل</b> تنفيذها. التقرير والشاهد تُرفع بعد التنفيذ من الزرّ الذي يظهر على الطلب.</div>'}
   <div class="fgrid">
-   <div class="field"><label for="vs_org">اسم الجهة المزارة *</label><input class="inp" id="vs_org" maxlength="150" value="${esc(e.org)}" ${dis}></div>
-   <div class="field"><label for="vs_people">الأشخاص الذين تمت زيارتهم/مقابلتهم *</label><input class="inp" id="vs_people" maxlength="250" value="${esc(e.people)}" ${dis}></div>
-   <div class="field"><label for="vs_date">تاريخ الزيارة *</label><input class="inp" id="vs_date" type="date" max="${TODAY()}" value="${esc(e.date)}" ${dis}></div>
-   <div class="field"><label for="vs_start">وقت البداية *</label><input class="inp" id="vs_start" type="time" value="${esc(e.start)}" data-act="vs-dur" ${dis}></div>
-   <div class="field"><label for="vs_end">وقت النهاية *</label><input class="inp" id="vs_end" type="time" value="${esc(e.end)}" data-act="vs-dur" ${dis}></div>
-   <div class="field"><label>مدة الزيارة (تُحسب آليًا)</label><div class="inp" id="vs_dur" style="background:var(--sky-3)">${e.durMin?minTxt(e.durMin):'—'}</div></div>
-   <div class="field full"><label for="vs_goals">أهداف الزيارة *</label><textarea class="inp" id="vs_goals" rows="2" maxlength="800" ${dis}>${esc(e.goals)}</textarea></div>
-   <div class="field full"><label for="vs_topics">المحاور التي تمت مناقشتها *</label><textarea class="inp" id="vs_topics" rows="2" maxlength="1200" ${dis}>${esc(e.topics)}</textarea></div>
-   <div class="field full"><label for="vs_results">أبرز النتائج والمخرجات *</label><textarea class="inp" id="vs_results" rows="2" maxlength="1200" ${dis}>${esc(e.results)}</textarea></div>
-   <div class="field full"><label for="vs_recs">التوصيات *</label><textarea class="inp" id="vs_recs" rows="2" maxlength="1200" ${dis}>${esc(e.recs)}</textarea></div>
-   <div class="field full"><label>المرفقات والوثائق الداعمة (PDF/JPG/PNG)</label><div id="vs_files" class="small">${(S._vs.attach||[]).map(fileLink).join(' ')||'<span class="muted">لا مرفقات</span>'}</div>${ro?'':'<input class="inp" id="vs_att" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="margin-top:6px">'}</div></div>
-  ${v&&v.decisions.length?`<div class="small muted" style="margin-top:8px">سجل القرارات: ${v.decisions.map(d=>`${{submit:'إرسال',approve:'اعتماد',return:'إعادة للتعديل',reject:'رفض'}[d.action]} (${dateOf(d.at)})`).join(' ← ')}</div>`:''}</div>
-  <div class="m-f"><button class="btn sec" data-act="close">${ro?'إغلاق':'إلغاء'}</button>${ro?'':`<button class="btn sec" data-act="vs-save" data-submit="0">حفظ كمسوّدة</button><button class="btn" data-act="vs-save" data-submit="1">إرسال للرئيس المباشر</button>`}</div>`,'wide');
+   <div class="field"><label for="vs_org">الجهة المراد زيارتها *</label><input class="inp" id="vs_org" maxlength="150" value="${esc(e.org)}" ${dis}></div>
+   <div class="field"><label for="vs_place">موقع الزيارة *</label><input class="inp" id="vs_place" maxlength="150" placeholder="المدينة والحي أو العنوان" value="${esc(e.place||'')}" ${dis}></div>
+   <div class="field"><label for="vs_date">التاريخ المقترح *</label><input class="inp" id="vs_date" type="date" min="${TODAY()}" value="${esc(e.date)}" ${dis}></div>
+   <div class="field"><label for="vs_people">من تتوقّع مقابلتهم (اختياري)</label><input class="inp" id="vs_people" maxlength="250" value="${esc(e.people||'')}" ${dis}></div>
+   <div class="field full"><label for="vs_goals">هدف الزيارة بالتفصيل *</label><textarea class="inp" id="vs_goals" rows="3" maxlength="800" placeholder="ماذا تريد أن تحقّق من هذه الزيارة؟" ${dis}>${esc(e.goals)}</textarea></div>
+  </div>
+  ${v&&(v.decisions||[]).length?`<div class="small muted" style="margin-top:10px">سجل القرارات: ${v.decisions.map(d=>`${({submit:'إرسال',approve:'موافقة',return:'إعادة للتعديل',reject:'رفض',report:'رفع التقرير'})[d.action]||d.action}${d.stage==='comm'?' (الاتصال)':d.stage==='lm'?' (الرئيس)':''} ${dateOf(d.at)}`).join(' ← ')}</div>`:''}</div>
+  <div class="m-f"><button class="btn sec" data-act="close">${ro?'إغلاق':'إلغاء'}</button>${ro?'':`<button class="btn sec" data-act="vs-save" data-submit="0">حفظ كمسوّدة</button><button class="btn" data-act="vs-save" data-submit="1">إرسال الطلب</button>`}</div>`,'wide');
+}
+/* نموذج ما بعد التنفيذ: التقرير والشاهد */
+function visitReportModal(id){
+  const v=DB.visits.find(x=>x.id===id&&x.userId===S.me);if(!v)return;
+  S._vr={id:v.id,attach:(v.attach||[]).slice()};
+  mask(`${mHead('تقرير الزيارة والشاهد',`${esc(v.org)} · ${fmt(v.date)}`)}<div class="m-b">
+  <div class="note" style="margin-bottom:12px">الشاهد إلزامي: صورة أو مستند يثبت الزيارة. وتصل نسخة من التقرير لإدارة الاتصال المؤسسي بعد اعتماد رئيسك.</div>
+  <div class="fgrid">
+   <div class="field"><label for="vr_start">وقت البداية *</label><input class="inp" id="vr_start" type="time" data-act="vr-dur"></div>
+   <div class="field"><label for="vr_end">وقت النهاية *</label><input class="inp" id="vr_end" type="time" data-act="vr-dur"></div>
+   <div class="field"><label>المدة (تُحسب آليًا)</label><div class="inp" id="vr_dur" style="background:var(--sky-3)">—</div></div>
+   <div class="field"><label for="vr_people">من قابلتَ *</label><input class="inp" id="vr_people" maxlength="250" value="${esc(v.people||'')}"></div>
+   <div class="field full"><label for="vr_topics">المحاور التي نوقشت *</label><textarea class="inp" id="vr_topics" rows="2" maxlength="1200"></textarea></div>
+   <div class="field full"><label for="vr_results">أبرز النتائج والمخرجات *</label><textarea class="inp" id="vr_results" rows="2" maxlength="1200"></textarea></div>
+   <div class="field full"><label for="vr_recs">التوصيات *</label><textarea class="inp" id="vr_recs" rows="2" maxlength="1200"></textarea></div>
+   <div class="field full"><label>الشاهد والصور * (PDF/JPG/PNG حتى ${(FILE_MAX/1e6).toFixed(1)} م.ب)</label>
+    <div id="vr_files" class="small">${(S._vr.attach||[]).map(fileLink).join(' ')||'<span class="muted">لا مرفقات</span>'}</div>
+    <input class="inp" id="vr_att" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="margin-top:6px"></div>
+  </div></div>
+  <div class="m-f"><button class="btn sec" data-act="close">إلغاء</button><button class="btn" data-act="vr-save">إرسال التقرير للاعتماد</button></div>`,'wide');
 }
 function visitForm(){
-  return {id:S._vs.id,org:fieldVal('vs_org'),people:fieldVal('vs_people'),date:fieldVal('vs_date'),start:fieldVal('vs_start'),end:fieldVal('vs_end'),goals:fieldVal('vs_goals'),topics:fieldVal('vs_topics'),results:fieldVal('vs_results'),recs:fieldVal('vs_recs'),attach:S._vs.attach};
+  return {id:S._vs.id,org:fieldVal('vs_org'),place:fieldVal('vs_place'),people:fieldVal('vs_people'),date:fieldVal('vs_date'),goals:fieldVal('vs_goals')};
+}
+function visitRepForm(){
+  return {start:fieldVal('vr_start'),end:fieldVal('vr_end'),people:fieldVal('vr_people'),topics:fieldVal('vr_topics'),results:fieldVal('vr_results'),recs:fieldVal('vr_recs'),attach:S._vr.attach};
 }
 async function addFiles(inputId,list){
   const el=document.getElementById(inputId);const fs=el?[...el.files]:[];const ids=[];
@@ -2585,23 +2791,58 @@ async function addFiles(inputId,list){
 }
 
 /* ---------- الرئيس المباشر: اعتماد الزيارات الميدانية ---------- */
+const VS_OPEN=['pending_comm','pending_lm','submitted','approved','reported'];
 function vLmVisits(){
-  const mine=DB.visits.filter(v=>inc(v)&&v.status!=='draft'&&(U(v.userId)||{}).managerId===S.me).sort((a,b)=>(a.status==='submitted'?0:1)-(b.status==='submitted'?0:1)||b.at.localeCompare(a.at));
-  const pend=mine.filter(v=>v.status==='submitted').length;
-  return `${pg('اعتماد الزيارات الميدانية','زيارات موظفيك المباشرين. لا تُحتسب الزيارة ضمن الأنشطة المعتمدة إلا بعد اعتمادك.')}
-  <div class="grid g3" style="margin-bottom:16px">${kpiTile('clock','var(--sky-2)','var(--teal)',pend,'بانتظار اعتمادك')}${kpiTile('check','var(--sky-2)','var(--teal)',mine.filter(v=>v.status==='approved').length,'معتمدة')}${kpiTile('swap','var(--sky-2)','var(--teal)',mine.filter(v=>['returned','rejected'].includes(v.status)).length,'أُعيدت أو رُفضت')}</div>
-  ${mine.length?`<div class="card tbl-wrap"><table><thead><tr><th>الموظف</th><th>الجهة</th><th>التاريخ</th><th>المدة</th><th>الحالة</th><th></th></tr></thead><tbody>${mine.map(v=>`<tr><td>${esc((U(v.userId)||{}).name||'')}</td><td><b style="color:var(--navy);font-weight:600">${esc(v.org)}</b>${demoTag(v)}</td><td>${fmt(v.date)}</td><td class="num">${minTxt(v.durMin)}</td><td>${stTag(v.status)}</td><td><button class="btn ${v.status==='submitted'?'':'ghost'} sm" data-act="lmv-open" data-id="${v.id}">${v.status==='submitted'?'مراجعة':'عرض'}</button></td></tr>`).join('')}</tbody></table></div>`:emptyBox('pin','لا توجد زيارات مرسلة من موظفيك.')}`;
+  const mine=DB.visits.filter(v=>inc(v)&&v.status!=='draft'&&(U(v.userId)||{}).managerId===S.me);
+  const act=['pending_lm','submitted','reported'];
+  mine.sort((a,b)=>(act.includes(a.status)?0:1)-(act.includes(b.status)?0:1)||(b.at||'').localeCompare(b.at||'')||0);
+  const pendReq=mine.filter(v=>['pending_lm','submitted'].includes(v.status)).length;
+  const pendRep=mine.filter(v=>v.status==='reported').length;
+  const row=v=>{const live=act.includes(v.status);
+    return `<tr><td>${esc((U(v.userId)||{}).name||'')}</td><td><b style="color:var(--navy);font-weight:600">${esc(v.org)}</b>${demoTag(v)}<div class="small muted">${esc(v.place||'')}</div></td><td>${fmt(v.date)}</td><td class="num">${v.durMin?minTxt(v.durMin):'—'}</td><td>${stTag(v.status)}</td><td><button class="btn ${live?'':'ghost'} sm" data-act="lmv-open" data-id="${v.id}">${live?'مراجعة':'عرض'}</button></td></tr>`};
+  return `${pg('اعتماد الزيارات الميدانية','تعتمد طلب الزيارة قبل تنفيذها، ثم تعتمد تقريرها وشاهدها بعد التنفيذ.')}
+  <div class="grid g3" style="margin-bottom:16px">${kpiTile('clock','var(--sky-2)','var(--teal)',pendReq,'طلبات بانتظار اعتمادك')}${kpiTile('file','var(--sky-2)','var(--teal)',pendRep,'تقارير بانتظار اعتمادك')}${kpiTile('check','var(--sky-2)','var(--teal)',mine.filter(v=>v.status==='closed').length,'مغلقة ومعتمدة')}</div>
+  ${mine.length?`<div class="card tbl-wrap"><table><thead><tr><th>الموظف</th><th>الجهة</th><th>التاريخ</th><th>المدة</th><th>الحالة</th><th></th></tr></thead><tbody>${mine.map(row).join('')}</tbody></table></div>`:emptyBox('pin','لا توجد زيارات من موظفيك.')}`;
+}
+/* ---------- الاتصال المؤسسي: الموافقة المبدئية ونسخ التقارير ---------- */
+function vCommVisits(){
+  const all=DB.visits.filter(v=>inc(v)&&v.status!=='draft');
+  const pend=all.filter(v=>v.status==='pending_comm');
+  const rest=all.filter(v=>v.status!=='pending_comm').sort((a,b)=>(b.at||'').localeCompare(a.at||''));
+  const row=(v,live)=>`<tr><td>${esc((U(v.userId)||{}).name||'')}</td><td><b style="color:var(--navy);font-weight:600">${esc(v.org)}</b>${demoTag(v)}<div class="small muted">${esc(v.place||'')}</div></td><td>${fmt(v.date)}</td><td>${stTag(v.status)}</td><td><button class="btn ${live?'':'ghost'} sm" data-act="cmv-open" data-id="${v.id}">${live?'مراجعة':'عرض'}</button></td></tr>`;
+  return `${pg('الزيارات الميدانية — الاتصال المؤسسي','موافقتكم المبدئية تسبق اعتماد الرئيس المباشر. وتصلكم نسخة من تقرير كل زيارة بعد إغلاقها.')}
+  <div class="grid g3" style="margin-bottom:16px">${kpiTile('clock','var(--sky-2)','var(--teal)',pend.length,'بانتظار موافقتكم')}${kpiTile('check','var(--sky-2)','var(--teal)',all.filter(v=>v.status==='closed').length,'مغلقة بتقاريرها')}${kpiTile('pin','var(--sky-2)','var(--teal)',all.filter(v=>['pending_lm','approved','reported'].includes(v.status)).length,'جارية')}</div>
+  ${pend.length?`<h3 class="sec-h">بانتظار موافقتكم</h3><div class="card tbl-wrap" style="margin-bottom:18px"><table><thead><tr><th>الموظف</th><th>الجهة</th><th>التاريخ المقترح</th><th>الحالة</th><th></th></tr></thead><tbody>${pend.map(v=>row(v,true)).join('')}</tbody></table></div>`:emptyBox('check','لا طلبات بانتظار موافقتكم.')}
+  ${rest.length?`<h3 class="sec-h">بقية الزيارات</h3><div class="card tbl-wrap"><table><thead><tr><th>الموظف</th><th>الجهة</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>${rest.map(v=>row(v,false)).join('')}</tbody></table></div>`:''}`;
 }
 function visitReadOnly(v){
   const u=U(v.userId)||{};
-  return `<div class="fgrid">${[['الموظف',u.name],['الجهة المزارة',v.org],['الأشخاص',v.people],['التاريخ',fmt(v.date)],['الوقت',`${v.start} – ${v.end}`],['المدة',minTxt(v.durMin)]].map(([a,b])=>`<div class="field"><label>${a}</label><div>${esc(b||'—')}</div></div>`).join('')}
-  ${[['أهداف الزيارة',v.goals],['المحاور',v.topics],['أبرز النتائج',v.results],['التوصيات',v.recs]].map(([a,b])=>`<div class="field full"><label>${a}</label><div style="line-height:1.9">${esc(b||'—')}</div></div>`).join('')}
-  <div class="field full"><label>المرفقات</label><div class="small">${(v.attach||[]).map(fileLink).join(' ')||'—'}</div></div></div>`;
+  const reported=['reported','closed'].includes(v.status)||v.durMin;
+  return `<div class="fgrid">${[['الموظف',u.name],['الجهة',v.org],['الموقع',v.place],['التاريخ',fmt(v.date)]].map(([a,b])=>`<div class="field"><label>${a}</label><div>${esc(b||'—')}</div></div>`).join('')}
+  <div class="field full"><label>هدف الزيارة</label><div style="line-height:1.9">${esc(v.goals||'—')}</div></div>
+  ${reported?`${[['من قابل',v.people],['الوقت',v.start?`${v.start} – ${v.end}`:''],['المدة',v.durMin?minTxt(v.durMin):'']].map(([a,b])=>`<div class="field"><label>${a}</label><div>${esc(b||'—')}</div></div>`).join('')}
+  ${[['المحاور',v.topics],['أبرز النتائج',v.results],['التوصيات',v.recs]].map(([a,b])=>`<div class="field full"><label>${a}</label><div style="line-height:1.9">${esc(b||'—')}</div></div>`).join('')}
+  <div class="field full"><label>الشاهد والمرفقات</label><div class="small">${(v.attach||[]).map(fileLink).join(' ')||'—'}</div></div>`:''}</div>
+  ${visitTrack(v)}`;
 }
 function lmVisitModal(id){
-  const v=DB.visits.find(x=>x.id===id);const u=v&&U(v.userId);if(!v||!u||u.managerId!==S.me){audit('denied','permission','visit.view',id);toast('غير مصرّح');return}
-  S._lmv=id;const can=v.status==='submitted';
-  mask(`${mHead('مراجعة زيارة ميدانية',esc(u.name))}<div class="m-b">${visitReadOnly(v)}${can?`<div class="field" style="margin-top:12px"><label for="lmv_n">ملاحظات / سبب القرار (إلزامي عند الإعادة أو الرفض)</label><textarea class="inp" id="lmv_n" rows="2"></textarea></div>`:`<div class="small muted">الحالة: ${ST_AR[v.status]}</div>`}</div><div class="m-f"><button class="btn sec" data-act="close">إغلاق</button>${can?`<button class="btn sec" data-act="lmv-do" data-a="reject">رفض</button><button class="btn sec" data-act="lmv-do" data-a="return">إعادة للتعديل</button><button class="btn" data-act="lmv-do" data-a="approve">اعتماد</button>`:''}</div>`,'wide');
+  const v=DB.visits.find(x=>x.id===id);const u=v&&U(v.userId);
+  if(!v||!u||u.managerId!==S.me){audit('denied','permission','visit.view',id);toast('غير مصرّح');return}
+  S._lmv=id;
+  const isRep=v.status==='reported',can=isRep||['pending_lm','submitted'].includes(v.status);
+  mask(`${mHead(isRep?'مراجعة تقرير الزيارة':'مراجعة طلب زيارة',esc(u.name))}<div class="m-b">${visitReadOnly(v)}
+  ${can?`<div class="field" style="margin-top:12px"><label for="lmv_n">ملاحظات / سبب القرار (إلزامي عند الإعادة أو الرفض)</label><textarea class="inp" id="lmv_n" rows="2"></textarea></div>`
+      :`<div class="small muted">الحالة: ${ST_AR[v.status]||v.status}</div>`}</div>
+  <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button>${can?`<button class="btn sec" data-act="lmv-do" data-a="reject">رفض</button><button class="btn sec" data-act="lmv-do" data-a="return">إعادة للتعديل</button><button class="btn" data-act="lmv-do" data-a="approve">${isRep?'اعتماد التقرير وإغلاقها':'اعتماد الطلب'}</button>`:''}</div>`,'wide');
+}
+function commVisitModal(id){
+  const v=DB.visits.find(x=>x.id===id);const u=v&&U(v.userId);
+  if(!isCommApprover(S.me)||!v||!u){audit('denied','permission','visit.view.comm',id);toast('غير مصرّح');return}
+  S._lmv=id;const can=v.status==='pending_comm';
+  mask(`${mHead('طلب زيارة ميدانية',esc(u.name))}<div class="m-b">${visitReadOnly(v)}
+  ${can?`<div class="field" style="margin-top:12px"><label for="lmv_n">ملاحظات / سبب القرار (إلزامي عند الإعادة أو الرفض)</label><textarea class="inp" id="lmv_n" rows="2"></textarea></div>`
+      :`<div class="small muted">الحالة: ${ST_AR[v.status]||v.status}</div>`}</div>
+  <div class="m-f"><button class="btn sec" data-act="close">إغلاق</button>${can?`<button class="btn sec" data-act="lmv-do" data-a="reject">رفض</button><button class="btn sec" data-act="lmv-do" data-a="return">إعادة للتعديل</button><button class="btn" data-act="lmv-do" data-a="approve">موافقة مبدئية</button>`:''}</div>`,'wide');
 }
 
 /* ---------- السجل الموحّد للموظف ---------- */
@@ -2876,7 +3117,7 @@ function loginView(){
 
 /* ================= المعالجات والتوجيه لوحدات الأنشطة ================= */
 const needRole=r=>{if(S.role===r)return true;audit('denied','permission','role:'+r,S.view);toast('غير مصرّح','هذا الإجراء مخصص لدور آخر');return false};
-const VIEWS2={library:vLibraryHub,reader:vReader,devp:vDevp,lmvisits:vLmVisits,tdash:vTrainerDash,activities:vActivities,requests:vRequests,help:vHelp};
+const VIEWS2={library:vLibraryHub,reader:vReader,devp:vDevp,lmvisits:vLmVisits,commvisits:vCommVisits,tdash:vTrainerDash,activities:vActivities,requests:vRequests,help:vHelp};
 const safe=fn=>async(t,e)=>{try{await fn(t,e)}catch(err){console.error(err);toast('حدث خطأ غير متوقع',err&&err.message||'')}};
 const ACT2={
  portal(t){S.portal=t.dataset.p;draw()},
@@ -2930,13 +3171,27 @@ const ACT2={
  'visit-new'(){if(!needRole('employee'))return;visitModal(null)},
  'visit-open'(t){if(!needRole('employee'))return;visitModal(t.dataset.id)},
  'vs-dur'(){const m=visitDur({start:fieldVal('vs_start'),end:fieldVal('vs_end')});const el=document.getElementById('vs_dur');if(el)el.textContent=m?minTxt(m):'—'},
- 'vs-save':safe(async(t)=>{
-  if(!needRole('employee'))return;const add=await addFiles('vs_att');if(add===null)return;S._vs.attach=(S._vs.attach||[]).concat(add);
-  const r=saveVisit(S.me,visitForm(),t.dataset.submit==='1');if(!r.ok){toast('تعذّر الحفظ',r.msg);return}
-  closeLayer();toast(t.dataset.submit==='1'?'أُرسلت الزيارة إلى رئيسك المباشر':'حُفظت المسوّدة');draw();
+ 'vs-save'(t){
+  if(!needRole('employee'))return;
+  const sb=t.dataset.submit==='1';
+  const r=saveVisit(S.me,visitForm(),sb);if(!r.ok){toast('تعذّر الحفظ',r.msg);return}
+  closeLayer();toast(sb?(commOn()?'أُرسل الطلب إلى إدارة الاتصال المؤسسي':'أُرسل الطلب إلى رئيسك المباشر'):'حُفظت المسوّدة');draw();
+ },
+ 'visit-report'(t){if(!needRole('employee'))return;visitReportModal(t.dataset.id)},
+ 'vr-dur'(){const m=visitDur({start:fieldVal('vr_start'),end:fieldVal('vr_end')});const el=document.getElementById('vr_dur');if(el)el.textContent=m?minTxt(m):'—'},
+ 'vr-save':safe(async()=>{
+  if(!needRole('employee'))return;const add=await addFiles('vr_att');if(add===null)return;
+  S._vr.attach=(S._vr.attach||[]).concat(add);
+  const r=saveVisitReport(S._vr.id,visitRepForm());if(!r.ok){toast('تعذّر الإرسال',r.msg);return}
+  closeLayer();toast('أُرسل التقرير إلى رئيسك المباشر');draw();
  }),
  'lmv-open'(t){if(!needRole('linemgr'))return;lmVisitModal(t.dataset.id)},
- 'lmv-do'(t){const r=decideVisit(S._lmv,t.dataset.a,fieldVal('lmv_n'));if(!r.ok){toast('تعذّر',r.msg);return}closeLayer();toast({approve:'اعتُمدت الزيارة',return:'أُعيدت الزيارة للتعديل',reject:'رُفضت الزيارة'}[t.dataset.a]);draw()},
+ 'cmv-open'(t){if(!isCommApprover(S.me)){toast('غير مصرّح');return}commVisitModal(t.dataset.id)},
+ 'lmv-do'(t){const v=DB.visits.find(x=>x.id===S._lmv)||{};const was=v.status;
+  const r=decideVisit(S._lmv,t.dataset.a,fieldVal('lmv_n'));if(!r.ok){toast('تعذّر',r.msg);return}
+  closeLayer();
+  toast(t.dataset.a==='approve'?(was==='pending_comm'?'سُجّلت الموافقة المبدئية':was==='reported'?'اعتُمد التقرير وأُغلقت الزيارة':'اعتُمد الطلب وصُرِّح بالزيارة'):t.dataset.a==='return'?'أُعيد للتعديل':'رُفض الطلب');
+  draw()},
  'vw-open'(t){
   if(!can('activities.view'))return guard('activities.view');const v=DB.visits.find(x=>x.id===t.dataset.id);if(!v)return;
   mask(`${mHead('تفاصيل الزيارة الميدانية',esc((U(v.userId)||{}).name||''))}<div class="m-b">${visitReadOnly(v)}<div class="small muted" style="margin-top:10px">الحالة: ${ST_AR[v.status]} · القرارات: ${v.decisions.map(d=>`${{submit:'إرسال',approve:'اعتماد',return:'إعادة',reject:'رفض'}[d.action]} (${dateOf(d.at)})${d.note?' — '+esc(d.note):''}`).join(' ← ')}</div></div><div class="m-f"><button class="btn sec" data-act="close">إغلاق</button></div>`,'wide');
@@ -3414,6 +3669,8 @@ function vAdmSet(){
   return `${pg('الإعدادات','قواعد عامة تُطبَّق على المنصة. القيم الافتراضية للمكتبة تنطبق على الدورات الجديدة.')}
   <div class="grid g2"><section class="card pad"><h3>التسجيل والتعلّم</h3><div style="margin-top:12px">
    <label class="chk"><input type="checkbox" id="st_lm" ${s.lmApproval?'checked':''}>اشتراط اعتماد الرئيس المباشر قبل تأكيد تسجيل الموظف</label>
+   <label class="chk"><input type="checkbox" id="st_cm" ${s.commApproval!==false?'checked':''}>اشتراط الموافقة المبدئية من الاتصال المؤسسي قبل اعتماد الرئيس للزيارة</label>
+   <div class="ins">${commApprovers().length?`المعتمدون حاليًا: ${commApprovers().map(u=>esc(u.name)).join('، ')}`:'لم يُعيَّن معتمد بعد؛ عيّنه من «المستخدمون ← ⋯ ← تعيينه معتمد اتصال مؤسسي». وما دام لا يوجد معتمد فالطلب يذهب للرئيس المباشر مباشرة.'}</div>
    <div class="fgrid3" style="margin-top:10px"><div class="field"><label for="st_rp">نسبة المشاهدة المطلوبة %</label><input class="inp" id="st_rp" type="number" min="50" max="100" value="${s.requiredPct}"></div><div class="field"><label for="st_ps">درجة النجاح %</label><input class="inp" id="st_ps" type="number" min="1" max="100" value="${s.passScore}"></div><div class="field"><label for="st_ma">عدد المحاولات</label><input class="inp" id="st_ma" type="number" min="1" max="10" value="${s.maxAttempts}"></div></div>
    <label class="chk"><input type="checkbox" id="st_rt" ${s.allowRetake?'checked':''}>السماح بإعادة الاختبار افتراضيًا</label>
    <label class="chk"><input type="checkbox" id="st_sf" ${s.seekForward?'checked':''}>السماح بالتقديم في الفيديو افتراضيًا (لا يمنح رصيدًا)</label></div></section>
@@ -3425,7 +3682,7 @@ function saveSettings(){
   const rp=+fieldVal('st_rp'),ps=+fieldVal('st_ps'),ma=+fieldVal('st_ma');
   if(!(rp>=50&&rp<=100)||!(ps>=1&&ps<=100)||!(ma>=1&&ma<=10)){toast('قيم غير صالحة','راجع النسب وعدد المحاولات');return}
   const dm=fieldVal('st_dm').toLowerCase().replace(/^@/,'');if(dm&&!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dm)){toast('نطاق البريد غير صالح');return}
-  Object.assign(DB.settings,{lmApproval:$('#st_lm').checked,requiredPct:rp,passScore:ps,maxAttempts:ma,allowRetake:$('#st_rt').checked,seekForward:$('#st_sf').checked,emailDomain:dm});
+  Object.assign(DB.settings,{lmApproval:$('#st_lm').checked,commApproval:$('#st_cm').checked,requiredPct:rp,passScore:ps,maxAttempts:ma,allowRetake:$('#st_rt').checked,seekForward:$('#st_sf').checked,emailDomain:dm});
   commit('settings');audit('settings.update','settings','',JSON.stringify({lm:DB.settings.lmApproval,rp,ps,ma}));toast('حُفظت الإعدادات');
 }
 
@@ -3489,7 +3746,7 @@ const VIEWS={home:vHome,opportunities:vOpp,library:vLibrary,player:vPlayer,'my-l
  team:vTeam,dash:vDash,needs:vNeeds,plans:vPlans,courses:vCourses,libadmin:vLibAdmin,trainees:vTrainees,impact:vImpact,reports:vReports,
  'adm-users':vAdmUsers,'adm-org':vAdmOrg,'adm-set':vAdmSet,'adm-audit':vAdmAudit,'adm-data':vAdmData};
 function view(){
-  const ok=NAV[S.role].map(x=>x[0]);if(S.role==='employee'){ok.push('player');ok.push('reader')}
+  const ok=navOf().map(x=>x[0]);if(S.role==='employee'){ok.push('player');ok.push('reader')}
   if(!ok.includes(S.view))S.view=HOME_OF[S.role];
   try{return VIEWS[S.view]()}catch(e){console.error(e);return `<div class="card empty">${ico('alert')}<div>حدث خطأ أثناء عرض الصفحة: ${esc(e.message)}</div></div>`}
 }
@@ -3533,7 +3790,7 @@ const ACT={
   const m=DB.mails.find(x=>x.id===t.dataset.id);if(!m)return;
   if(m.openC){go('opportunities');detailModal(m.openC);return}
   if(m.rate){go('record');rateModal('c',m.rate);return}
-  const ok=NAV[S.role].map(x=>x[0]);go(ok.includes(m.go)?m.go:'inbox');
+  const ok=navOf().map(x=>x[0]);go(ok.includes(m.go)?m.go:'inbox');
  },
  'demo-toggle'(){S.showDemo=!S.showDemo;DB.settings.showDemo=S.showDemo;commit('settings');draw()},
  tab(t){S.tab[t.dataset.key]=t.dataset.v;draw()},
@@ -3662,6 +3919,7 @@ document.addEventListener('input',e=>{
   const t=e.target,d=t.dataset||{};
   if(t.id==='q'){S.f.q=t.value;const L=filteredCourses();$('#oppn').textContent=L.length;$('#oppgrid').innerHTML=L.length?`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${L.map(c=>oppCard(c)).join('')}</div>`:`<div class="card empty">${ico('search')}<div>لا توجد نتائج مطابقة.</div></div>`}
   else if(d.act==='vs-dur'){ACT['vs-dur']()}
+  else if(d.act==='vr-dur'){ACT['vr-dur']()}
   else if(t.id==='mq'){S.mf.q=t.value;draw()}
   else if(t.id==='tq'){S.tf.q=t.value;draw()}
   else if(t.id==='aq'){S.af.q=t.value;draw()}

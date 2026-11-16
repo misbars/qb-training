@@ -119,8 +119,18 @@ async function session(req, S) {
 async function readCtx(ses, S) {
   const teamIds = ses.role === 'linemgr'
     ? (await S.all('users')).filter(u => u.managerId === ses.user.id).map(u => u.id) : [];
+  // مسار الزيارة يبدأ بالاتصال المؤسسي متى كان مفعَّلًا وله معتمد؛ يُقرأ هنا
+  // مرة واحدة لأن قاعدة الصلاحيات تحتاجه لتمنع تخطّي المحطة الأولى
+  const st = await setts(S);
+  let commOn = null;
+  const commOnF = async () => {
+    if (commOn === null) commOn = st.commApproval !== false
+      && (await S.all('users')).some(u => u.active !== false && u.commApprover === true);
+    return commOn;
+  };
+  await commOnF();
   // المعرّف المبهم كان قابلًا للعكس بجدول (فضاء المعرّفات صغير ومعروف)؛ يُملَّح بسرّ الخادم
-  return { team: () => teamIds, salt: await vSecret(S) };
+  return { team: () => teamIds, commOn: () => commOn === true, salt: await vSecret(S) };
 }
 
 async function snapshot(ses, S) {

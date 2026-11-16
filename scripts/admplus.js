@@ -23,7 +23,7 @@ VIEWS['adm-users'] = function () {
   const n = (x, one, two, few) => x === 1 ? one : x === 2 ? two : `${num(x)} ${few}`;
   const row = u => `<tr><td><b>${esc(u.name)}</b> ${demoTag(u)}<div class="small muted">${esc(u.title || '')}</div></td>
     <td class="num small">${esc(u.email)}</td>
-    <td class="small">${u.roles.map(r => ROLES[r]).join('، ')}</td>
+    <td class="small">${u.roles.map(r => ROLES[r]).join('، ')}${u.commApprover === true ? '<div><span class="tag">معتمد اتصال مؤسسي</span></div>' : ''}</td>
     <td class="small">${esc(deptName(u.deptId))}</td>
     <td class="small">${esc((U(u.managerId) || {}).name || '—')}</td>
     <td><span class="tag ${u.active !== false ? 'ok' : 'bad'}">${u.active !== false ? 'نشط' : 'موقوف'}</span></td>
@@ -33,6 +33,7 @@ VIEWS['adm-users'] = function () {
       ${S.umenu === u.id ? `<div class="urow-menu">
         <button data-act="pw-reset" data-id="${u.id}">إصدار كلمة مرور مؤقتة</button>
         <button data-act="user-toggle" data-id="${u.id}">${u.active !== false ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
+        <button data-act="comm-toggle" data-id="${u.id}">${u.commApprover === true ? 'إلغاء اعتماد الاتصال المؤسسي' : 'تعيينه معتمد اتصال مؤسسي'}</button>
       </div>` : ''}</td></tr>`;
   return `${pg('المستخدمون والصلاحيات', 'كل حساب مرتبط ببريده الرسمي. الصفات تحدد ما يظهر للمستخدم من وظائف.', `<button class="btn" data-act="newuser">${ico('plus')}مستخدم جديد</button>`)}
   <div class="note" style="margin-bottom:14px">الصلاحيات تُطبَّق على الخادم: كل حساب يرى وينفّذ ما تسمح به صفته فقط.</div>
@@ -320,3 +321,16 @@ document.addEventListener('change', e => {
     })();
   }
 });
+
+
+/* معتمد الاتصال المؤسسي: علمٌ يضعه مسؤول النظام على أي حساب، فلا يُمسّ جدول الأدوار */
+ACT['comm-toggle'] = function (t) {
+  if (!needRole('sysadmin')) return;
+  const u = U(t.dataset.id); if (!u) return;
+  if (u.active === false) { toast('الحساب موقوف', 'فعّله أولًا'); return }
+  u.commApprover = u.commApprover === true ? false : true;
+  S.umenu = null; commit('users');
+  audit(u.commApprover ? 'user.comm.on' : 'user.comm.off', 'user', u.id, u.name);
+  toast(u.commApprover ? `${u.name} صار معتمدًا للاتصال المؤسسي` : `أُلغي اعتماد ${u.name} للاتصال المؤسسي`);
+  draw();
+};

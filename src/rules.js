@@ -4,6 +4,69 @@ const TM_COLS = ['jobs','comps','courses','libs','programs','plans','trainers','
 const ADM_COLS = ['users','depts','jobs','comps'];
 export const changed = (a, b) => { const ks = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]); return [...ks].filter(k => JSON.stringify((a || {})[k]) !== JSON.stringify((b || {})[k])) };
 
+/* ===== مسار اعتماد الزيارة الميدانية =====
+   الزيارة تُطلب قبل تنفيذها: الاتصال المؤسسي ← الرئيس المباشر ← تنفيذ ←
+   تقرير وشاهد ← اعتماد الرئيس. العميل يرسم المسار، والخادم هو الذي يُلزِم به:
+   لولا ذلك لأمكن لموظف أن يرسل صفًّا حالته 'closed' فتُحتسب له زيارة لم تقع. */
+const VS_DECIDE = ['status','decisions','decidedAt','decidedBy','mgrNote','statusLog','lmAt','okAt','closedAt','repAt','reqAt'];
+const VS_REPORT = ['status','decisions','repAt','people','start','end','durMin','topics','results','recs','attach'];
+const VS_FROM = { // من أي حالة إلى أي حالة، ومن يملك النقل
+  pending_comm: { who: 'comm', to: ['pending_lm','returned','rejected'] },
+  pending_lm:   { who: 'lm',   to: ['approved','returned','rejected'] },
+  submitted:    { who: 'lm',   to: ['approved','returned','rejected'] }, // صفوف ما قبل المسار الجديد
+  reported:     { who: 'lm',   to: ['closed','returned','rejected'] }
+};
+function visitRule(ses, oldO, newO, del, ctx, diff, only) {
+  const me = ses.user.id, role = ses.role;
+  const isComm = ses.user.commApprover === true && ses.user.active !== false;
+  const owner = (newO || oldO || {}).userId;
+  const oldSt = oldO && oldO.status, newSt = newO && newO.status;
+
+  if (del) return oldO && owner === me && oldSt === 'draft' ? true : 'لا تُحذف الزيارة بعد إرسالها';
+
+  // إنشاء: الموظف لنفسه فقط، وبحالة غير محسومة
+  if (!oldO) {
+    if (owner !== me) return 'لا يُنشئ أحد طلب زيارة باسم غيره';
+    const start = ctx.commOn && ctx.commOn() ? ['draft','pending_comm'] : ['draft','pending_comm','pending_lm'];
+    if (!start.includes(newSt)) return `لا يبدأ طلب الزيارة بحالة «${newSt}»`;
+    if (newO.durMin || (newO.attach || []).length || newO.closedAt || newO.okAt) return 'بيانات التنفيذ تُرفع بعد التصريح بالزيارة';
+    if ((newO.decisions || []).some(d => d && d.action !== 'submit')) return 'لا يعتمد الموظف طلبه بنفسه';
+    return true;
+  }
+
+  // صاحب الطلب: إعادة إرسال بعد تعديل، أو رفع التقرير بعد التصريح
+  if (owner === me) {
+    if (['draft','returned'].includes(oldSt)) {
+      const start = ctx.commOn && ctx.commOn() ? ['draft','pending_comm'] : ['draft','pending_comm','pending_lm'];
+      if (!start.includes(newSt)) return `لا ينقل الموظف طلبه من «${oldSt}» إلى «${newSt}»`;
+      if (diff.includes('decisions') && (newO.decisions || []).slice((oldO.decisions || []).length).some(d => d && d.action !== 'submit')) return 'لا يعتمد الموظف طلبه بنفسه';
+      return true;
+    }
+    if (oldSt === 'approved' && newSt === 'reported') {
+      if (!only(...VS_REPORT)) return 'لا يُعدَّل في التقرير غير بيانات التنفيذ';
+      if (!(newO.attach || []).length) return 'الشاهد مطلوب لإغلاق الزيارة';
+      if ((newO.decisions || []).slice((oldO.decisions || []).length).some(d => d && d.action !== 'report')) return 'لا يعتمد الموظف تقريره بنفسه';
+      return true;
+    }
+    return `لا يملك صاحب الطلب نقله من «${oldSt}» إلى «${newSt}»`;
+  }
+
+  // القرارات: كلٌّ في محطته، ولا يمسّ غير حقول القرار
+  const step = VS_FROM[oldSt];
+  if (!step) return `الزيارة في حالة «${oldSt}» ولا تقبل قرارًا`;
+  if (!step.to.includes(newSt)) return `نقل غير مسموح من «${oldSt}» إلى «${newSt}»`;
+  if (!only(...VS_DECIDE)) return 'قرار الزيارة لا يعدّل بياناتها';
+  if (step.who === 'comm') {
+    if (!isComm) return 'الموافقة المبدئية لمعتمد الاتصال المؤسسي وحده';
+  } else {
+    if (role !== 'linemgr' || !ctx.team().includes(owner)) return 'اعتماد الزيارة للرئيس المباشر للموظف وحده';
+  }
+  const od = oldO.decisions || [], nd = newO.decisions || [];
+  if (nd.length < od.length || JSON.stringify(nd.slice(0, od.length)) !== JSON.stringify(od)) return 'لا يُعاد كتابة سجل القرارات';
+  if (nd.slice(od.length).some(d => !d || d.by !== me)) return 'القرار يُنسب إلى من اتخذه';
+  return true;
+}
+
 export function authorize(ses, col, oldO, newO, del, ctx) {
   if (col === 'watch') return 'احتساب المشاهدة من الخادم وحده';
   const team = ctx.team;
@@ -21,6 +84,8 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
     if (role === 'trainmgr' && only('showDemo')) return true;
     return 'الإعدادات العامة لمسؤول النظام فقط';
   }
+  if (col === 'visits' && role !== 'trainmgr' && role !== 'sysadmin')
+    return visitRule(ses, oldO, newO, del, ctx, diff, only);
   if (role === 'trainmgr') {
     if (TM_COLS.includes(col)) return true;
     if (col === 'users' && isOwn && only('phone','bio','title','photo','prefs','lastSeen')) return true;
@@ -156,7 +221,7 @@ const MAX_STR = 8000;        // أطول نص مقبول في حقل واحد
 const MAX_DOC = 200000;      // أكبر حجم لسجل واحد
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // الدورات والخطط تُجدول مستقبلًا؛ وما عداها لا يُسجَّل بتاريخ آتٍ
-const AHEAD_DAYS = { courses: 1095, plans: 1095, programs: 1095, kpis: 1095, kpiMeas: 1095, tracks: 1095 };
+const AHEAD_DAYS = { courses: 1095, plans: 1095, programs: 1095, kpis: 1095, kpiMeas: 1095, tracks: 1095, visits: 400 }; // الزيارة تُطلب قبل تنفيذها، فتاريخها في المستقبل
 
 const dayNum = d => Math.floor(Date.parse(d + 'T00:00:00Z') / 864e5);
 

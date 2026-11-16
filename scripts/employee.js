@@ -16,7 +16,7 @@ function navOn(k){
 }
 // موجّه الصفحات: يسمح للموظف بصفحات أقسامه الداخلية
 function view(){
-  const ok=NAV[S.role].map(x=>x[0]);
+  const ok=navOf().map(x=>x[0]);
   if(S.role==='employee'){ok.push('player','reader');Object.keys(EMP_GROUP_OF).forEach(v=>ok.push(v))}
   if(!ok.includes(S.view))S.view=HOME_OF[S.role];
   try{return VIEWS[S.view]()}catch(e){console.error(e);return `<div class="card empty">${ico('alert')}<div>حدث خطأ أثناء عرض الصفحة: ${esc(e.message)}</div></div>`}
@@ -55,9 +55,18 @@ function empTasks(u){
   const nGap=gapsOfEmp(u).filter(g=>g.state==='unrated'||(g.a&&g.a.self==null)).length;
   if(nGap)T.push({kind:'skills',title:'قيّم مهاراتك',sub:`${nGap} ${nGap===1?'مهارة':nGap===2?'مهارتان':nGap<=10?'مهارات':'مهارة'} تنتظر تقييمك، وعليها نقترح لك الدورات`,btn:'قيّم',act:'go',v:'selfassess'});
   // طلبات تنتظر غيرك (للعلم فقط)
-  DB.enrolls.filter(e=>e.userId===u.id&&['pending_lm','pending_tm'].includes(e.status)).forEach(e=>{const c=courseById(e.courseId);if(!c)return;const who=e.status==='pending_lm'?(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]:'إدارة التدريب';T.push({kind:'wait',title:`ننتظر موافقة ${who}`,sub:`على تسجيلك في «${c.title}». بيوصلك إشعار بالقرار.`})});
-  DB.extreq.filter(x=>x.userId===u.id&&['pending','submitted'].includes(x.status)&&inc(x)).forEach(x=>T.push({kind:'wait',title:'ننتظر اعتماد إدارة التدريب',sub:`لدورتك الخارجية «${x.title}»`}));
-  DB.visits.filter(v=>v.userId===u.id&&['pending','pending_lm','submitted'].includes(v.status)&&inc(v)).forEach(v=>T.push({kind:'wait',title:`ننتظر موافقة ${(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]}`,sub:`على زيارتك لـ «${v.org||'جهة'}»`}));
+  DB.enrolls.filter(e=>e.userId===u.id&&['pending_lm','pending_tm'].includes(e.status)).forEach(e=>{const c=courseById(e.courseId);if(!c)return;const who=e.status==='pending_lm'?(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]:'إدارة التدريب';T.push({kind:'wait',title:`ننتظر موافقة ${who}`,sub:`على تسجيلك في «${c.title}»`,trk:enrollTrack(e)})});
+  DB.extreq.filter(x=>x.userId===u.id&&['pending','submitted'].includes(x.status)&&inc(x)).forEach(x=>T.push({kind:'wait',title:'ننتظر اعتماد إدارة التدريب',sub:`لدورتك الخارجية «${x.title}»`,trk:extTrack(x)}));
+  DB.retakes.filter(r=>r.userId===u.id&&['pending','pending_tm'].includes(r.status)&&inc(r)).forEach(r=>T.push({kind:'wait',title:'ننتظر قرار إدارة التدريب',sub:`على طلب إعادة «${titleOf('l',r.libId)||'دورة'}»`,trk:retakeTrack(r)}));
+  // الزيارة: طلبها ثم تنفيذها ثم تقريرها — ثلاث حالات يراها الموظف
+  DB.visits.filter(v=>v.userId===u.id&&['pending','pending_comm','pending_lm','submitted','reported'].includes(v.status)&&inc(v)).forEach(v=>{
+    const who=v.status==='pending_comm'?'إدارة الاتصال المؤسسي':v.status==='reported'?`${(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0]} على تقريرك`:(U(u.managerId)||{name:'رئيسك'}).name.split(' ')[0];
+    T.push({kind:'wait',title:`ننتظر موافقة ${who}`,sub:`على زيارتك لـ «${v.org||'جهة'}»`,trk:visitTrack(v)})});
+  DB.visits.filter(v=>v.userId===u.id&&v.status==='approved'&&inc(v)).forEach(v=>T.push({
+    kind:v.date<=TODAY()?'returned':'wait',
+    title:v.date<=TODAY()?`أغلق زيارتك لـ «${v.org}»`:`صُرِّح لك بزيارة «${v.org}»`,
+    sub:v.date<=TODAY()?'ارفع التقرير والشاهد ليعتمدهما رئيسك':`موعدها ${fmt(v.date)}، وبعدها ترفع التقرير والشاهد`,
+    btn:v.date<=TODAY()?'ارفع التقرير':null,act:'visit-report',id:v.id,trk:visitTrack(v)}));
   return T;
 }
 const TASK_ICON={course:['cal','#072C49','#fff'],returned:['rotate','#F8E4DF','#8F3B2B'],continue:['play','#D3EEF3','#007497'],exam:['check','#D3EEF3','#007497'],retake:['rotate','#FBEFD9','#8A5C12'],survey:['smile','#F7E7D4','#7A4A18'],skills:['target','#EAF6F9','#007497'],wait:['clock','#F0ECE4','#47596A']};
@@ -65,7 +74,7 @@ function taskCard(t){
   const [ic,bg,fg]=TASK_ICON[t.kind]||TASK_ICON.wait;
   const badge=t.kind==='course'?`<div class="tk-date" style="background:${bg};color:${fg}"><span>${relDay(t.date)}</span><b class="num">${+t.date.slice(8,10)}</b></div>`:`<div class="tk-ic" style="background:${bg};color:${fg}">${ico(ic)}</div>`;
   const btn=t.btn?`<button class="btn ${t.primary?'':'ghost'} tk-btn" data-act="${t.act}"${t.v?` data-v="${t.v}"`:''}${t.id?` data-id="${t.id}"`:''}${t.dkind?` data-kind="${t.dkind}"`:''}>${t.btn}</button>`:'';
-  return `<article class="card tk ${t.kind==='returned'?'tk-alert':''} ${t.kind==='wait'?'tk-wait':''}">${badge}<div class="tk-body"><b>${esc(t.title)}</b><span>${esc(t.sub||'')}</span>${t.pct!=null?`<div class="tk-bar"><i style="width:${t.pct}%"></i></div>`:''}</div>${btn}</article>`;
+  return `<article class="card tk ${t.kind==='returned'?'tk-alert':''} ${t.kind==='wait'?'tk-wait':''}">${badge}<div class="tk-body"><b>${esc(t.title)}</b><span>${esc(t.sub||'')}</span>${t.pct!=null?`<div class="tk-bar"><i style="width:${t.pct}%"></i></div>`:''}${t.trk||''}</div>${btn}</article>`;
 }
 VIEWS.home=function(){
   const u=ME();if(!u)return '';
