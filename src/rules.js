@@ -201,7 +201,17 @@ export function readFilter(ses, col, row, ctx) {
   if (col === 'mails') return row.to === me ? row : null;
   if (col === 'users') return row.id === me ? row : omit(row, USER_HIDE);
   // التعليق المجهول يحمل هوية كاتبه في بياناته؛ تُزال عن الآخرين
-  if (col === 'comments') return (row.anon && row.userId !== me) ? omit(row, ['userId']) : row;
+  if (col === 'comments') {
+    if (!row.anon || row.userId === me) return row;
+    // إخفاء الاسم كان يحذف userId وحده، ومعرّف الكاتب باقٍ في statusLog —
+    // فمن يفحص الحمولة يعرف صاحب التعليق «المجهول». يُنزع من الاثنين.
+    const o = omit(row, ['userId']);
+    if (Array.isArray(o.statusLog))
+      o.statusLog = o.statusLog.map(e => (e && e.by === row.userId) ? omit(e, ['by']) : e);
+    if (Array.isArray(o.replies))
+      o.replies = o.replies.map(r => (r && r.by === row.userId) ? omit(r, ['by']) : r);
+    return o;
+  }
 
   // إجابات الاختبارات لا تغادر الخادم إلا لمن يحرّرها
   if (col === 'libs') {
