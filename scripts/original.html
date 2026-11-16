@@ -869,6 +869,9 @@ function seedDemo(){
    ['u_rakan','راكان بن عبدالله العنزي','rakan.alanazi','S32','J7','u_aisha',['employee'],'أخصائي خدمة مستفيدين']
   ];
   US.forEach(([id,name,em,deptId,jobId,managerId,roles,title],i)=>DB.users.push(mk({id,name,email:em+'@qb.org.sa',roles,deptId,jobId,managerId,title,empNo:'QB-'+(1001+i),active:true})));
+  /* الاتصال المؤسسي: قسم الإعلام يقوم مقامه في البيانات التجريبية — رئيسه معتمد
+     أصيل، وقد فوّض إحدى أخصائياته أسبوعين ليُجرَّب المساران معًا */
+  (u=>{if(u){u.commApprover=true;u.commDeleg={to:'u_amal',until:dd(14),by:u.id,at:nowISO()}}})(DB.users.find(x=>x.id==='u_nawaf'));
   /* المدربون */
   const TR=(id,name,type,title,cats,exp,quals,bio,status,email)=>DB.trainers.push(mk({id,name,type,title,cats,exp,quals,bio,status,email,phone:'',docs:[{name:'السيرة الذاتية.pdf',kind:'سيرة ذاتية',date:dd(-300)},{name:'شهادة مدرب معتمد.pdf',kind:'شهادة مهنية',date:dd(-280)}],mgrRatings:[]}));
   TR('t1','د. عبدالرحمن الشثري','external','أستاذ مشارك في القراءات وعلوم التجويد',['quran'],15,['دكتوراه في القراءات','إجازة بالسند في القراءات العشر'],'مدرب معتمد في برامج إعداد معلمي الحلقات.','active','a.alshethri@example.org');
@@ -2354,8 +2357,18 @@ function decideExt(id,approve,note){
 
 /* ---------- الزيارات الميدانية ---------- */
 /* ===== الاتصال المؤسسي: علمٌ على موظفين موجودين، لا دور جديد ===== */
-const commApprovers=()=>DB.users.filter(u=>u.active!==false&&u.commApprover===true);
-const isCommApprover=uid=>{const u=U(uid);return !!(u&&u.active!==false&&u.commApprover===true)};
+/* الأصيل: من وضع عليه مسؤول النظام العلم. والمفوَّض: من فوّضه أصيلٌ ولم ينتهِ تفويضه */
+const commPrimary=()=>DB.users.filter(u=>u.active!==false&&u.commApprover===true);
+const commDelegOf=uid=>{const u=U(uid);const d=u&&u.commDeleg;
+  return d&&d.to&&d.until>=TODAY()?d:null};
+const commDelegTo=uid=>commPrimary().filter(u=>{const d=commDelegOf(u.id);return d&&d.to===uid});
+/* من يصله الإشعار ومن يملك القرار: الأصلاء ومفوَّضوهم بلا تكرار */
+const commApprovers=()=>{const m=new Map();
+  commPrimary().forEach(u=>{m.set(u.id,u);const d=commDelegOf(u.id);const t=d&&U(d.to);
+    if(t&&t.active!==false)m.set(t.id,t)});
+  return [...m.values()]};
+const isCommApprover=uid=>{const u=U(uid);if(!u||u.active===false)return false;
+  return u.commApprover===true||commDelegTo(uid).length>0};
 const commOn=()=>DB.settings.commApproval!==false&&commApprovers().length>0;
 /* الزيارة تُحتسب في سجل التطوير حين تُغلق باعتماد التقرير، لا حين يُؤذن بها.
    و'approved' القديمة تعني في الصفوف السابقة «اعتُمدت الزيارة» فتبقى محتسبة. */
@@ -2811,9 +2824,31 @@ function vCommVisits(){
   const rest=all.filter(v=>v.status!=='pending_comm').sort((a,b)=>(b.at||'').localeCompare(a.at||''));
   const row=(v,live)=>`<tr><td>${esc((U(v.userId)||{}).name||'')}</td><td><b style="color:var(--navy);font-weight:600">${esc(v.org)}</b>${demoTag(v)}<div class="small muted">${esc(v.place||'')}</div></td><td>${fmt(v.date)}</td><td>${stTag(v.status)}</td><td><button class="btn ${live?'':'ghost'} sm" data-act="cmv-open" data-id="${v.id}">${live?'مراجعة':'عرض'}</button></td></tr>`;
   return `${pg('الزيارات الميدانية — الاتصال المؤسسي','موافقتكم المبدئية تسبق اعتماد الرئيس المباشر. وتصلكم نسخة من تقرير كل زيارة بعد إغلاقها.')}
+  ${commDelegCard()}
   <div class="grid g3" style="margin-bottom:16px">${kpiTile('clock','var(--sky-2)','var(--teal)',pend.length,'بانتظار موافقتكم')}${kpiTile('check','var(--sky-2)','var(--teal)',all.filter(v=>v.status==='closed').length,'مغلقة بتقاريرها')}${kpiTile('pin','var(--sky-2)','var(--teal)',all.filter(v=>['pending_lm','approved','reported'].includes(v.status)).length,'جارية')}</div>
   ${pend.length?`<h3 class="sec-h">بانتظار موافقتكم</h3><div class="card tbl-wrap" style="margin-bottom:18px"><table><thead><tr><th>الموظف</th><th>الجهة</th><th>التاريخ المقترح</th><th>الحالة</th><th></th></tr></thead><tbody>${pend.map(v=>row(v,true)).join('')}</tbody></table></div>`:emptyBox('check','لا طلبات بانتظار موافقتكم.')}
   ${rest.length?`<h3 class="sec-h">بقية الزيارات</h3><div class="card tbl-wrap"><table><thead><tr><th>الموظف</th><th>الجهة</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>${rest.map(v=>row(v,false)).join('')}</tbody></table></div>`:''}`;
+}
+/* المدير يفوّض من هنا بلا رجوع لمسؤول النظام، وينتهي التفويض بتاريخه فيعود الاعتماد له */
+function commDelegCard(){
+  const me=ME();if(!me)return '';
+  const via=commDelegTo(S.me);
+  if(me.commApprover!==true)
+    return via.length?`<div class="note" style="margin-bottom:16px">تعتمد الزيارات بتفويض من <b>${esc(via[0].name)}</b> حتى ${fmt(commDelegOf(via[0].id).until)}.</div>`:'';
+  const d=commDelegOf(S.me),t=d&&U(d.to);
+  const team=DB.users.filter(u=>u.active!==false&&u.id!==S.me&&(u.deptId===me.deptId||u.managerId===S.me))
+    .sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  return `<section class="card pad" style="margin-bottom:18px"><h3>تفويض الاعتماد</h3>
+   ${d&&t?`<div class="note" style="margin-top:10px">الاعتماد مفوَّض إلى <b>${esc(t.name)}</b> حتى <b>${fmt(d.until)}</b>، ويعود إليك بعدها تلقائيًا. وتبقى أنت قادرًا على الاعتماد في أثنائه.
+     <div style="margin-top:10px"><button class="btn sec sm" data-act="cmd-clear">سحب التفويض الآن</button></div></div>`
+   :`<div class="ins" style="margin-top:8px">فوّض أحد زملائك بالموافقة المبدئية على الزيارات مدةً محددة — في إجازتك مثلًا — ويعود الاعتماد إليك تلقائيًا عند انتهائها.</div>
+     <div class="fgrid" style="margin-top:10px">
+      <div class="field"><label for="cmd_to">المفوَّض</label><select class="inp" id="cmd_to"><option value="">— اختر —</option>${team.map(u=>`<option value="${u.id}">${esc(u.name)}${u.title?' — '+esc(u.title):''}</option>`).join('')}</select></div>
+      <div class="field"><label for="cmd_until">حتى تاريخ</label><input class="inp" id="cmd_until" type="date" min="${TODAY()}" max="${addDays(TODAY(),180)}" value="${addDays(TODAY(),14)}"></div>
+     </div>
+     <button class="btn" data-act="cmd-save" style="margin-top:4px">حفظ التفويض</button>
+     ${team.length?'':'<div class="note warn" style="margin-top:10px">لا يوجد زملاء في إدارتك لتفويضهم؛ راجع مسؤول النظام.</div>'}`}
+  </section>`;
 }
 function visitReadOnly(v){
   const u=U(v.userId)||{};
@@ -3187,6 +3222,28 @@ const ACT2={
  }),
  'lmv-open'(t){if(!needRole('linemgr'))return;lmVisitModal(t.dataset.id)},
  'cmv-open'(t){if(!isCommApprover(S.me)){toast('غير مصرّح');return}commVisitModal(t.dataset.id)},
+ 'cmd-save'(){
+  const me=ME();if(!me||me.commApprover!==true){toast('التفويض للمعتمد الأصيل وحده');return}
+  const to=fieldVal('cmd_to'),until=fieldVal('cmd_until');
+  if(!to){toast('اختر المفوَّض');return}
+  if(to===S.me){toast('لا تفوّض نفسك');return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(until)||until<TODAY()){toast('تاريخ الانتهاء غير صالح');return}
+  if((D(until)-D(TODAY()))/864e5>180){toast('أقصى مدة للتفويض 180 يومًا');return}
+  const t=U(to);if(!t||t.active===false){toast('الموظف غير متاح');return}
+  me.commDeleg={to,until,by:S.me,at:nowISO()};commit('users');
+  audit('comm.delegate','user',to,`${t.name} حتى ${until}`);
+  notify(to,'فُوِّضتَ باعتماد الزيارات','تفويض الاتصال المؤسسي',
+    `<p>فوّضك <b>${esc(me.name)}</b> بالموافقة المبدئية على طلبات الزيارات الميدانية حتى <b>${fmt(until)}</b>.</p>`,'فتح','commvisits');
+  toast(`فُوِّض ${t.name} حتى ${fmt(until)}`);draw();
+ },
+ 'cmd-clear'(){
+  const me=ME();if(!me||me.commApprover!==true)return;
+  const d=me.commDeleg;me.commDeleg=null;commit('users');
+  audit('comm.delegate.clear','user',(d&&d.to)||'','سحب التفويض');
+  if(d&&d.to)notify(d.to,'انتهى تفويضك باعتماد الزيارات','تفويض الاتصال المؤسسي',
+    `<p>سحب <b>${esc(me.name)}</b> تفويضك بالموافقة المبدئية على الزيارات.</p>`,'فتح','home');
+  toast('سُحب التفويض');draw();
+ },
  'lmv-do'(t){const v=DB.visits.find(x=>x.id===S._lmv)||{};const was=v.status;
   const r=decideVisit(S._lmv,t.dataset.a,fieldVal('lmv_n'));if(!r.ok){toast('تعذّر',r.msg);return}
   closeLayer();

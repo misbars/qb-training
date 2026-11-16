@@ -18,7 +18,7 @@ const VS_FROM = { // من أي حالة إلى أي حالة، ومن يملك �
 };
 function visitRule(ses, oldO, newO, del, ctx, diff, only) {
   const me = ses.user.id, role = ses.role;
-  const isComm = ses.user.commApprover === true && ses.user.active !== false;
+  const isComm = ctx.isComm ? ctx.isComm() === true : (ses.user.commApprover === true && ses.user.active !== false);
   const owner = (newO || oldO || {}).userId;
   const oldSt = oldO && oldO.status, newSt = newO && newO.status;
 
@@ -115,7 +115,24 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
   if (!isOwn) return `لا يملك دور «${role}» تعديل سجل يخص مستخدمًا آخر في «${col}»`;
   if (del && !['progress','readprog','files','comments','mails'].includes(col)) return 'الحذف غير مسموح لهذا السجل';
   switch (col) {
-    case 'users': return only('phone','bio','photo','prefs','lastSeen') ? true : 'لا يعدّل الموظف دوره أو إدارته أو حالته';
+    case 'users': {
+      if (diff.includes('commDeleg')) {
+        if (ses.user.commApprover !== true) return 'التفويض لمعتمد الاتصال المؤسسي الأصيل وحده';
+        if (!only('commDeleg')) return 'التفويض يُحفظ وحده';
+        const d = newO.commDeleg;
+        if (d === null || d === undefined) return true;            // سحب التفويض
+        if (typeof d !== 'object' || Array.isArray(d)) return 'تفويض غير صالح';
+        if (Object.keys(d).some(k => !['to','until','by','at'].includes(k))) return 'حقول تفويض غير معروفة';
+        if (typeof d.to !== 'string' || !/^[A-Za-z0-9_|.\-]{1,100}$/.test(d.to) || d.to === me) return 'اختر موظفًا غير نفسك';
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d.until || '')) return 'تاريخ انتهاء التفويض غير صالح';
+        const days = Math.floor(Date.parse(d.until + 'T00:00:00Z') / 864e5) - Math.floor(Date.now() / 864e5);
+        if (days < 0) return 'تاريخ انتهاء التفويض في الماضي';
+        if (days > 180) return 'أقصى مدة للتفويض 180 يومًا';
+        if (d.by !== me) return 'التفويض يُنسب إلى من فوّض';
+        return true;
+      }
+      return only('phone','bio','photo','prefs','lastSeen') ? true : 'لا يعدّل الموظف دوره أو إدارته أو حالته';
+    }
     case 'assess': return only('self','selfAt','history','selfNote') ? true : 'تقييم الرئيس لا يكتبه الموظف';
     case 'enrolls': {
       if (!oldO) return ['registered','waitlist','pending_lm','pending'].includes(newO.status) ? true : 'لا يسجّل الموظف نفسه بحالة «' + newO.status + '»';
