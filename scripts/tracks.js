@@ -139,7 +139,7 @@ function trAxisState(uid, n) {
   const pod = (!hasPod || a.pod) ? 'done' : 'todo', card = a.card && a.card.at ? 'done' : 'todo';
   const done = course === 'done' && pod === 'done' && card === 'done';
   const started = course !== 'todo' || pod === 'done' || card === 'done' || !!(a.reflect || '').trim();
-  return { course, pod, card, done, started, cert, a };
+  return { course, pod, card, done, started, cert, a, hasPod };
 }
 function trSummary(uid) {
   const st = TRACK.axes.map(x => trAxisState(uid, x.n));
@@ -188,7 +188,7 @@ function vTrackMap() {
   <div class="tr-grid">${TRACK.axes.map((a, i) => { const s = sm.st[i];
     return `<button class="card tr-ax ${s.done ? 'is-done' : ''} ${sm.next && sm.next.n === a.n && !s.done ? 'is-next' : ''}" data-act="tr-axis" data-n="${a.n}">
       <span class="tr-n num">${String(a.n).padStart(2, '0')}</span><span class="tr-ax-t"><b>${esc(a.t)}</b><span>${esc(a.s)}</span></span>
-      <span class="tr-ax-st">${trPill('الدورة', s.course)}${trPill('الحلقة', s.pod)}${trPill('التطبيق', s.card)}</span></button>` }).join('')}</div>
+      <span class="tr-ax-st">${trPill('الدورة', s.course)}${s.hasPod ? trPill('الحلقة', s.pod) : ''}${trPill('التطبيق', s.card)}</span></button>` }).join('')}</div>
   <div class="grid g2" style="margin-top:16px">
    ${!TRACK.bonus ? '' : `<button class="card pad tr-bonus" data-act="tr-axis" data-n="ai"><span class="small muted">حلقة إضافية</span><b>${esc(TRACK.bonus.t)}</b><span class="small">${esc(TRACK.bonus.s)}</span></button>`}
    <div class="card pad tr-final ${all ? 'ready' : ''}"><b>${ico('award')} بطاقة الإنجاز</b>
@@ -208,7 +208,7 @@ function vTrackAxis(n) {
     : `${st.course === 'rejected' ? `<div class="note warn">لم تُعتمد الشهادة: ${esc((st.cert.decisions || []).filter(d => d.action === 'reject').slice(-1).map(d => d.note)[0] || '')}</div>` : ''}<button class="btn" data-act="tr-cert" data-n="${a.n}">${ico('upload')} ارفع شهادة الإتمام</button>`;
   return `<div class="tr-back"><button class="linkbtn" data-act="tr-axis" data-n="">${ico('menu')} خريطة المسار</button></div>
   <div class="tr-axhead"><span class="tr-n num">${String(a.n).padStart(2, '0')}</span><div><h1>${esc(a.t)}</h1><p>${esc(a.s)}</p></div>
-   <span class="tr-ax-st">${trPill('الدورة', st.course)}${trPill('الحلقة', st.pod)}${trPill('التطبيق', st.card)}</span></div>
+   <span class="tr-ax-st">${trPill('الدورة', st.course)}${st.hasPod ? trPill('الحلقة', st.pod) : ''}${trPill('التطبيق', st.card)}</span></div>
   <div class="card pad tr-reflect"><h3>وقفة مع واقع عملكم</h3><p>${esc(a.q)}</p><textarea class="inp" id="tr_ref" rows="2" maxlength="600" placeholder="اكتبوا ملاحظتكم (اختياري)">${esc(st.a.reflect || '')}</textarea>
    <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn sec" data-act="tr-ref" data-n="${a.n}">حفظ</button></div></div>
   <section class="card pad tr-step"><div class="tr-step-h"><span class="tr-sn">1</span><div><h3>الدورة: المعرفة</h3><span class="small muted">${esc(c.pf)} · ${esc(c.dur)} · مجانية</span></div></div>
@@ -354,7 +354,7 @@ Object.assign(ACT, {
      <div class="note" style="margin-bottom:12px"><b>${esc(c.name)}</b> — ${esc(c.pf)}. تروح الشهادة لإدارة التدريب، وتنحسب ساعاتها في سجلك بعد الاعتماد.</div>
      <div class="fgrid"><div class="field"><label for="trc_date">تاريخ الإتمام *</label><input class="inp" id="trc_date" type="date" max="${TODAY()}" value="${TODAY()}"></div>
       <div class="field"><label for="trc_h">عدد الساعات${c.h ? '' : ' * (كما في الشهادة)'}</label><input class="inp" id="trc_h" type="number" min="0.5" max="60" step="0.5" ${c.h ? `value="${c.h}" readonly style="background:var(--sky-3)"` : ''}></div>
-      <div class="field full"><label for="trc_f">ملف الشهادة * (PDF/JPG/PNG حتى ${(FILE_MAX / 1e6).toFixed(1)} م.ب)</label><input class="inp" id="trc_f" type="file" accept=".pdf,.jpg,.jpeg,.png"></div></div>
+      <div class="field full"><label for="trc_f">ملف الشهادة * (${FMAX_TXT})</label><input class="inp" id="trc_f" type="file" accept=".pdf,.jpg,.jpeg,.png"></div></div>
      ${c.h ? `<p class="small muted" style="margin-top:8px">مدة الدورة ${esc(c.dur)}، وتنحسب ${num(c.h)} ساعة (مقرّبة لأقرب نصف ساعة للأسفل).</p>` : ''}</div>
     <div class="m-f"><button class="btn sec" data-act="close">إلغاء</button><button class="btn" data-act="tr-cert-go">أرسل للاعتماد</button></div>`);
   },
@@ -364,7 +364,6 @@ Object.assign(ACT, {
     if (!fieldVal('trc_date')) { toast('اختر تاريخ الإتمام'); return }
     if (!hours || hours <= 0) { toast('اكتب عدد الساعات كما في الشهادة'); return }
     if (!cf) { toast('ارفع ملف الشهادة'); return }
-    const bad = fileCheck(cf); if (bad) { toast('ملف الشهادة غير مقبول', bad); return }
     const sf = await storeFile(cf); if (!sf.ok) { toast('ملف الشهادة غير مقبول', sf.msg); return }
     const r = submitExt(S.me, { title: c.name, provider: c.pf, trainer: '', date: fieldVal('trc_date'), hours, field: TRACK.cat, desc: `${TRACK.title} — المحور ${a.n}: ${a.t}`, skills: '', certFile: sf.id, attach: [] });
     if (!r.ok) { DB.files = DB.files.filter(x => x.id !== sf.id); commit('files'); toast('تعذّر الإرسال', r.msg); return }

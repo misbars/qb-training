@@ -307,7 +307,10 @@ def axes_of(path):
             try: ti = next(j for j, x in enumerate(M) if 'تطبيق قصير' in x)
             except StopIteration: ti = 0
             k2 = {'t': M[ti + 1] if ti + 1 < len(M) else ''}
-            k2['intro'] = follow('ابدأ بهذه المادة', M)
+            # الشاشة تضيف «إن لم يتوفر عمل قائم…» بنفسها لكل بطاقة،
+            # فإبقاؤها في النصّ المستخرَج يكرّر الجملة على الموظف
+            k2['intro'] = re.sub(r'\s*إن لم يتوفر عمل قائم.*$', '',
+                                 follow('ابدأ بهذه المادة', M)).strip()
             k2['steps'] = [M0[j + 1] for j, x in enumerate(M0)
                            if re.fullmatch(r'[1-9]', x) and j + 1 < len(M0)]
             k2['ex'] = follow('مثال تدريبي للتوضيح', M)

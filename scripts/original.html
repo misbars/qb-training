@@ -2133,7 +2133,12 @@ function navOf(role){
 }
 const ST_AR={completed:'مكتمل',approved:'معتمد',inprogress:'قيد التنفيذ',registered:'مسجّل',pending:'بانتظار الاعتماد',draft:'مسوّدة',submitted:'بانتظار اعتماد الرئيس',returned:'أُعيد للتعديل',rejected:'مرفوض',new:'جديد',answered:'تمت الإجابة',pending_comm:'بانتظار الاتصال المؤسسي',pending_lm:'بانتظار اعتماد الرئيس',reported:'التقرير بانتظار الرئيس',closed:'مغلقة ومعتمدة'};
 const COUNTED=['completed','approved','closed'];
-const FILE_MAX=1200000,FILE_OK=['application/pdf','image/jpeg','image/png'];
+/* المرفقات تُخزَّن داخل سجلات البيانات، فحدّ العميل يجب أن يطابق حدّ
+   الخادم: 180000 حرفًا بعد ترميز base64، أي نحو 130 ك.ب من الملف. وكان
+   العميل يقبل 1.2 م.ب فيَعِد الموظف بالحفظ ثم يرفض الخادم، فتُفقد كل
+   شهادة حقيقية. والصور تُصغَّر قبل الحفظ، فلا يصطدم بالحد إلا PDF كبير. */
+const FILE_MAX=130000,FILE_OK=['application/pdf','image/jpeg','image/png'];
+const FMAX_TXT=`PDF/JPG/PNG — الصور تُصغَّر تلقائيًا، وحدّ ملف PDF ${Math.round(FILE_MAX/1000)} ك.ب`;
 const trainerUserOf=tid=>DB.users.filter(u=>u.active!==false&&u.roles.includes('trainer')&&u.trainerId===tid);
 const myTrainerId=()=>{const u=ME();return u&&u.roles.includes('trainer')?u.trainerId:null};
 const tmUsers=()=>DB.users.filter(u=>u.active!==false&&u.roles.includes('trainmgr'));
@@ -2146,7 +2151,7 @@ const mgrOfUser=u=>u&&u.managerId?U(u.managerId):null;
 function fileCheck(f){
   if(!f)return 'اختر ملفًا';
   if(!FILE_OK.includes(f.type))return 'نوع الملف غير مسموح (PDF أو JPG أو PNG فقط)';
-  if(f.size>FILE_MAX)return `حجم الملف يتجاوز الحد المسموح (${(FILE_MAX/1e6).toFixed(1)} م.ب)`;
+  if(f.size>FILE_MAX)return `حجم الملف يتجاوز الحد المسموح (${Math.round(FILE_MAX/1000)} ك.ب). إن كان مستندًا، صوّره أو صدّره بجودة أقل.`;
   if(f.size<200)return 'الملف فارغ أو تالف';
   return '';
 }
@@ -2159,7 +2164,28 @@ function safeHtml(html){
   return t.innerHTML;
 }
 function readDataURL(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('read'));r.readAsDataURL(f)})}
+/* صورة الجوال تبلغ ميغابايتات، وحدّ المرفق 130 ك.ب. فتُصغَّر قبل الحفظ
+   لا بعد الرفض: أطول ضلع 1600، ثم تُجرَّب جودات نازلة حتى تدخل الحد. */
+async function shrinkImage(f){
+  if(!/^image\/(jpeg|png)$/.test(f.type||'')||f.size<=FILE_MAX)return f;
+  const url=URL.createObjectURL(f);
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('img'));i.src=url});
+    for(const MAXD of [1600,1200,900]){
+      const sc=Math.min(1,MAXD/Math.max(img.naturalWidth,img.naturalHeight));
+      const w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h);g.drawImage(img,0,0,w,h);
+      for(const q of [0.82,0.7,0.6,0.5,0.4]){
+        const b=await new Promise(r=>c.toBlob(r,'image/jpeg',q));
+        if(b&&b.size<=FILE_MAX)return new File([b],String(f.name||'صورة').replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
+      }
+    }
+    return f;
+  }catch(e){return f}finally{URL.revokeObjectURL(url)}
+}
 async function storeFile(f,by){
+  try{f=await shrinkImage(f)}catch(e){}
   const bad=fileCheck(f);if(bad)return {ok:false,msg:bad};
   try{
     const data=await readDataURL(f);
@@ -2746,7 +2772,7 @@ function extModal(){
    <div class="field"><label for="ex_field">المجال التدريبي *</label><select class="inp" id="ex_field">${options(Object.entries(CATS),'','اختر…')}</select></div>
    <div class="field full"><label for="ex_desc">وصف مختصر *</label><textarea class="inp" id="ex_desc" rows="2" maxlength="600"></textarea></div>
    <div class="field full"><label for="ex_skills">المهارات أو المعارف المكتسبة *</label><textarea class="inp" id="ex_skills" rows="2" maxlength="600"></textarea></div>
-   <div class="field full"><label for="ex_cert">شهادة الحضور أو الإتمام * (PDF/JPG/PNG حتى ${(FILE_MAX/1e6).toFixed(1)} م.ب)</label><input class="inp" id="ex_cert" type="file" accept=".pdf,.jpg,.jpeg,.png"></div>
+   <div class="field full"><label for="ex_cert">شهادة الحضور أو الإتمام * (${FMAX_TXT})</label><input class="inp" id="ex_cert" type="file" accept=".pdf,.jpg,.jpeg,.png"></div>
    <div class="field full"><label for="ex_att">مرفقات إضافية (اختياري)</label><input class="inp" id="ex_att" type="file" multiple accept=".pdf,.jpg,.jpeg,.png"></div></div>
    ${limitsNote('تُخزَّن الملفات المرفقة مع بيانات المنصة بحدود الحجم أعلاه. للإنتاج يلزم ربطها بخدمة تخزين ملفات (انظر «دليل التشغيل»).')}</div>
   <div class="m-f"><button class="btn sec" data-act="close">إلغاء</button><button class="btn" data-act="ex-save">إرسال للاعتماد</button></div>`,'wide');
@@ -2788,7 +2814,7 @@ function visitReportModal(id){
    <div class="field full"><label for="vr_topics">المحاور التي نوقشت *</label><textarea class="inp" id="vr_topics" rows="2" maxlength="1200">${esc(v.topics||'')}</textarea></div>
    <div class="field full"><label for="vr_results">أبرز النتائج والمخرجات *</label><textarea class="inp" id="vr_results" rows="2" maxlength="1200">${esc(v.results||'')}</textarea></div>
    <div class="field full"><label for="vr_recs">التوصيات *</label><textarea class="inp" id="vr_recs" rows="2" maxlength="1200">${esc(v.recs||'')}</textarea></div>
-   <div class="field full"><label>الشاهد والصور * (PDF/JPG/PNG حتى ${(FILE_MAX/1e6).toFixed(1)} م.ب)</label>
+   <div class="field full"><label>الشاهد والصور * (${FMAX_TXT})</label>
     <div id="vr_files" class="small">${(S._vr.attach||[]).map(fileLink).join(' ')||'<span class="muted">لا مرفقات</span>'}</div>
     <input class="inp" id="vr_att" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="margin-top:6px"></div>
   </div></div>
@@ -3119,7 +3145,7 @@ function vHelp(){
   return `${pg('دليل التشغيل والإدارة','الحسابات التجريبية، وطريقة التشغيل، وما يلزم لربط المنصة بخدمات تخزين وقواعد بيانات مؤسسية.')}
   <div class="card pad" style="margin-bottom:16px"><h3>الحسابات التجريبية</h3><div class="h-sub">الدخول بالبريد فقط (لا كلمة مرور، انظر حدود الأمان أدناه).</div><div class="tbl-wrap"><table class="sm-t"><thead><tr><th>الدور</th><th>البريد</th><th>ما يمكن اختباره</th></tr></thead><tbody>${DEMO_ACCOUNTS.map(a=>`<tr><td><b>${a[1]}</b></td><td dir="ltr" class="num">${a[2]}</td><td class="small">${esc(a[3])}</td></tr>`).join('')}</tbody></table></div></div>
   <div class="grid g-12"><div class="card pad"><h3>كيف تُدار المنصة</h3><ol style="line-height:2;padding-inline-start:20px;margin-top:8px"><li><b>دورة مسجلة:</b> المكتبة ← دورة مسجّلة جديدة ← أضف دروسًا وارفع الفيديو (أو أدخل رابط ملف مستضاف) ← أسئلة الاختبار ← وثّق الحقوق ← انشر.</li><li><b>مادة مقروءة:</b> المكتبة ← المواد المقروءة ← ارفع PDF أو أدخل رابطه، قسّمه إلى أجزاء وأضف أسئلة التحقق، وثّق المصدر ثم انشر.</li><li><b>القرارات:</b> «الطلبات والمتابعة» لاعتماد الدورات الخارجية والبت في إعادة الدورات ومتابعة التعليقات.</li><li><b>الزيارات:</b> يعتمدها الرئيس المباشر من «اعتماد الزيارات»، وتتابعها من «الطلبات والمتابعة».</li><li><b>التقارير:</b> «الأنشطة والتطوير» مع التصفية والتصدير.</li><li><b>النسخ الاحتياطي:</b> مسؤول النظام ← البيانات والنسخ الاحتياطي.</li></ol></div>
-  <div class="card pad"><h3>أين يُخزَّن ماذا؟</h3><ul style="line-height:2;padding-inline-start:20px;margin-top:8px"><li><b>بيانات المنصة</b> (مستخدمون، نتائج، اعتمادات، تدقيق): قاعدة بيانات المنصة المشتركة عند توفرها لحسابك، وإلا التخزين المحلي للمتصفح. الحالة تظهر أسفل الشاشة.</li><li><b>ملفات الفيديو وملفات PDF:</b> استضافة أصول المنصة (متاحة لمالك المنصة والمحرّرين، حتى 20 م.ب للملف) أو رابط ملف لدى الجمعية.</li><li><b>مرفقات الموظفين</b> (شهادات، وثائق الزيارات): تُحفظ مع البيانات، بحد ${(FILE_MAX/1e6).toFixed(1)} م.ب للملف.</li></ul></div></div>
+  <div class="card pad"><h3>أين يُخزَّن ماذا؟</h3><ul style="line-height:2;padding-inline-start:20px;margin-top:8px"><li><b>بيانات المنصة</b> (مستخدمون، نتائج، اعتمادات، تدقيق): قاعدة بيانات المنصة المشتركة عند توفرها لحسابك، وإلا التخزين المحلي للمتصفح. الحالة تظهر أسفل الشاشة.</li><li><b>ملفات الفيديو وملفات PDF:</b> استضافة أصول المنصة (متاحة لمالك المنصة والمحرّرين، حتى 20 م.ب للملف) أو رابط ملف لدى الجمعية.</li><li><b>مرفقات الموظفين</b> (شهادات، وثائق الزيارات): تُحفظ مع البيانات، بحد ${Math.round(FILE_MAX/1000)} ك.ب للملف، والصور تُصغَّر تلقائيًا قبل الحفظ.</li></ul></div></div>
   <div class="card pad" style="margin-top:16px"><h3>ما يحتاج خدمات أو إعدادات إضافية قبل الإنتاج</h3><div class="tbl-wrap"><table class="sm-t"><thead><tr><th>المتطلب</th><th>الوضع الحالي</th><th>الحل المطلوب</th></tr></thead><tbody>
    <tr><td>فيديو بأحجام كبيرة وعدد مشاهدين كبير</td><td>حد 20 م.ب للملف في استضافة المنصة</td><td>رفع الفيديو إلى خدمة بث مناسبة (Azure Media/Blob + CDN، أو Cloudflare Stream، أو Bunny Stream، أو AWS S3 + CloudFront) واستخدام رابط ملف MP4/HLS في الدرس. يعمل التتبع نفسه لأنه يعتمد على المشغّل. تكلفة التخزين ثابتة تقريبًا، وتكلفة نقل البيانات تتبع عدد المشاهدات، فيُنصح بـ CDN وبتخزين عدة جودات.</td></tr>
    <tr><td>حماية الملفات من الوصول غير المصرّح</td><td>روابط الملفات لا تتحقق من الدور</td><td>روابط موقّعة قصيرة العمر من الخادم، وتحقق من الهوية قبل التسليم.</td></tr>
@@ -3196,7 +3222,6 @@ const ACT2={
   const cf=document.getElementById('ex_cert').files[0];
   const f={title:fieldVal('ex_title'),provider:fieldVal('ex_prov'),trainer:fieldVal('ex_tr'),date:fieldVal('ex_date'),hours:fieldVal('ex_hours'),field:fieldVal('ex_field'),desc:fieldVal('ex_desc'),skills:fieldVal('ex_skills'),certFile:cf?'pending':''};
   const errs=validateExt(f);if(errs.length){toast('تعذّر الإرسال',errs[0]);return}
-  const bad=fileCheck(cf);if(bad){toast('ملف الشهادة غير مقبول',bad);return}
   const c=await storeFile(cf);if(!c.ok){toast('ملف الشهادة غير مقبول',c.msg);return}
   const att=await addFiles('ex_att');if(att===null){DB.files=DB.files.filter(x=>x.id!==c.id);commit('files');return}
   f.certFile=c.id;f.attach=att;const r=submitExt(S.me,f);

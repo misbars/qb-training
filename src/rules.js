@@ -255,6 +255,7 @@ const CAP = { hours: 500, score: 100, passScore: 100, requiredPct: 100, pct: 100
 const TXT_OK = { tracks: ['dur'] };
 const MAX_STR = 8000;        // أطول نص مقبول في حقل واحد
 const MAX_DOC = 200000;      // أكبر حجم لسجل واحد
+const FILE_DATA_MAX = 180000;// محتوى المرفق بعد base64 ≈ 130 ك.ب من الملف
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // الدورات والخطط تُجدول مستقبلًا؛ وما عداها لا يُسجَّل بتاريخ آتٍ
 const AHEAD_DAYS = { courses: 1095, plans: 1095, programs: 1095, kpis: 1095, kpiMeas: 1095, tracks: 1095, visits: 400 }; // الزيارة تُطلب قبل تنفيذها، فتاريخها في المستقبل
@@ -279,7 +280,7 @@ export function validate(col, obj) {
     const hit = FILE_OK.find(([re]) => re.test(d));
     if (!hit) return 'نوع الملف غير مسموح أو لا يطابق محتواه';
     if (obj.type && obj.type !== hit[1]) return 'نوع الملف المعلن لا يطابق محتواه';
-    if (d.length > 180000) return 'الملف أكبر من الحد المسموح';
+    if (d.length > FILE_DATA_MAX) return 'الملف أكبر من الحد المسموح';
   }
   if (JSON.stringify(obj).length > MAX_DOC) return 'السجل أكبر من الحد المسموح';
   const today = dayNum(new Date().toISOString().slice(0, 10));
@@ -296,7 +297,11 @@ export function validate(col, obj) {
       return;
     }
     if (typeof v === 'string') {
-      if (v.length > MAX_STR) return void (bad = `نص «${key}» أطول من ${MAX_STR} حرفًا`);
+      // محتوى الملف نصٌّ طويل بطبعه، وحدُّه قاعدةُ files أعلاه لا حدُّ
+      // الحقول. وبدون هذا الاستثناء كان MAX_STR يرفض كل مرفقٍ حقيقي
+      // ويُبطل قاعدةَ files نفسها قبل أن تُفحص.
+      const lim = (col === 'files' && key === 'data') ? FILE_DATA_MAX : MAX_STR;
+      if (v.length > lim) return void (bad = `نص «${key}» أطول من ${lim} حرفًا`);
       if ((key === 'date' || key.endsWith('Date')) && v) {
         if (!DATE_RE.test(v)) return void (bad = `تاريخ «${key}» غير صالح`);
         const d = dayNum(v);
