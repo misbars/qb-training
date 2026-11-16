@@ -6,7 +6,7 @@ function navSections(u) {
   const R = (u && u.roles) || [], emp = R.includes('employee'), out = [];
   const noInbox = items => emp ? items.filter(x => x[0] !== 'inbox') : items;
   if (emp) out.push({ h: '', role: 'employee', items: NAV.employee });
-  if (R.includes('linemgr')) out.push({ h: 'فريقي', role: 'linemgr', items: [['team', 'فريقي', 'users'], ['lmvisits', 'اعتماد الزيارات', 'pin'], ['track', 'بطاقات مسار القيادات', 'flag'], ['reports', 'تقارير إدارتي', 'file']] });
+  if (R.includes('linemgr')) out.push({ h: 'فريقي', role: 'linemgr', items: [['team', 'فريقي', 'users'], ['lmvisits', 'اعتماد الزيارات', 'pin'], ['track', 'بطاقات فريقي', 'flag'], ['reports', 'تقارير إدارتي', 'file']] });
   // القائمة تُبنى من NAV[role] الخام، فكان بند معتمد الاتصال المؤسسي يسقط
   // ولا يبلغ الشاشة إلا من إشعار. العلم ليس صفة، فله قسمه الخاص.
   if (typeof isCommApprover === 'function' && isCommApprover(u && u.id))
@@ -80,7 +80,7 @@ empTasks = function (u) {
     const en = navBadge('linemgr', 'team'), vs = navBadge('linemgr', 'lmvisits'), cd = navBadge('linemgr', 'track');
     if (en) add.push({ kind: 'mgr', title: `${n(en, 'طلب تسجيل', ['طلبا تسجيل', 'طلبات تسجيل', 'طلب تسجيل'])} من فريقك ينتظر موافقتك`, sub: 'دورات طلبها موظفوك', btn: 'راجع', primary: true, act: 'navgo', v: 'linemgr:team' });
     if (vs) add.push({ kind: 'mgr', title: `${n(vs, 'زيارة ميدانية', ['زيارتان ميدانيتان', 'زيارات ميدانية', 'زيارة ميدانية'])} تنتظر اعتمادك`, sub: 'زيارات أرسلها موظفوك', btn: 'راجع', primary: true, act: 'navgo', v: 'linemgr:lmvisits' });
-    if (cd) add.push({ kind: 'mgr', title: `${n(cd, 'بطاقة تطبيق جديدة', ['بطاقتا تطبيق جديدتان', 'بطاقات تطبيق جديدة', 'بطاقة تطبيق جديدة'])} من فريقك`, sub: 'مسار القيادات', btn: 'اطّلع', act: 'navgo', v: 'linemgr:track' });
+    if (cd) add.push({ kind: 'mgr', title: `${n(cd, 'بطاقة تطبيق جديدة', ['بطاقتا تطبيق جديدتان', 'بطاقات تطبيق جديدة', 'بطاقة تطبيق جديدة'])} من فريقك`, sub: 'بطاقة من مسار فريقك', btn: 'اطّلع', act: 'navgo', v: 'linemgr:track' });
   }
   if (u.roles.includes('trainmgr')) {
     const rq = navBadge('trainmgr', 'requests');

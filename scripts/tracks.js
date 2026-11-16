@@ -1,4 +1,4 @@
-/* ================= المسارات التدريبية: مسار القيادات ================= */
+/* ================= المسارات التدريبية ================= */
 // المحتوى من «دليل المسار التدريبي للقيادات ١٤٤٨هـ». كل محور: دورة مجانية خارجية (معرفة) + حلقة صوتية (اتجاه) + بطاقة تطبيق (مهارة).
 // الساعات: مدة الدورة مقرّبة لأقرب نصف ساعة للأسفل، وتُحتسب بعد اعتماد مدير التدريب لشهادة الإتمام.
 const TR_SEED = {
@@ -153,8 +153,8 @@ function trSummary(uid) {
 function trSave(p, what) { commit('trackprog'); if (what) audit('track.' + what, 'trackprog', p.id, TRACK.title) }
 function trNotifyUp(subj, body) {
   const u = ME(), m = u && u.managerId && U(u.managerId);
-  if (m) notify(m.id, subj, 'مسار القيادات', body, 'عرض البطاقة', 'linemgr:track');
-  tmUsers().forEach(t => { if (!m || t.id !== m.id) notify(t.id, subj, 'مسار القيادات', body, 'متابعة المسار', 'trainmgr:trackadm') });
+  if (m) notify(m.id, subj, TRACK.title, body, 'عرض البطاقة', 'linemgr:track');
+  tmUsers().forEach(t => { if (!m || t.id !== m.id) notify(t.id, subj, TRACK.title, body, 'متابعة المسار', 'trainmgr:trackadm') });
 }
 
 /* ---------- عناصر العرض ---------- */
@@ -270,7 +270,7 @@ function trTeamCards() {
 function vTrackTeam() {
   const team = DB.users.filter(u => inc(u) && u.managerId === S.me && isLeader(u));
   const cards = trTeamCards();
-  return `${pg('بطاقات التطبيق لفريقك', 'بطاقات التطبيق اللي أرسلها القادة المرتبطون بك في مسار القيادات. اطّلع عليها واكتب ملاحظة إذا حبيت.')}
+  return `${pg('بطاقات التطبيق لفريقك', 'بطاقات التطبيق اللي أرسلها المرتبطون بك في مساراتهم. اطّلع عليها واكتب ملاحظة إذا حبيت.')}
   ${team.length ? `<div class="card tbl-wrap" style="margin-bottom:16px"><table><thead><tr><th>القائد</th><th>محاور مكتملة</th><th>بطاقات مرسلة</th><th>ساعات معتمدة</th></tr></thead><tbody>${team.map(u => { const s = trSummary(u.id); return `<tr><td><b>${esc(u.name)}</b></td><td class="num">${s.done} / 10</td><td class="num">${s.cards}</td><td class="num">${num(s.hours)}</td></tr>` }).join('')}</tbody></table></div>` : ''}
   ${cards.length ? cards.map(x => trCardView(x, true)).join('') : `<div class="card empty">${ico('inbox')}<div>${team.length ? 'ما وصلت بطاقات للحين.' : 'ما عندك قادة مرتبطين بك في المسار.'}</div></div>`}`;
 }
@@ -381,7 +381,7 @@ Object.assign(ACT, {
     const note = fieldVal(`tra_${t.dataset.u}_${n}`);
     p.acks = p.acks || {}; p.acks[n] = { by: S.me, at: nowISO(), note };
     trSave(p, 'ack');
-    notify(t.dataset.u, `اطّلع ${(ME() || {}).name} على بطاقتك: ${TR_AX(n).k.t}`, 'مسار القيادات', note ? `<p>${esc(note)}</p>` : '<p>اطّلع رئيسك على بطاقة التطبيق.</p>', 'افتح المسار', 'employee:track');
+    notify(t.dataset.u, `اطّلع ${(ME() || {}).name} على بطاقتك: ${TR_AX(n).k.t}`, TRACK.title, note ? `<p>${esc(note)}</p>` : '<p>اطّلع رئيسك على بطاقة التطبيق.</p>', 'افتح المسار', 'employee:track');
     toast('تم'); draw();
   },
   'tr-who'(t) {
@@ -426,17 +426,33 @@ Object.assign(ACT, {
   'tr-rm'(t) { const c = DB.tracks.find(x => x.id === TRACK.id); if (!c) return; c.extra = (c.extra || []).filter(x => x !== t.dataset.u); commit('tracks'); draw() },
 });
 /* ---------- الربط مع القوائم والرئيسية ---------- */
-NAV.linemgr.splice(1, 0, ['track', 'مسار القيادات', 'flag']);
-NAV.trainmgr.splice(Math.max(1, NAV.trainmgr.findIndex(x => x[0] === 'library' || x[0] === 'libadmin') + 1), 0, ['trackadm', 'مسار القيادات', 'flag']);
-EMP_GROUPS.learn.subs.push(['track', 'مسار القيادات']); EMP_GROUP_OF.track = 'learn';
+NAV.linemgr.splice(1, 0, ['track', 'بطاقات فريقي', 'flag']);
+NAV.trainmgr.splice(Math.max(1, NAV.trainmgr.findIndex(x => x[0] === 'library' || x[0] === 'libadmin') + 1), 0, ['trackadm', 'المسارات التدريبية', 'flag']);
+EMP_GROUPS.learn.subs.push(['track', 'مساري التدريبي']); EMP_GROUP_OF.track = 'learn';
 { const orig = VIEWS.track; VIEWS.track = () => (S.role === 'employee' ? (S.empLast.learn = 'track', empGroupBar('learn', 'track')) : '') + orig() }
 const _empGroupBar = empGroupBar;
-empGroupBar = function (g, cur) { const o = EMP_GROUPS[g], keep = o.subs; if (g === 'learn' && !isLeader(ME())) o.subs = keep.filter(s => s[0] !== 'track'); const h = _empGroupBar(g, cur); o.subs = keep; return h };
+// التسمية كانت «مسار القيادات» لكل أحد، فيقرأ موظف الشؤون التعليمية
+// اسم مسارٍ ليس مساره. تُؤخذ الآن من مسار المستخدم نفسه.
+empGroupBar = function (g, cur) {
+  const o = EMP_GROUPS[g], keep = o.subs;
+  if (g === 'learn') {
+    const mine = myTracks(S.me) || [];
+    o.subs = mine.length
+      ? keep.map(x => x[0] === 'track' ? ['track', mine.length > 1 ? 'مساراتي التدريبية' : (mine[0].title || 'مساري التدريبي')] : x)
+      : keep.filter(x => x[0] !== 'track');
+  }
+  const h = _empGroupBar(g, cur); o.subs = keep; return h;
+};
 TASK_ICON.track = ['flag', '#072C49', '#9DDAE5'];
 const _empTasks = empTasks;
 empTasks = function (u) {
   const T = _empTasks(u);
-  if (isLeader(u)) { const s = trSummary(u.id); if (!s.final && s.next) T.splice(Math.min(1, T.length), 0, { kind: 'track', title: `مسار القيادات: ${s.next.t}`, sub: `المحور ${s.next.n} من 10 · أكملت ${s.done}`, pct: Math.round(s.done * 10), btn: s.started ? 'كمّل' : 'ابدأ', primary: true, act: 'tr-axis', v: '' }) }
+  if (isLeader(u)) {
+    const s = trSummary(u.id), N = (TRACK.axes || []).length || 1;
+    if (!s.final && s.next) T.splice(Math.min(1, T.length), 0, { kind: 'track', title: `${TRACK.title}: ${s.next.t}`,
+      sub: `المحور ${s.next.n} من ${N} · أكملتَ ${s.done} منها`, pct: Math.round(s.done * 100 / N),
+      btn: s.started ? 'كمّل' : 'ابدأ', primary: true, act: 'tr-axis', v: '' });
+  }
   return T;
 };
 

@@ -204,7 +204,16 @@ export function readFilter(ses, col, row, ctx) {
   // يرى ما غادر المسوّدة فقط — والمسوّدة تبقى لصاحبها.
   if (col === 'visits' && ctx.isComm && ctx.isComm() && row.status !== 'draft') return row;
   if (col === 'mails') return row.to === me ? row : null;
-  if (col === 'users') return row.id === me ? row : omit(row, USER_HIDE);
+  // تفويض اعتماد الزيارات يكشف غياب المعتمد ومدّته ومن ينوب عنه، ولا
+  // يحتاجه إلا طرفاه وإدارة التدريب. وصفةُ «معتمد اتصال مؤسسي» نفسها
+  // تبقى ظاهرة: الموظف يبني عليها مسار طلبه.
+  if (col === 'users') {
+    if (row.id === me) return row;
+    const o = omit(row, USER_HIDE);
+    const d = o.commDeleg;
+    if (d && role !== 'trainmgr' && d.to !== me) return omit(o, ['commDeleg']);
+    return o;
+  }
   // التعليق المجهول يحمل هوية كاتبه في بياناته؛ تُزال عن الآخرين
   if (col === 'comments') {
     if (!row.anon || row.userId === me) return row;
