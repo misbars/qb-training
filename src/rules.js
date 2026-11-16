@@ -234,6 +234,10 @@ export function readFilter(ses, col, row, ctx) {
 const CAP = { hours: 500, score: 100, passScore: 100, requiredPct: 100, pct: 100, maxAttempts: 20,
               seats: 5000, creditHours: 200, estMin: 20000, exp: 70, dur: 86400, n: 1000,
               round: 100, days: 400, pages: 5000, maxRate: 4, best: 100 };
+// حقول اسمها عددي في مجموعات أخرى، لكنها في هذه المجموعة نصّ بشري:
+// «dur» في تعريف المسار هو «ساعة و52 دقيقة» لا عدد ثوانٍ. والاستثناء
+// بالمجموعة لا بالاسم، حتى تبقى القاعدة قائمة في كل ما عداها.
+const TXT_OK = { tracks: ['dur'] };
 const MAX_STR = 8000;        // أطول نص مقبول في حقل واحد
 const MAX_DOC = 200000;      // أكبر حجم لسجل واحد
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -266,12 +270,13 @@ export function validate(col, obj) {
   const today = dayNum(new Date().toISOString().slice(0, 10));
   const ahead = AHEAD_DAYS[col] ?? 2;        // يومان هامشًا لفروق المناطق الزمنية
   let bad = null;
+  const txtOk = TXT_OK[col] || [];
   const walk = (v, key, depth) => {
     if (bad || depth > 8) return;
     if (typeof v === 'number') {
       if (!Number.isFinite(v)) return void (bad = `قيمة غير رقمية في «${key}»`);
       if (Math.abs(v) > 1e7) return void (bad = `قيمة خارج المدى في «${key}»`);
-      const cap = CAP[key];
+      const cap = txtOk.includes(key) ? undefined : CAP[key];
       if (cap !== undefined && (v < 0 || v > cap)) bad = `قيمة «${key}» يجب أن تكون بين 0 و${cap}`;
       return;
     }
@@ -290,7 +295,7 @@ export function validate(col, obj) {
     if (v && typeof v === 'object') for (const k of Object.keys(v)) {
       const x = v[k];
       // حقل عددي وصلته قيمة ليست رقمًا (نص أو كائن) — يُرفض بدل أن يُخزَّن ويُفسد الحسابات
-      if (CAP[k] !== undefined && x !== null && x !== undefined && typeof x !== 'number') { bad = `قيمة «${k}» يجب أن تكون رقمًا`; return }
+      if (CAP[k] !== undefined && !txtOk.includes(k) && x !== null && x !== undefined && typeof x !== 'number') { bad = `قيمة «${k}» يجب أن تكون رقمًا`; return }
       walk(x, k, depth + 1);
     }
   };

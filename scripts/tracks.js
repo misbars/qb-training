@@ -1,8 +1,8 @@
 /* ================= المسارات التدريبية: مسار القيادات ================= */
 // المحتوى من «دليل المسار التدريبي للقيادات ١٤٤٨هـ». كل محور: دورة مجانية خارجية (معرفة) + حلقة صوتية (اتجاه) + بطاقة تطبيق (مهارة).
 // الساعات: مدة الدورة مقرّبة لأقرب نصف ساعة للأسفل، وتُحتسب بعد اعتماد مدير التدريب لشهادة الإتمام.
-const TRACK = {
-  id: 'leaders', title: 'مسار القيادات', cat: 'lead',
+const TR_SEED = {
+  id: 'leaders', roles: ['linemgr'], title: 'مسار القيادات', cat: 'lead',
   audience: 'المدير العام ومساعده، ومديرو الإدارات، ورؤساء الأقسام والوحدات، وعميدة المعهد ووكيلاتها',
   intro: 'عشرة محاور في القيادة والاستراتيجية والأداء والحوكمة والموارد البشرية والمال والقرار والشراكات والجودة والبيانات. لكل محور دورة مجانية، وحلقة صوتية، وتطبيق عملي قصير يُنجز في جلسة واحدة على عمل قائم في إدارتكم.',
   start: { q: 'حين تتأملون واقع إدارتكم اليوم، أين يظهر أثر قيادتكم بوضوح؟ وما التغيير الذي لو حققتموه لكان أنفع لفرقكم وللمستفيدين؟', f: ['ممارسة أعتز بها', 'جانب أريد تطويره', 'علامة سأعرف بها أني تقدمت'] },
@@ -85,16 +85,41 @@ const TRACK = {
     rules: ['لا تُدخلوا في أي أداة عامة بيانات شخصية أو معلومات سرية أو غير منشورة تخص الجمعية.', 'راجعوا كل ناتج قبل الاعتماد عليه؛ فالأداة قد تخطئ بثقة.', 'اسألوا إدارتكم عن الأدوات المعتمدة في الجمعية قبل استخدام أي أداة جديدة.'],
     f: ['المهمة التي جرّبت فيها', 'ما وفّره عليّ', 'ما صحّحته أو غيّرته في الناتج'] }
 };
-const TR_AX = n => TRACK.axes.find(a => a.n === +n);
+/* المسار صار سجلًّا في قاعدة البيانات لا ثابتًا في الشفرة. وTRACK يُقرأ حيًّا
+   من المسار المختار، فبقيت الثلاثون إشارة إليه في هذا الملف كما هي. */
+function trackById(id) {
+  const d = (DB.tracks || []).find(x => x.id === id);
+  const base = id === TR_SEED.id ? TR_SEED : null;
+  if (!d) return base;
+  const axes = (d.axes && d.axes.length) ? d.axes : ((base || {}).axes || []);
+  return Object.assign({}, base || {}, d, { axes });
+}
+function trAll() {
+  const ids = new Set((DB.tracks || []).map(t => t.id)); ids.add(TR_SEED.id);
+  return [...ids].map(trackById).filter(t => t && t.axes && t.axes.length && t.active !== false);
+}
+function trEligible(u, t) {
+  if (!u || u.active === false || !t) return false;
+  if ((t.off || []).includes(u.id)) return false;
+  if ((t.extra || []).includes(u.id)) return true;
+  return (t.roles || []).some(r => (u.roles || []).includes(r));
+}
+const myTracks = uid => { const u = U(uid); return trAll().filter(t => trEligible(u, t)) };
+/* المسار المعروض: ما اختاره المستخدم، وإلا أول مسار يخصّه، وإلا البذرة */
+function trCurId() {
+  if (S.track && trackById(S.track)) return S.track;
+  const m = myTracks(S.me); if (m.length) return m[0].id;
+  return TR_SEED.id;
+}
+Object.defineProperty(typeof window !== 'undefined' ? window : globalThis, 'TRACK',
+  { configurable: true, get() { return trackById(trCurId()) || TR_SEED } });
+
+const TR_AX = n => (TRACK.axes || []).find(a => a.n === +n);
+const axN = n => n === 1 ? 'محور واحد' : n === 2 ? 'محورين' : n <= 10 ? n + ' محاور' : n + ' محورًا';
 
 /* ---------- البيانات ---------- */
 function trConf() { return DB.tracks.find(t => t.id === TRACK.id) || { id: TRACK.id, extra: [], off: [] } }
-function isLeader(u) {
-  if (!u || u.active === false) return false;
-  const c = trConf();
-  if ((c.off || []).includes(u.id)) return false;
-  return (u.roles || []).includes('linemgr') || (c.extra || []).includes(u.id);
-}
+const isLeader = u => trEligible(u, TRACK);
 const trLeaders = () => DB.users.filter(u => inc(u) && isLeader(u));
 const trProg = uid => DB.trackprog.find(p => p.userId === uid && p.track === TRACK.id);
 function trMine() {
@@ -153,7 +178,7 @@ function vTrackMap() {
   const startDone = Object.values(p.start || {}).some(v => (v || '').trim());
   const all = sm.done === TRACK.axes.length;
   return `${pg(TRACK.title, TRACK.audience)}
-  <div class="card tr-hero"><div class="tr-hero-t"><h2>عشرة محاور، لكل محور ثلاث خطوات</h2><p>${esc(TRACK.intro)}</p>
+  <div class="card tr-hero"><div class="tr-hero-t"><h2>${axN(TRACK.axes.length)}، لكل محور ثلاث خطوات</h2><p>${esc(TRACK.intro)}</p>
     <div class="tr-legend"><span><b>الدورة</b> = المعرفة</span><span><b>الحلقة الصوتية</b> = القناعة</span><span><b>بطاقة التطبيق</b> = المهارة</span></div></div>
     <div class="tr-hero-s">${trRing(sm.done, TRACK.axes.length)}<div><b>محاور مكتملة</b><span class="num">${num(sm.hours)} ساعة معتمدة</span>${sm.pending ? `<span>${sm.pending} شهادة بانتظار الاعتماد</span>` : ''}</div></div></div>
   ${startDone ? '' : `<div class="card pad tr-start"><h3>${ico('flag')} قبل ما تبدأ: وقفة مع واقع عملكم</h3><p>${esc(TRACK.start.q)}</p>
@@ -164,11 +189,11 @@ function vTrackMap() {
       <span class="tr-n num">${String(a.n).padStart(2, '0')}</span><span class="tr-ax-t"><b>${esc(a.t)}</b><span>${esc(a.s)}</span></span>
       <span class="tr-ax-st">${trPill('الدورة', s.course)}${trPill('الحلقة', s.pod)}${trPill('التطبيق', s.card)}</span></button>` }).join('')}</div>
   <div class="grid g2" style="margin-top:16px">
-   <button class="card pad tr-bonus" data-act="tr-axis" data-n="ai"><span class="small muted">حلقة إضافية</span><b>${esc(TRACK.bonus.t)}</b><span class="small">${esc(TRACK.bonus.s)}</span></button>
+   ${!TRACK.bonus ? '' : `<button class="card pad tr-bonus" data-act="tr-axis" data-n="ai"><span class="small muted">حلقة إضافية</span><b>${esc(TRACK.bonus.t)}</b><span class="small">${esc(TRACK.bonus.s)}</span></button>`}
    <div class="card pad tr-final ${all ? 'ready' : ''}"><b>${ico('award')} بطاقة الإنجاز</b>
     ${sm.final ? `<span>أرسلتها ${fmt(sm.final.at.slice(0, 10))}. جزاكم الله خيرًا على ما بذلتم.</span>`
-      : all ? `<span>أكملتم المحاور العشرة. أرسلوا بطاقة الإنجاز لرئيسكم وإدارة التدريب.</span><button class="btn" data-act="tr-final">أرسل بطاقة الإنجاز</button>`
-      : `<span>تنفتح بعد إكمال المحاور العشرة. باقي ${TRACK.axes.length - sm.done}.</span>`}</div></div>`;
+      : all ? `<span>أكملتم ${axN(TRACK.axes.length)}. أرسلوا بطاقة الإنجاز لرئيسكم وإدارة التدريب.</span><button class="btn" data-act="tr-final">أرسل بطاقة الإنجاز</button>`
+      : `<span>تنفتح بعد إكمال ${axN(TRACK.axes.length)}. باقي ${TRACK.axes.length - sm.done}.</span>`}</div></div>`;
 }
 
 /* ---------- صفحة المحور ---------- */
@@ -205,7 +230,8 @@ function vTrackAxis(n) {
   <div class="row tr-pn">${prev ? `<button class="btn ghost" data-act="tr-axis" data-n="${prev.n}">→ ${esc(prev.t)}</button>` : '<span></span>'}${next ? `<button class="btn ghost" data-act="tr-axis" data-n="${next.n}">${esc(next.t)} ←</button>` : ''}</div>`;
 }
 function vTrackBonus() {
-  const b = TRACK.bonus, p = trProg(S.me) || { bonus: {} }, bo = p.bonus || {};
+  const b = TRACK.bonus; if (!b) { S.trackAxis = null; return vTrackMap() }
+  const p = trProg(S.me) || { bonus: {} }, bo = p.bonus || {};
   return `<div class="tr-back"><button class="linkbtn" data-act="tr-axis" data-n="">${ico('menu')} خريطة المسار</button></div>
   <div class="tr-axhead"><span class="tr-n">${ico('spark')}</span><div><h1>${esc(b.t)}</h1><p>${esc(b.s)}</p></div></div>
   <section class="card pad tr-step">${trPodcast(b.p, 'ai')}
@@ -216,11 +242,17 @@ function vTrackBonus() {
    <div class="fgrid">${b.f.map((l, i) => `<div class="field"><label for="trb_${i}">${esc(l)}</label><textarea class="inp" id="trb_${i}" rows="2" maxlength="600">${esc((bo.f || [])[i] || '')}</textarea></div>`).join('')}</div>
    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn sec" data-act="tr-bonus">حفظ البطاقة</button></div></section>`;
 }
+/* شريط اختيار المسار: لا يظهر لمن له مسار واحد */
+function trPicker() {
+  const m = myTracks(S.me); if (m.length < 2) return '';
+  return `<div class="tr-pick">${m.map(t => `<button class="btn ${t.id === TRACK.id ? '' : 'ghost'} sm" data-act="tr-pick" data-t="${esc(t.id)}">${esc(t.title)}</button>`).join('')}</div>`;
+}
 VIEWS.track = () => {
   const u = ME();
   if (S.role === 'linemgr' && S.trTab === 'team') return trTabs() + vTrackTeam();
-  if (!isLeader(u)) return `${pg(TRACK.title, '')}<div class="card empty">${ico('flag')}<div>هذا المسار مخصص للقيادات. إذا تشوف إنه يخصك، تواصل مع إدارة التدريب.</div></div>`;
-  return (S.role === 'linemgr' ? trTabs() : '') + (S.trackAxis ? vTrackAxis(S.trackAxis) : vTrackMap());
+  const mine = myTracks(S.me);
+  if (!mine.length) return `${pg('المسارات التدريبية', '')}<div class="card empty">${ico('flag')}<div>لم يُسنَد إليك مسار تدريبي بعد. إذا تشوف إنه يخصك، تواصل مع إدارة التدريب.</div></div>`;
+  return (S.role === 'linemgr' ? trTabs() : '') + trPicker() + (S.trackAxis ? vTrackAxis(S.trackAxis) : vTrackMap());
 };
 function trTabs() {
   const n = trTeamCards().filter(x => !x.ack).length;
@@ -252,20 +284,40 @@ function trCardView(x, canAck) {
 }
 
 /* ---------- مدير التدريب: متابعة المسار ---------- */
+/* الإدارة تنتقل بين المسارات، وتستورد تعريف مسار كاملًا دفعة واحدة:
+   تأليف 35 محورًا يدويًا في نموذج غير عملي، والاستيراد يجعلها دقيقتين */
+function trAdmBar() {
+  const all = trAll();
+  return `<div class="card pad" style="margin-bottom:16px">
+   <div class="row wrap" style="gap:8px;align-items:center">
+    <b style="color:var(--navy)">المسار:</b>
+    ${all.map(t => `<button class="btn ${t.id === TRACK.id ? '' : 'ghost'} sm" data-act="tr-pick" data-t="${esc(t.id)}">${esc(t.title)} <span class="small muted">${t.axes.length}</span></button>`).join('')}
+    <span style="flex:1"></span>
+    <button class="btn sec sm" data-act="tr-exp">تصدير تعريف المسار</button>
+    <button class="btn sec sm" data-act="tr-imp">استيراد مسار</button>
+   </div></div>`;
+}
+function trImpModal() {
+  mask(`${mHead('استيراد مسار تدريبي', 'ألصق تعريف المسار (JSON). يُنشئ مسارًا جديدًا أو يحدّث القائم بالمعرّف نفسه.')}<div class="m-b">
+   <div class="note" style="margin-bottom:10px">الحقول المطلوبة: <code>id</code> و<code>title</code> و<code>axes</code>. ولا يمسّ الاستيراد تقدّم المشاركين ولا قائمة المضافين.</div>
+   <div class="field"><label for="tr_json">تعريف المسار</label><textarea class="inp" id="tr_json" rows="12" dir="ltr" style="font-family:ui-monospace,monospace;font-size:12px" placeholder='{"id":"edu_staff","title":"موظفو الشؤون التعليمية","axes":[…]}'></textarea></div>
+   </div><div class="m-f"><button class="btn sec" data-act="close">إلغاء</button><button class="btn" data-act="tr-imp-go">استورد</button></div>`, 'wide');
+}
 function vTrackAdm() {
   const L = trLeaders(), sums = L.map(u => ({ u, s: trSummary(u.id) }));
-  const started = sums.filter(x => x.s.started).length, finished = sums.filter(x => x.s.done === 10).length;
+  const started = sums.filter(x => x.s.started).length, finished = sums.filter(x => x.s.done === TRACK.axes.length).length;
   const cards = sums.reduce((t, x) => t + x.s.cards, 0), pend = sums.reduce((t, x) => t + x.s.pending, 0);
   const conf = trConf();
   const dot = s => `<span class="tr-dot ${s.done ? 'd' : s.started ? 'p' : ''}" title="${s.done ? 'مكتمل' : s.started ? 'بدأ' : 'لم يبدأ'}"></span>`;
   const others = DB.users.filter(u => inc(u) && u.active !== false && !isLeader(u) && !(u.roles || []).every(r => r === 'sysadmin' || r === 'trainer'));
-  return `${pg(TRACK.title, 'متابعة القادة في المسار: من بدأ، ووين وصل، وبطاقات التطبيق اللي أرسلوها.')}
-  <div class="grid g4" style="margin-bottom:16px">${kpiTile('users', 'var(--sky-2)', 'var(--teal)', L.length, 'قادة في المسار')}${kpiTile('play', 'var(--sky-2)', 'var(--teal)', started, 'بدؤوا')}${kpiTile('award', 'var(--sky-2)', 'var(--teal)', finished, 'أكملوا المحاور العشرة')}${kpiTile('clock', 'var(--sky-2)', 'var(--teal)', pend, 'شهادات بانتظار اعتمادك')}</div>
+  return `${pg('المسارات التدريبية', 'متابعة المشاركين: من بدأ، ووين وصل، وبطاقات التطبيق اللي أرسلوها.')}
+  ${trAdmBar()}
+  <div class="grid g4" style="margin-bottom:16px">${kpiTile('users', 'var(--sky-2)', 'var(--teal)', L.length, 'قادة في المسار')}${kpiTile('play', 'var(--sky-2)', 'var(--teal)', started, 'بدؤوا')}${kpiTile('award', 'var(--sky-2)', 'var(--teal)', finished, 'أكملوا المسار')}${kpiTile('clock', 'var(--sky-2)', 'var(--teal)', pend, 'شهادات بانتظار اعتمادك')}</div>
   ${pend ? `<div class="note" style="margin-bottom:12px">${ico('clock')} شهادات الدورات تصلك في «الطلبات والمتابعة ← الدورات الخارجية»، ومكتوب فيها رقم المحور. <button class="linkbtn" data-act="go" data-v="requests">افتح الطلبات</button></div>` : ''}
   <div class="card tbl-wrap"><table class="tr-mx"><thead><tr><th>القائد</th>${TRACK.axes.map(a => `<th title="${esc(a.t)}" class="num">${a.n}</th>`).join('')}<th>البطاقات</th><th>الساعات</th><th></th></tr></thead>
   <tbody>${sums.map(({ u, s }) => `<tr><td><b>${esc(u.name)}</b><div class="small muted">${esc(u.title || '')}</div></td>${s.st.map(dot).join('')}<td class="num">${s.cards}</td><td class="num">${num(s.hours)}</td><td>${s.cards ? `<button class="btn ghost sm" data-act="tr-who" data-u="${u.id}">البطاقات</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="14" class="muted">لا يوجد قادة. القادة هم من لهم صفة «رئيس مباشر»، وتقدر تضيف غيرهم من تحت.</td></tr>`}</tbody></table></div>
   <div class="small muted" style="margin:6px 2px 16px"><span class="tr-dot d"></span> مكتمل (دورة معتمدة + حلقة + بطاقة) · <span class="tr-dot p"></span> بدأ · <span class="tr-dot"></span> لم يبدأ</div>
-  <div class="card pad"><h3>المشاركون</h3><div class="h-sub">كل من له صفة «رئيس مباشر» داخل المسار تلقائيًا. أضف هنا من يُعتبر من القيادات بدون هذه الصفة، مثل عميدة المعهد أو وكيلاتها.</div>
+  <div class="card pad"><h3>المشاركون في «${esc(TRACK.title)}»</h3><div class="h-sub">${(TRACK.roles || []).length ? `كل من له صفة «${(TRACK.roles || []).map(r => ROLES[r] || r).join('» أو «')}» داخل المسار تلقائيًا. وأضف هنا من يخصّه المسار بدون هذه الصفة.` : 'المسار بالإضافة اليدوية: أضف هنا من يخصّه.'}</div>
    <div class="row wrap" style="gap:8px;margin:10px 0"><select class="inp" id="tr_add" style="max-width:320px">${options(others.map(u => [u.id, u.name]), '', 'اختر موظفًا…')}</select><button class="btn sec" data-act="tr-add">أضف للمسار</button></div>
    ${(conf.extra || []).length ? `<div class="row wrap" style="gap:6px">${conf.extra.map(id => `<span class="tag">${esc((U(id) || {}).name || id)} <button class="linkbtn" data-act="tr-rm" data-u="${id}" aria-label="إزالة">✕</button></span>`).join('')}</div>` : ''}</div>`;
 }
@@ -274,6 +326,7 @@ VIEWS.trackadm = vTrackAdm;
 /* ---------- الإجراءات ---------- */
 Object.assign(ACT, {
   'tr-tab'(t) { S.trTab = t.dataset.t; draw() },
+  'tr-pick'(t) { S.track = t.dataset.t; S.trackAxis = null; draw(); scrollTo(0, 0) },
   'tr-axis'(t) { S.trackAxis = t.dataset.n || null; S._trPlay = null; if (S.view !== 'track') go('track'); else draw(); scrollTo(0, 0) },
   'tr-play'(t) { S._trPlay = t.dataset.k; draw() },
   'tr-start'() { const p = trMine(); TRACK.start.f.forEach((_, i) => p.start[i] = fieldVal('trs_' + i)); if (!Object.values(p.start).some(v => v)) { toast('اكتب سطر واحد على الأقل'); return } trSave(p, 'start'); toast('حُفظت وقفتك. بالتوفيق في المسار'); draw() },
@@ -318,9 +371,9 @@ Object.assign(ACT, {
     closeLayer(); toast('أُرسلت الشهادة لإدارة التدريب'); draw();
   }),
   'tr-final'() {
-    const sm = trSummary(S.me); if (sm.done < TRACK.axes.length) { toast('أكمل المحاور العشرة أول'); return }
+    const sm = trSummary(S.me); if (sm.done < TRACK.axes.length) { toast('أكمل ' + axN(TRACK.axes.length) + ' أول'); return }
     const p = trMine(); p.final = { at: nowISO(), hours: sm.hours }; trSave(p, 'final');
-    trNotifyUp(`${(ME() || {}).name} أكمل ${TRACK.title}`, `<p>أكمل المحاور العشرة: ${TRACK.axes.map(a => esc(a.t)).join('، ')}.</p><p>الساعات المعتمدة: <b>${num(sm.hours)}</b>. وبطاقات التطبيق العشر موجودة في صفحة المسار.</p>`);
+    trNotifyUp(`${(ME() || {}).name} أكمل ${TRACK.title}`, `<p>أكمل ${axN(TRACK.axes.length)}: ${TRACK.axes.map(a => esc(a.t)).join('، ')}.</p><p>الساعات المعتمدة: <b>${num(sm.hours)}</b>. وبطاقات التطبيق في صفحة المسار.</p>`);
     toast('أُرسلت بطاقة الإنجاز. جزاكم الله خيرًا'); draw();
   },
   'tr-ack'(t) {
@@ -341,6 +394,34 @@ Object.assign(ACT, {
     let c = DB.tracks.find(t => t.id === TRACK.id); if (!c) { c = { id: TRACK.id, extra: [], off: [] }; DB.tracks.push(c) }
     c.extra = [...new Set([...(c.extra || []), id])]; c.off = (c.off || []).filter(x => x !== id);
     commit('tracks'); audit('track.add', 'tracks', id, (U(id) || {}).name || ''); toast('أُضيف للمسار'); draw();
+  },
+  'tr-exp'() {
+    const t = TRACK, out = { id: t.id, title: t.title, cat: t.cat, audience: t.audience, intro: t.intro, roles: t.roles || [], start: t.start, axes: t.axes };
+    if (t.bonus) out.bonus = t.bonus;
+    saveFile(`track-${t.id}.json`, new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }));
+  },
+  'tr-imp'() { if (!needRole('trainmgr')) return; trImpModal() },
+  'tr-imp-go'() {
+    if (!needRole('trainmgr')) return;
+    let o; try { o = JSON.parse(fieldVal('tr_json')) } catch (e) { toast('JSON غير صالح', String(e.message || e).slice(0, 90)); return }
+    if (!o || typeof o !== 'object' || Array.isArray(o)) { toast('المتوقع كائن واحد'); return }
+    if (!/^[A-Za-z0-9_-]{2,40}$/.test(o.id || '')) { toast('معرّف غير صالح', 'حروف لاتينية وأرقام و_ و- فقط'); return }
+    if ((o.title || '').trim().length < 3) { toast('العنوان مطلوب'); return }
+    if (!Array.isArray(o.axes) || !o.axes.length) { toast('المسار بلا محاور'); return }
+    if (o.axes.length > 60) { toast('عدد المحاور يتجاوز 60'); return }
+    const bad = o.axes.findIndex(a => !a || typeof a !== 'object' || !a.n || !(a.t || '').trim());
+    if (bad >= 0) { toast(`المحور رقم ${bad + 1} ناقص`, 'كل محور يحتاج n وt'); return }
+    if (new Set(o.axes.map(a => +a.n)).size !== o.axes.length) { toast('أرقام المحاور مكرّرة'); return }
+    const keep = DB.tracks.find(x => x.id === o.id);
+    const rec = Object.assign(keep || { id: o.id, extra: [], off: [] }, {
+      title: String(o.title).trim(), cat: o.cat || 'lead', audience: o.audience || '', intro: o.intro || '',
+      roles: Array.isArray(o.roles) ? o.roles.filter(r => ROLES[r]) : [], start: o.start || { q: '', f: [] },
+      axes: o.axes, active: true
+    });
+    if (o.bonus) rec.bonus = o.bonus; else delete rec.bonus;
+    if (!keep) DB.tracks.push(rec);
+    commit('tracks'); audit(keep ? 'track.update' : 'track.create', 'track', rec.id, `${rec.title} — ${rec.axes.length} محورًا`);
+    S.track = rec.id; closeLayer(); toast(keep ? `حُدّث «${rec.title}»` : `أُنشئ «${rec.title}»`, `${rec.axes.length} محورًا`); draw();
   },
   'tr-rm'(t) { const c = DB.tracks.find(x => x.id === TRACK.id); if (!c) return; c.extra = (c.extra || []).filter(x => x !== t.dataset.u); commit('tracks'); draw() },
 });
