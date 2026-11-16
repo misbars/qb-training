@@ -10,7 +10,14 @@ const P={mode:'server',msg:'متصل بالخادم',dirty:new Set(),t:null,busy
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){return false}};
 async function api(path,opts={}){
-  const r=await fetch(path,{credentials:'same-origin',...opts,headers:{'Content-Type':'application/json','X-Role':S.role||'',...(opts.headers||{})}});
+  /* الصلاحية تُرسَل بأعلى صفة يملكها المستخدم لا بالصفة المعروضة.
+     القائمة صارت موحّدة بلا مبدّل صفة، وnav.js يُنزل S.role إلى 'employee'
+     لكل من يملكها — فكانت كتابات مديرة التدريب ورئيس القسم تُرفض في
+     الخادم بينما الواجهة تعرض لهم شاشاتهم. S.role للعرض، وهذه للصلاحية. */
+  const _pri=['sysadmin','trainmgr','linemgr','trainer','employee'];
+  const _me=(typeof ME==='function'?ME():null);
+  const _auth=(_me&&_me.roles&&_pri.find(r=>_me.roles.includes(r)))||S.role||'';
+  const r=await fetch(path,{credentials:'same-origin',...opts,headers:{'Content-Type':'application/json','X-Role':_auth,...(opts.headers||{})}});
   const j=await r.json().catch(()=>({}));
   if(r.status===401&&!['/api/login','/api/me'].includes(path)&&S.me){S.me=null;S.role=null;closeLayer();draw();toast('انتهت الجلسة','سجّل الدخول من جديد')}
   if(!r.ok)throw Object.assign(new Error(j.error||('HTTP '+r.status)),{status:r.status,body:j});
