@@ -129,6 +129,7 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
         if (days < 0) return 'تاريخ انتهاء التفويض في الماضي';
         if (days > 180) return 'أقصى مدة للتفويض 180 يومًا';
         if (d.by !== me) return 'التفويض يُنسب إلى من فوّض';
+        if (ctx.sameUnit && !ctx.sameUnit(d.to)) return 'التفويض لزملاء إدارتك أو مرؤوسيك وحدهم';
         return true;
       }
       return only('phone','bio','photo','prefs','lastSeen') ? true : 'لا يعدّل الموظف دوره أو إدارته أو حالته';
@@ -198,6 +199,10 @@ export function readFilter(ses, col, row, ctx) {
   const me = ses.user.id, role = ses.role;
   if (role === 'sysadmin') return row;              // الاستعادة والنسخ الاحتياطي تحتاج الكل
   if (col === 'audit') return null;                 // سجل التدقيق لمسؤول النظام وحده
+  // معتمد الاتصال المؤسسي كان يُصرَّح له بالقرار على صفٍّ لا يصل إليه أصلًا:
+  // authorize تستشير ctx.isComm وreadFilter لا تستشيرها، وvisits في PRIVATE.
+  // يرى ما غادر المسوّدة فقط — والمسوّدة تبقى لصاحبها.
+  if (col === 'visits' && ctx.isComm && ctx.isComm() && row.status !== 'draft') return row;
   if (col === 'mails') return row.to === me ? row : null;
   if (col === 'users') return row.id === me ? row : omit(row, USER_HIDE);
   // التعليق المجهول يحمل هوية كاتبه في بياناته؛ تُزال عن الآخرين

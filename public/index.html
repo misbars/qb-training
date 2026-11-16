@@ -2959,7 +2959,7 @@ function navOf(role){
   return base;
 }
 const ST_AR={completed:'مكتمل',approved:'معتمد',inprogress:'قيد التنفيذ',registered:'مسجّل',pending:'بانتظار الاعتماد',draft:'مسوّدة',submitted:'بانتظار اعتماد الرئيس',returned:'أُعيد للتعديل',rejected:'مرفوض',new:'جديد',answered:'تمت الإجابة',pending_comm:'بانتظار الاتصال المؤسسي',pending_lm:'بانتظار اعتماد الرئيس',reported:'التقرير بانتظار الرئيس',closed:'مغلقة ومعتمدة'};
-const COUNTED=['completed','approved'];
+const COUNTED=['completed','approved','closed'];
 const FILE_MAX=1200000,FILE_OK=['application/pdf','image/jpeg','image/png'];
 const trainerUserOf=tid=>DB.users.filter(u=>u.active!==false&&u.roles.includes('trainer')&&u.trainerId===tid);
 const myTrainerId=()=>{const u=ME();return u&&u.roles.includes('trainer')?u.trainerId:null};
@@ -3364,7 +3364,7 @@ function decideVisit(id,action,note){
     commApprovers().forEach(c=>notify(c.id,`تقرير زيارة: ${u.name} — ${v.org}`,'تقرير زيارة ميدانية (نسخة للعلم)',
       `<p>أغلق <b>${esc(u.name)}</b> زيارته لـ <b>${esc(v.org)}</b> في ${esc(v.place||'')} بتاريخ ${fmt(v.date)} (${minTxt(v.durMin)}).</p>`
       +`<p><b>المحاور:</b> ${esc(v.topics)}</p><p><b>النتائج:</b> ${esc(v.results)}</p><p><b>التوصيات:</b> ${esc(v.recs)}</p>`
-      +`<p><b>الشاهد:</b> ${(v.attach||[]).map(fileLink).join(' ')||'—'}</p>`,'فتح','commvisits'));
+      +`<p><b>الشاهد:</b> ${(v.attach||[]).length?`${(v.attach||[]).length} مرفق — افتحها من صفحة الزيارة`:'—'}</p>`,'فتح','commvisits'));
     title=`اعتماد: تقرير زيارتك لـ ${v.org}`;head='أُغلقت الزيارة واعتُمدت';
     body='اعتُمد تقريرك وأُضيفت مدة الزيارة إلى سجل التطوير المهني، وأُرسلت نسخة لإدارة الاتصال المؤسسي.';
   }
@@ -3606,13 +3606,13 @@ function visitReportModal(id){
   mask(`${mHead('تقرير الزيارة والشاهد',`${esc(v.org)} · ${fmt(v.date)}`)}<div class="m-b">
   <div class="note" style="margin-bottom:12px">الشاهد إلزامي: صورة أو مستند يثبت الزيارة. وتصل نسخة من التقرير لإدارة الاتصال المؤسسي بعد اعتماد رئيسك.</div>
   <div class="fgrid">
-   <div class="field"><label for="vr_start">وقت البداية *</label><input class="inp" id="vr_start" type="time" data-act="vr-dur"></div>
-   <div class="field"><label for="vr_end">وقت النهاية *</label><input class="inp" id="vr_end" type="time" data-act="vr-dur"></div>
-   <div class="field"><label>المدة (تُحسب آليًا)</label><div class="inp" id="vr_dur" style="background:var(--sky-3)">—</div></div>
+   <div class="field"><label for="vr_start">وقت البداية *</label><input class="inp" id="vr_start" type="time" value="${esc(v.start||'')}" data-act="vr-dur"></div>
+   <div class="field"><label for="vr_end">وقت النهاية *</label><input class="inp" id="vr_end" type="time" value="${esc(v.end||'')}" data-act="vr-dur"></div>
+   <div class="field"><label>المدة (تُحسب آليًا)</label><div class="inp" id="vr_dur" style="background:var(--sky-3)">${v.durMin?minTxt(v.durMin):'—'}</div></div>
    <div class="field"><label for="vr_people">من قابلتَ *</label><input class="inp" id="vr_people" maxlength="250" value="${esc(v.people||'')}"></div>
-   <div class="field full"><label for="vr_topics">المحاور التي نوقشت *</label><textarea class="inp" id="vr_topics" rows="2" maxlength="1200"></textarea></div>
-   <div class="field full"><label for="vr_results">أبرز النتائج والمخرجات *</label><textarea class="inp" id="vr_results" rows="2" maxlength="1200"></textarea></div>
-   <div class="field full"><label for="vr_recs">التوصيات *</label><textarea class="inp" id="vr_recs" rows="2" maxlength="1200"></textarea></div>
+   <div class="field full"><label for="vr_topics">المحاور التي نوقشت *</label><textarea class="inp" id="vr_topics" rows="2" maxlength="1200">${esc(v.topics||'')}</textarea></div>
+   <div class="field full"><label for="vr_results">أبرز النتائج والمخرجات *</label><textarea class="inp" id="vr_results" rows="2" maxlength="1200">${esc(v.results||'')}</textarea></div>
+   <div class="field full"><label for="vr_recs">التوصيات *</label><textarea class="inp" id="vr_recs" rows="2" maxlength="1200">${esc(v.recs||'')}</textarea></div>
    <div class="field full"><label>الشاهد والصور * (PDF/JPG/PNG حتى ${(FILE_MAX/1e6).toFixed(1)} م.ب)</label>
     <div id="vr_files" class="small">${(S._vr.attach||[]).map(fileLink).join(' ')||'<span class="muted">لا مرفقات</span>'}</div>
     <input class="inp" id="vr_att" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style="margin-top:6px"></div>
@@ -5720,6 +5720,10 @@ function navSections(u) {
   const noInbox = items => emp ? items.filter(x => x[0] !== 'inbox') : items;
   if (emp) out.push({ h: '', role: 'employee', items: NAV.employee });
   if (R.includes('linemgr')) out.push({ h: 'فريقي', role: 'linemgr', items: [['team', 'فريقي', 'users'], ['lmvisits', 'اعتماد الزيارات', 'pin'], ['track', 'بطاقات مسار القيادات', 'flag'], ['reports', 'تقارير إدارتي', 'file']] });
+  // القائمة تُبنى من NAV[role] الخام، فكان بند معتمد الاتصال المؤسسي يسقط
+  // ولا يبلغ الشاشة إلا من إشعار. العلم ليس صفة، فله قسمه الخاص.
+  if (typeof isCommApprover === 'function' && isCommApprover(u && u.id))
+    out.push({ h: 'الاتصال المؤسسي', role: 'commvisits', items: [['commvisits', 'اعتماد الزيارات', 'pin']] });
   if (R.includes('trainmgr')) out.push({ h: 'إدارة التدريب', role: 'trainmgr', items: noInbox(NAV.trainmgr) });
   if (R.includes('sysadmin')) out.push({ h: 'إدارة النظام', role: 'sysadmin', items: noInbox(NAV.sysadmin) });
   if (R.includes('trainer')) out.push({ h: emp ? 'المدرب' : '', role: 'trainer', items: noInbox(NAV.trainer) });

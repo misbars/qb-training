@@ -7,6 +7,10 @@ function navSections(u) {
   const noInbox = items => emp ? items.filter(x => x[0] !== 'inbox') : items;
   if (emp) out.push({ h: '', role: 'employee', items: NAV.employee });
   if (R.includes('linemgr')) out.push({ h: 'فريقي', role: 'linemgr', items: [['team', 'فريقي', 'users'], ['lmvisits', 'اعتماد الزيارات', 'pin'], ['track', 'بطاقات مسار القيادات', 'flag'], ['reports', 'تقارير إدارتي', 'file']] });
+  // القائمة تُبنى من NAV[role] الخام، فكان بند معتمد الاتصال المؤسسي يسقط
+  // ولا يبلغ الشاشة إلا من إشعار. العلم ليس صفة، فله قسمه الخاص.
+  if (typeof isCommApprover === 'function' && isCommApprover(u && u.id))
+    out.push({ h: 'الاتصال المؤسسي', role: 'commvisits', items: [['commvisits', 'اعتماد الزيارات', 'pin']] });
   if (R.includes('trainmgr')) out.push({ h: 'إدارة التدريب', role: 'trainmgr', items: noInbox(NAV.trainmgr) });
   if (R.includes('sysadmin')) out.push({ h: 'إدارة النظام', role: 'sysadmin', items: noInbox(NAV.sysadmin) });
   if (R.includes('trainer')) out.push({ h: emp ? 'المدرب' : '', role: 'trainer', items: noInbox(NAV.trainer) });

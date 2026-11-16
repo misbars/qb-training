@@ -130,7 +130,13 @@ async function readCtx(ses, S) {
   const isComm = ses.user.commApprover === true && ses.user.active !== false
     || approvers.some(u => u.commDeleg && u.commDeleg.to === ses.user.id && u.commDeleg.until >= today);
   // المعرّف المبهم كان قابلًا للعكس بجدول (فضاء المعرّفات صغير ومعروف)؛ يُملَّح بسرّ الخادم
-  return { team: () => teamIds, commOn: () => commOn, isComm: () => isComm, salt: await vSecret(S) };
+  // نطاق التفويض: زملاء الإدارة نفسها أو مرؤوسو المفوِّض، ونشطون
+  const sameUnit = id => {
+    const t = users.find(u => u.id === id);
+    if (!t || t.active === false || t.id === ses.user.id) return false;
+    return (t.deptId && t.deptId === ses.user.deptId) || t.managerId === ses.user.id;
+  };
+  return { team: () => teamIds, commOn: () => commOn, isComm: () => isComm, sameUnit, salt: await vSecret(S) };
 }
 
 async function snapshot(ses, S) {
