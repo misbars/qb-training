@@ -2965,7 +2965,7 @@ const DEV_TYPES=['reading','visit'];                    // تُقاس بمدد �
 function navOf(role){
   const r=role||S.role;const base=NAV[r]||[];
   if(r!=='sysadmin'&&isCommApprover(S.me)&&!base.some(x=>x[0]==='commvisits'))
-    return base.slice(0,Math.max(1,base.length-1)).concat([['commvisits','زيارات الاتصال المؤسسي','pin']],base.slice(Math.max(1,base.length-1)));
+    return base.slice(0,Math.max(1,base.length-1)).concat([['commvisits','الاعتماد المبدئي للزيارات','pin']],base.slice(Math.max(1,base.length-1)));
   return base;
 }
 const ST_AR={completed:'مكتمل',approved:'معتمد',inprogress:'قيد التنفيذ',registered:'مسجّل',pending:'بانتظار الاعتماد',draft:'مسوّدة',submitted:'بانتظار اعتماد الرئيس',returned:'أُعيد للتعديل',rejected:'مرفوض',new:'جديد',answered:'تمت الإجابة',pending_comm:'بانتظار الاتصال المؤسسي',pending_lm:'بانتظار اعتماد الرئيس',reported:'التقرير بانتظار الرئيس',closed:'مغلقة ومعتمدة'};
@@ -5282,7 +5282,10 @@ ACT['emp-visit']=function(t){S.tab.devp='visits';go('devp');setTimeout(()=>visit
 // المحتوى من «دليل المسار التدريبي للقيادات ١٤٤٨هـ». كل محور: دورة مجانية خارجية (معرفة) + حلقة صوتية (اتجاه) + بطاقة تطبيق (مهارة).
 // الساعات: مدة الدورة مقرّبة لأقرب نصف ساعة للأسفل، وتُحتسب بعد اعتماد مدير التدريب لشهادة الإتمام.
 const TR_SEED = {
-  id: 'leaders', roles: ['linemgr'], title: 'مسار القيادات', cat: 'lead',
+  // الصفة لا تُسنِد مسارًا بعد أن صارت المسارات ستةً بالقسم والمستوى:
+  // كان كل رئيسٍ يُضاف تلقائيًا إلى مسار القيادات، فيجد نفسه في مسارين —
+  // مساره الحقيقي ومسارٌ من بذرةٍ لا تخصّه. الإسناد الآن صريحٌ لكل مسار.
+  id: 'leaders', roles: [], title: 'مسار القيادات', cat: 'lead',
   audience: 'المدير العام ومساعده، ومديرو الإدارات، ورؤساء الأقسام والوحدات، وعميدة المعهد ووكيلاتها',
   intro: 'عشرة محاور في القيادة والاستراتيجية والأداء والحوكمة والموارد البشرية والمال والقرار والشراكات والجودة والبيانات. لكل محور دورة مجانية، وحلقة صوتية، وتطبيق عملي قصير يُنجز في جلسة واحدة على عمل قائم في إدارتكم.',
   start: { q: 'حين تتأملون واقع إدارتكم اليوم، أين يظهر أثر قيادتكم بوضوح؟ وما التغيير الذي لو حققتموه لكان أنفع لفرقكم وللمستفيدين؟', f: ['ممارسة أعتز بها', 'جانب أريد تطويره', 'علامة سأعرف بها أني تقدمت'] },
@@ -5785,7 +5788,7 @@ function navSections(u) {
   // القائمة تُبنى من NAV[role] الخام، فكان بند معتمد الاتصال المؤسسي يسقط
   // ولا يبلغ الشاشة إلا من إشعار. العلم ليس صفة، فله قسمه الخاص.
   if (typeof isCommApprover === 'function' && isCommApprover(u && u.id))
-    out.push({ h: 'الاتصال المؤسسي', role: 'commvisits', items: [['commvisits', 'اعتماد الزيارات', 'pin']] });
+    out.push({ h: 'الاتصال المؤسسي', role: 'commvisits', items: [['commvisits', 'الاعتماد المبدئي للزيارات', 'pin']] });
   if (R.includes('trainmgr')) out.push({ h: 'إدارة التدريب', role: 'trainmgr', items: noInbox(NAV.trainmgr) });
   if (R.includes('sysadmin')) out.push({ h: 'إدارة النظام', role: 'sysadmin', items: noInbox(NAV.sysadmin) });
   if (R.includes('trainer')) out.push({ h: emp ? 'المدرب' : '', role: 'trainer', items: noInbox(NAV.trainer) });

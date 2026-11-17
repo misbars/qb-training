@@ -71,7 +71,14 @@ def check(r):
         if u.get('manager') and u['manager'] not in ids:
             bad.append(f"رئيس «{u['name']}» ({u['manager']}) ليس في القائمة")
     dids = [d.get('id') for d in r.get('departments', [])]
-    if len(set(dids)) != len(dids): bad.append("معرّف إدارةٍ مكرَّر")
+    dids += [s.get('id') for d in r.get('departments', []) for s in d.get('sections', [])]
+    if len(set(dids)) != len(dids): bad.append("معرّف إدارةٍ أو قسمٍ مكرَّر")
+    known = set(dids)
+    for u in users:
+        if u.get('dept') and u['dept'] not in known:
+            bad.append(f"قسم «{u['name']}» ({u['dept']}) غير معرّف")
+        if u.get('level') not in ROLES:
+            bad.append(f"مستوى «{u.get('name')}» غير محدَّد (mgr أو head أو staff)")
     if bad: sys.exit("في ملف الأسماء:\n- " + "\n- ".join(bad))
 
 
@@ -85,6 +92,12 @@ def org(path):
         out.append(row('depts', {'id': d['id'], 'name': d['name'],
                                  'parent': d.get('parent'), 'type': d.get('type', 'dir'),
                                  'demo': False}))
+        # الأقسام تحت إدارتها: الموظف يُسجَّل في قسمه، والمسار والتفويض
+        # يُحسبان بالإدارة الحاضنة
+        for sec in d.get('sections', []):
+            deps[sec['id']] = {**d, **sec, 'parent': d['id']}
+            out.append(row('depts', {'id': sec['id'], 'name': sec['name'],
+                                     'parent': d['id'], 'type': 'sec', 'demo': False}))
     for j in r.get('jobs', []):
         out.append(row('jobs', {'id': j['id'], 'title': j['title'],
                                 'summary': j.get('summary', ''), 'comps': j.get('comps', []),
@@ -99,12 +112,13 @@ def org(path):
             sys.exit(f"المستوى «{lvl}» غير معروف عند {u.get('name')}؛ المتاح: mgr أو head أو staff")
         d = deps.get(u.get('dept'))
         if not d:
-            sys.exit(f"الإدارة «{u.get('dept')}» غير معرّفة عند {u.get('name')}")
+            sys.exit(f"الإدارة أو القسم «{u.get('dept')}» غير معرّف عند {u.get('name')}")
         o = {'id': u['id'], 'name': u['name'], 'email': u['email'],
              'roles': u.get('roles') or ROLES[lvl], 'deptId': u['dept'],
              'jobId': u.get('job'), 'managerId': u.get('manager'),
              'title': u.get('title') or LVL_AR[lvl], 'empNo': u.get('empNo', ''),
              'active': True, 'demo': False}
+        if u.get('phone'): o['phone'] = u['phone']
         if u.get('commApprover'):
             o['commApprover'] = True
         out.append(row('users', o))
@@ -125,22 +139,15 @@ def org(path):
 
 TEMPLATE = {
     "departments": [
-        {"id": "D_EDU", "name": "إدارة الشؤون التعليمية", "type": "dir", "trackPrefix": "edu"},
-        {"id": "D_COMM", "name": "إدارة الاتصال المؤسسي", "type": "dir", "trackPrefix": "comm"}
+        {"id": "D_EDU", "name": "إدارة الشؤون التعليمية", "type": "dir", "trackPrefix": "edu",
+         "sections": [{"id": "S_EDU_1", "name": "اسم القسم"}]},
+        {"id": "D_COMM", "name": "إدارة الاتصال المؤسسي", "type": "dir", "trackPrefix": "comm",
+         "sections": [{"id": "S_COMM_1", "name": "اسم القسم"}]}
     ],
-    "jobs": [
-        {"id": "J_EDU", "title": "أخصائي شؤون تعليمية"},
-        {"id": "J_COMM", "title": "أخصائي اتصال مؤسسي"}
-    ],
+    "jobs": [{"id": "J_EDU", "title": "أخصائي شؤون تعليمية"}],
     "users": [
-        {"id": "u_ab", "name": "الاسم الثلاثي", "email": "name@qb.org.sa",
-         "dept": "D_EDU", "level": "head", "job": "J_EDU", "empNo": "QB-2001"},
-        {"id": "u_fh", "name": "الاسم الثلاثي", "email": "name@qb.org.sa",
-         "dept": "D_EDU", "level": "staff", "job": "J_EDU",
-         "manager": "u_ab", "empNo": "QB-2002"},
-        {"id": "u_nw", "name": "الاسم الثلاثي", "email": "name@qb.org.sa",
-         "dept": "D_COMM", "level": "staff", "job": "J_COMM",
-         "commApprover": True, "empNo": "QB-2003"}
+        {"id": "u_x", "name": "الاسم الثلاثي", "email": "name@qb.org.sa", "phone": "05xxxxxxxx",
+         "dept": "S_EDU_1", "level": "staff", "job": "J_EDU", "empNo": "QB-2001"}
     ]
 }
 

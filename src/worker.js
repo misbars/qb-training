@@ -131,10 +131,20 @@ async function readCtx(ses, S) {
     || approvers.some(u => u.commDeleg && u.commDeleg.to === ses.user.id && u.commDeleg.until >= today);
   // المعرّف المبهم كان قابلًا للعكس بجدول (فضاء المعرّفات صغير ومعروف)؛ يُملَّح بسرّ الخادم
   // نطاق التفويض: زملاء الإدارة نفسها أو مرؤوسو المفوِّض، ونشطون
+  // الهيكل إدارةٌ فوق أقسام، والموظف مسجَّلٌ في قسمه. فمقارنة القسم
+  // وحده تضيق على إدارةٍ من ثلاثة أشخاص موزّعين على قسمين: يصير المعتمد
+  // لا يجد في «إدارته» أحدًا يفوّضه. فالنطاق: القسم، أو الإدارة الحاضنة،
+  // أو من يرأسه المفوِّض مباشرةً.
+  const depts = await S.all('depts');
+  const dirOf = id => { const d = depts.find(x => x.id === id); return d ? (d.parent || d.id) : null };
   const sameUnit = id => {
     const t = users.find(u => u.id === id);
     if (!t || t.active === false || t.id === ses.user.id) return false;
-    return (t.deptId && t.deptId === ses.user.deptId) || t.managerId === ses.user.id;
+    if (t.managerId === ses.user.id) return true;
+    if (!t.deptId || !ses.user.deptId) return false;
+    if (t.deptId === ses.user.deptId) return true;
+    const a = dirOf(t.deptId), b = dirOf(ses.user.deptId);
+    return !!a && a === b;
   };
   return { team: () => teamIds, commOn: () => commOn, isComm: () => isComm, sameUnit, salt: await vSecret(S) };
 }

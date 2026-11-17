@@ -10,7 +10,7 @@ function navSections(u) {
   // القائمة تُبنى من NAV[role] الخام، فكان بند معتمد الاتصال المؤسسي يسقط
   // ولا يبلغ الشاشة إلا من إشعار. العلم ليس صفة، فله قسمه الخاص.
   if (typeof isCommApprover === 'function' && isCommApprover(u && u.id))
-    out.push({ h: 'الاتصال المؤسسي', role: 'commvisits', items: [['commvisits', 'اعتماد الزيارات', 'pin']] });
+    out.push({ h: 'الاتصال المؤسسي', role: 'commvisits', items: [['commvisits', 'الاعتماد المبدئي للزيارات', 'pin']] });
   if (R.includes('trainmgr')) out.push({ h: 'إدارة التدريب', role: 'trainmgr', items: noInbox(NAV.trainmgr) });
   if (R.includes('sysadmin')) out.push({ h: 'إدارة النظام', role: 'sysadmin', items: noInbox(NAV.sysadmin) });
   if (R.includes('trainer')) out.push({ h: emp ? 'المدرب' : '', role: 'trainer', items: noInbox(NAV.trainer) });
