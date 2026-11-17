@@ -175,17 +175,46 @@ Object.assign(ACT, {
   },
 });
 
+/* كانت تُنزَّل في ملف إكسل واحد: ملفٌّ يفتح كل الحسابات، يبقى في
+   التنزيلات ويُرسل ويُزامَن. صارت تُعرض على الشاشة مرةً واحدة، لكل
+   واحدٍ رسالته وزرُّ واتسابه، ثم تُمحى بإغلاق النافذة. */
 async function impPasswords(users) {
-  const rows = [['الاسم', 'البريد', 'كلمة المرور المؤقتة']], failed = [];
+  const made = [], failed = [];
   for (const u of users) {
-    try { const r = await api('/api/password/reset', { method: 'POST', body: JSON.stringify({ userId: u.id }) }); rows.push([r.name, r.email, r.password]) }
-    catch (e) { failed.push(u.name) }
+    try {
+      const r = await api('/api/password/reset', { method: 'POST', body: JSON.stringify({ userId: u.id }) });
+      made.push({ ...r, phone: (U(u.id) || {}).phone || '' });
+    } catch (e) { failed.push(u.name) }
   }
-  if (rows.length > 1) {
-    await exportTable('كلمات-المرور-المؤقتة-' + TODAY(), [{ name: 'كلمات المرور', rows }], 'xlsx');
-    toast('نُزّل ملف كلمات المرور', 'سلّم كل موظف كلمته بنفسك');
-  }
+  if (made.length) pwListModal(made);
   if (failed.length) toast('تعذّر إصدار كلمة المرور لـ ' + num(failed.length), failed.slice(0, 3).join('، '));
+}
+
+function pwListModal(items) {
+  const rows = items.map((r, i) => {
+    const msg = pwMsg(r.name, r.email, r.password), w = waNum(r.phone);
+    return `<div class="pwrow">
+      <div class="pwwho"><b>${esc(r.name)}</b><code dir="ltr">${esc(r.email)}</code></div>
+      <code class="pwval" id="pwl_v${i}" dir="ltr">${esc(r.password)}</code>
+      <textarea id="pwl_m${i}" readonly style="position:absolute;left:-9999px">${esc(msg)}</textarea>
+      <div class="pwact">
+        <button class="btn sec sm" data-act="copy-msg" data-t="pwl_m${i}">نسخ الرسالة</button>
+        ${w ? `<a class="btn sm" href="https://wa.me/${w}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">واتساب</a>` : ''}
+      </div></div>`;
+  }).join('');
+  mask(`${mHead('كلمات المرور المؤقتة', `${num(items.length)} حسابًا — تُعرض الآن فقط`)}
+    <div class="m-b">
+      <div class="note warn">انسخ رسالة كلِّ واحدٍ وأرسلها له، ثم أغلق النافذة. لا تُصوَّر ولا تُحفظ في ملف — وكلٌّ منها تُجبَر على التغيير عند أول دخول. ولو فاتتك واحدة، أصدِر بديلها من شاشة المستخدمين.</div>
+      <style>
+        .pwrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-top:8px}
+        .pwwho{flex:1 1 220px;min-width:0;display:flex;flex-direction:column}
+        .pwwho code{color:var(--muted);font-size:12px}
+        .pwval{background:var(--sand,#ECE6DD);padding:3px 10px;border-radius:6px;letter-spacing:.05em}
+        .pwact{display:flex;gap:6px}
+      </style>
+      ${rows}
+    </div>
+    <div class="m-f"><button class="btn" data-act="close">أغلق وامسح من الشاشة</button></div>`, 'wide');
 }
 
 /* ---------- ٣) سجل التدقيق: إخفاء الدخول، فلترة، أسماء عربية ---------- */

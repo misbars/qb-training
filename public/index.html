@@ -4958,6 +4958,41 @@ function askPwChange(forced){
   miniModal(forced?'اختر كلمة مرور جديدة':'تغيير كلمة المرور',pwChangeForm(forced),`${forced?'':'<button class="btn sec" data-act="mm-close">إلغاء</button>'}<button class="btn" data-act="pw-change">حفظ كلمة المرور</button>`);
   if(forced){const x=$('#layer .m-x');if(x)x.remove()}
 }
+/* ===== تسليم كلمة المرور المؤقتة =====
+   الكلمة تُعرض مرة واحدة ثم تُسلَّم. فيكون التسليم بزرٍّ لا بنسخٍ باليد:
+   كل حقلٍ يُنسخ وحده فلا يلتصق به ما جاوره، ورسالةٌ جاهزة بنصّها، وزرٌّ
+   يفتح واتساب على رقم صاحبها مكتوبةً فيه. */
+const waNum=p=>{let d=String(p||'').replace(/\D/g,'');
+  if(!d)return '';
+  if(d.startsWith('00'))d=d.slice(2);
+  if(d.startsWith('966'))return d;
+  if(d.startsWith('0'))return '966'+d.slice(1);
+  if(d.length===9&&d[0]==='5')return '966'+d;
+  return d};
+const pwMsg=(name,email,pw)=>`السلام عليكم ${String(name||'').split(' ').slice(0,2).join(' ')}، حسابك في منصة دال جاهز.
+
+الرابط: ${location.origin}
+اسم الدخول: ${email}
+كلمة المرور المؤقتة: ${pw}
+
+تُغيَّر عند أول دخول.`;
+let PW_N=0;
+function pwBlock(r,phone){
+  const i=++PW_N, msg=pwMsg(r.name,r.email,r.password), w=waNum(phone);
+  return `<div class="field"><label for="pw_e${i}">اسم الدخول</label>
+    <div style="display:flex;gap:8px"><input class="inp" id="pw_e${i}" dir="ltr" readonly value="${esc(r.email)}" onclick="this.select()">
+    <button class="btn sec sm" data-act="copy-val" data-t="pw_e${i}" style="white-space:nowrap">نسخ</button></div></div>
+  <div class="field"><label for="pw_tmp">كلمة المرور المؤقتة</label>
+    <div style="display:flex;gap:8px"><input class="inp num" id="pw_tmp" dir="ltr" readonly value="${esc(r.password)}" onclick="this.select()" style="font-size:18px;letter-spacing:.05em">
+    <button class="btn sec sm" data-act="copy-val" data-t="pw_tmp" style="white-space:nowrap">نسخ</button></div></div>
+  <textarea id="pw_m${i}" readonly style="position:absolute;left:-9999px">${esc(msg)}</textarea>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+    <button class="btn sec" data-act="copy-msg" data-t="pw_m${i}">نسخ الرسالة كاملة</button>
+    ${w?`<a class="btn" href="https://wa.me/${w}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">إرسال عبر واتساب</a>`
+       :`<span class="small muted" style="align-self:center">لا جوّال في ملفه — أضفه ليظهر زرّ واتساب</span>`}
+  </div>`;
+}
+
 Object.assign(ACT,{
   'mm-close'(){if(S.mustChange)return;closeLayer()},
   'pw-reset'(t){
@@ -4968,10 +5003,25 @@ Object.assign(ACT,{
     try{
       const r=await api('/api/password/reset',{method:'POST',body:JSON.stringify({userId:t.dataset.id})});
       audit('password.reset','user',r.name);
-      miniModal('كلمة المرور المؤقتة',`<p>سلّمها لـ <b>${esc(r.name)}</b> بنفسك أو برسالة خاصة. لن تظهر مرة أخرى.</p><div class="field"><label for="pw_tmp_e">البريد</label><input class="inp" id="pw_tmp_e" dir="ltr" readonly value="${esc(r.email)}"></div><div class="field"><label for="pw_tmp">كلمة المرور المؤقتة</label><input class="inp num" id="pw_tmp" dir="ltr" readonly value="${esc(r.password)}" style="font-size:18px;letter-spacing:.05em"></div>`,`<button class="btn sec" data-act="pw-copy">نسخ</button><button class="btn" data-act="mm-close">تم</button>`);
+      const u=U(t.dataset.id)||{};
+      miniModal('كلمة المرور المؤقتة',
+        `<p>سلّمها لـ <b>${esc(r.name)}</b> بنفسك أو برسالة خاصة. لن تظهر مرة أخرى.</p>${pwBlock(r,u.phone)}`,
+        `<button class="btn" data-act="mm-close">تم</button>`);
     }catch(e){toast('تعذّر إصدار كلمة المرور',e.message)}
   },
   'pw-copy'(){const i=$('#pw_tmp');if(!i)return;navigator.clipboard.writeText(i.value).then(()=>toast('نُسخت كلمة المرور')).catch(()=>{i.select();toast('حدّد النص وانسخه')})},
+  /* النسخ لحقلٍ بعينه: الضغط على الزرّ ينسخ قيمته وحدها، فلا يلتصق بها
+     ما جاورها من نصّ الشاشة */
+  'copy-val'(t){
+    const i=$('#'+t.dataset.t);if(!i)return;
+    const done=()=>{const o=t.textContent;t.textContent='نُسخ ✓';setTimeout(()=>t.textContent=o,1600)};
+    navigator.clipboard.writeText(i.value).then(done).catch(()=>{i.select();toast('حدّد النص وانسخه')});
+  },
+  'copy-msg'(t){
+    const i=$('#'+t.dataset.t);if(!i)return;
+    const done=()=>{const o=t.textContent;t.textContent='نُسخت الرسالة ✓';setTimeout(()=>t.textContent=o,1800)};
+    navigator.clipboard.writeText(i.value).then(done).catch(()=>{i.select();toast('حدّد النص وانسخه')});
+  },
   'pw-ask'(){askPwChange(false)},
   async 'pw-change'(){
     const cur=$('#pw_cur').value,n=$('#pw_new').value,n2=$('#pw_new2').value,err=$('#pw_err');
@@ -6213,17 +6263,46 @@ Object.assign(ACT, {
   },
 });
 
+/* كانت تُنزَّل في ملف إكسل واحد: ملفٌّ يفتح كل الحسابات، يبقى في
+   التنزيلات ويُرسل ويُزامَن. صارت تُعرض على الشاشة مرةً واحدة، لكل
+   واحدٍ رسالته وزرُّ واتسابه، ثم تُمحى بإغلاق النافذة. */
 async function impPasswords(users) {
-  const rows = [['الاسم', 'البريد', 'كلمة المرور المؤقتة']], failed = [];
+  const made = [], failed = [];
   for (const u of users) {
-    try { const r = await api('/api/password/reset', { method: 'POST', body: JSON.stringify({ userId: u.id }) }); rows.push([r.name, r.email, r.password]) }
-    catch (e) { failed.push(u.name) }
+    try {
+      const r = await api('/api/password/reset', { method: 'POST', body: JSON.stringify({ userId: u.id }) });
+      made.push({ ...r, phone: (U(u.id) || {}).phone || '' });
+    } catch (e) { failed.push(u.name) }
   }
-  if (rows.length > 1) {
-    await exportTable('كلمات-المرور-المؤقتة-' + TODAY(), [{ name: 'كلمات المرور', rows }], 'xlsx');
-    toast('نُزّل ملف كلمات المرور', 'سلّم كل موظف كلمته بنفسك');
-  }
+  if (made.length) pwListModal(made);
   if (failed.length) toast('تعذّر إصدار كلمة المرور لـ ' + num(failed.length), failed.slice(0, 3).join('، '));
+}
+
+function pwListModal(items) {
+  const rows = items.map((r, i) => {
+    const msg = pwMsg(r.name, r.email, r.password), w = waNum(r.phone);
+    return `<div class="pwrow">
+      <div class="pwwho"><b>${esc(r.name)}</b><code dir="ltr">${esc(r.email)}</code></div>
+      <code class="pwval" id="pwl_v${i}" dir="ltr">${esc(r.password)}</code>
+      <textarea id="pwl_m${i}" readonly style="position:absolute;left:-9999px">${esc(msg)}</textarea>
+      <div class="pwact">
+        <button class="btn sec sm" data-act="copy-msg" data-t="pwl_m${i}">نسخ الرسالة</button>
+        ${w ? `<a class="btn sm" href="https://wa.me/${w}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">واتساب</a>` : ''}
+      </div></div>`;
+  }).join('');
+  mask(`${mHead('كلمات المرور المؤقتة', `${num(items.length)} حسابًا — تُعرض الآن فقط`)}
+    <div class="m-b">
+      <div class="note warn">انسخ رسالة كلِّ واحدٍ وأرسلها له، ثم أغلق النافذة. لا تُصوَّر ولا تُحفظ في ملف — وكلٌّ منها تُجبَر على التغيير عند أول دخول. ولو فاتتك واحدة، أصدِر بديلها من شاشة المستخدمين.</div>
+      <style>
+        .pwrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-top:8px}
+        .pwwho{flex:1 1 220px;min-width:0;display:flex;flex-direction:column}
+        .pwwho code{color:var(--muted);font-size:12px}
+        .pwval{background:var(--sand,#ECE6DD);padding:3px 10px;border-radius:6px;letter-spacing:.05em}
+        .pwact{display:flex;gap:6px}
+      </style>
+      ${rows}
+    </div>
+    <div class="m-f"><button class="btn" data-act="close">أغلق وامسح من الشاشة</button></div>`, 'wide');
 }
 
 /* ---------- ٣) سجل التدقيق: إخفاء الدخول، فلترة، أسماء عربية ---------- */
