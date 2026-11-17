@@ -4969,7 +4969,11 @@ const waNum=p=>{let d=String(p||'').replace(/\D/g,'');
   if(d.startsWith('0'))return '966'+d.slice(1);
   if(d.length===9&&d[0]==='5')return '966'+d;
   return d};
-const pwMsg=(name,email,pw)=>`السلام عليكم ${String(name||'').split(' ').slice(0,2).join(' ')}، حسابك في منصة دال جاهز.
+/* النداء بالاسم الأول واسم العائلة: «أحمد الحميد» لا «أحمد علي» —
+   فالثاني اسمُ الرجل واسمُ أبيه، ولا يُنادى به أحد. */
+const shortName=n=>{const w=String(n||'').trim().split(/\s+/).filter(Boolean);
+  return w.length>2?w[0]+' '+w[w.length-1]:w.join(' ')};
+const pwMsg=(name,email,pw)=>`السلام عليكم ${shortName(name)}، حسابك في منصة دال جاهز.
 
 الرابط: ${location.origin}
 اسم الدخول: ${email}
