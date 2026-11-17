@@ -153,6 +153,7 @@ function impModal() {
 Object.assign(ACT, {
   'uf-set'(t) { S.uf[t.dataset.k] = t.value; S.umenu = null; draw() },
   'urow'(t) { S.umenu = S.umenu === t.dataset.id ? null : t.dataset.id; draw() },
+  'umenu-close'() { if (S.umenu) { S.umenu = null; draw() } },
   'imp-open'() { if (!guard('user.write')) return; S.imp = {}; impModal() },
   'imp-reset'() { S.imp = {}; impModal() },
   async 'imp-tpl'() { try { await impTemplate(); toast('نُزّل النموذج') } catch (e) { toast('تعذّر توليد النموذج', e.message) } },
@@ -363,3 +364,19 @@ ACT['comm-toggle'] = function (t) {
   toast(u.commApprover ? `${u.name} صار معتمدًا للاتصال المؤسسي` : `أُلغي اعتماد ${u.name} للاتصال المؤسسي`);
   draw();
 };
+
+
+/* قائمة الصفّ (⋯) كانت لا تُغلق إلا بضغط النقاط الثلاث مرةً أخرى، فتبقى
+   مفتوحةً فوق الجدول وتحجب ما تحتها. تُغلق الآن بأي ضغطٍ خارجها وبمفتاح
+   الهروب. والمستمع في طور الصعود بعد موزّع الإجراءات، فيُنفَّذ ما ضُغط
+   عليه أولًا ثم تُغلق القائمة. */
+document.addEventListener('click', e => {
+  if (!S.umenu) return;
+  if (e.target.closest('[data-act="urow"]')) return;   // زرّ الفتح والإغلاق نفسه
+  // واختيارُ بندٍ منها يُغلقها أيضًا: الموزّع نفّذ البند قبل هذا المستمع،
+  // والنافذة المنبثقة في طبقةٍ أخرى لا يمسّها إعادةُ رسم الجدول
+  S.umenu = null; draw();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.umenu && !$('#layer').innerHTML) { S.umenu = null; draw() }
+});
