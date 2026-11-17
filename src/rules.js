@@ -27,7 +27,7 @@ function visitRule(ses, oldO, newO, del, ctx, diff, only) {
   // إنشاء: الموظف لنفسه فقط، وبحالة غير محسومة
   if (!oldO) {
     if (owner !== me) return 'لا يُنشئ أحد طلب زيارة باسم غيره';
-    const start = ctx.commOn && ctx.commOn() ? ['draft','pending_comm'] : ['draft','pending_comm','pending_lm'];
+    const start = (ctx.commOnFor ? ctx.commOnFor(owner) : (ctx.commOn && ctx.commOn())) ? ['draft','pending_comm'] : ['draft','pending_comm','pending_lm'];
     if (!start.includes(newSt)) return `لا يبدأ طلب الزيارة بحالة «${newSt}»`;
     if (newO.durMin || (newO.attach || []).length || newO.closedAt || newO.okAt) return 'بيانات التنفيذ تُرفع بعد التصريح بالزيارة';
     if ((newO.decisions || []).some(d => d && d.action !== 'submit')) return 'لا يعتمد الموظف طلبه بنفسه';
@@ -37,7 +37,7 @@ function visitRule(ses, oldO, newO, del, ctx, diff, only) {
   // صاحب الطلب: إعادة إرسال بعد تعديل، أو رفع التقرير بعد التصريح
   if (owner === me) {
     if (['draft','returned'].includes(oldSt)) {
-      const start = ctx.commOn && ctx.commOn() ? ['draft','pending_comm'] : ['draft','pending_comm','pending_lm'];
+      const start = (ctx.commOnFor ? ctx.commOnFor(owner) : (ctx.commOn && ctx.commOn())) ? ['draft','pending_comm'] : ['draft','pending_comm','pending_lm'];
       if (!start.includes(newSt)) return `لا ينقل الموظف طلبه من «${oldSt}» إلى «${newSt}»`;
       if (diff.includes('decisions') && (newO.decisions || []).slice((oldO.decisions || []).length).some(d => d && d.action !== 'submit')) return 'لا يعتمد الموظف طلبه بنفسه';
       return true;

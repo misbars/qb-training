@@ -2403,6 +2403,13 @@ const commApprovers=()=>{const m=new Map();
 const isCommApprover=uid=>{const u=U(uid);if(!u||u.active===false)return false;
   return u.commApprover===true||commDelegTo(uid).length>0};
 const commOn=()=>DB.settings.commApproval!==false&&commApprovers().length>0;
+/* المحطة المبدئية لا تضيف شيئًا حين يكون معتمدها هو الرئيس المباشر نفسه:
+   يصل الطلبُ الشخصَ ذاته مرتين فيعتمده مرتين، والأولى لم تُراجِع شيئًا لم
+   يُراجِعه في الثانية. تُطوى حينئذٍ ويذهب الطلب إلى رئيسه مباشرةً. ولو كان
+   معه مفوَّضٌ أو معتمدٌ ثانٍ بقيت، لأن غيره قد يكون هو الذي ينظر فيها. */
+const commOnFor=uid=>{if(!commOn())return false;
+  const u=U(uid),ap=commApprovers();
+  return !(u&&u.managerId&&ap.length===1&&ap[0].id===u.managerId)};
 /* الزيارة تُحتسب في سجل التطوير حين تُغلق باعتماد التقرير، لا حين يُؤذن بها.
    و'approved' القديمة تعني في الصفوف السابقة «اعتُمدت الزيارة» فتبقى محتسبة. */
 const visitCounts=v=>v.status==='closed'||(v.status==='approved'&&!v.reqAt);
@@ -2422,7 +2429,7 @@ const firstName=u=>((u&&u.name)||'').split(' ')[0];
 function visitTrack(v){
   const u=U(v.userId)||{},mg=U(u.managerId);
   const st=[{t:'قدّمتَها'}];
-  if(commOn()||v.status==='pending_comm'||(v.decisions||[]).some(d=>d.stage==='comm'))st.push({t:'الاتصال المؤسسي',who:'موافقة مبدئية'});
+  if(commOnFor(v.userId)||v.status==='pending_comm'||(v.decisions||[]).some(d=>d.stage==='comm'))st.push({t:'الاتصال المؤسسي',who:'موافقة مبدئية'});
   st.push({t:'رئيسك',who:mg?firstName(mg):''},{t:'نفّذ الزيارة'},{t:'التقرير والشاهد'},{t:'مغلقة'});
   const i=k=>st.findIndex(x=>x.t===k);
   const M={draft:0,pending_comm:i('الاتصال المؤسسي'),pending_lm:i('رئيسك'),approved:i('نفّذ الزيارة'),
@@ -2508,7 +2515,7 @@ function saveVisit(userId,f,submit){
   if(submit){
     rec.mgrId=u.managerId;rec.reqAt=nowISO();
     rec.decisions.push({at:nowISO(),by:userId,action:'submit',stage:'req',note:''});
-    if(commOn()){
+    if(commOnFor(userId)){
       rec.status='pending_comm';
       commApprovers().forEach(c=>notify(c.id,`طلب زيارة بانتظار موافقتكم: ${u.name}`,'طلب زيارة ميدانية',
         `<p>يطلب <b>${esc(u.name)}</b> زيارة <b>${esc(rec.org)}</b> في ${esc(rec.place)} بتاريخ ${fmt(rec.date)}.</p><p>الهدف: ${esc(rec.goals)}</p>`,'مراجعة الطلب','commvisits'));
@@ -2788,7 +2795,7 @@ function visitModal(id){
   S._vs={id:v?v.id:null,attach:(e.attach||[]).slice()};
   const dis=ro?'disabled':'';
   const mgr=mgrOfUser(ME());
-  const dest=commOn()?'ستُرسل أولًا إلى إدارة الاتصال المؤسسي للموافقة المبدئية، ثم إلى رئيسك المباشر'
+  const dest=commOnFor(S.me)?'ستُرسل أولًا إلى إدارة الاتصال المؤسسي للموافقة المبدئية، ثم إلى رئيسك المباشر'
                      :(mgr?`ستُرسل إلى رئيسك المباشر: ${esc(mgr.name)}`:'لا يوجد رئيس مباشر محدد لك');
   mask(`${mHead(ro?'تفاصيل طلب الزيارة':'طلب زيارة ميدانية',dest)}<div class="m-b">
   ${v?visitTrack(v):''}
@@ -3242,7 +3249,7 @@ const ACT2={
   if(!needRole('employee'))return;
   const sb=t.dataset.submit==='1';
   const r=saveVisit(S.me,visitForm(),sb);if(!r.ok){toast('تعذّر الحفظ',r.msg);return}
-  closeLayer();toast(sb?(commOn()?'أُرسل الطلب إلى إدارة الاتصال المؤسسي':'أُرسل الطلب إلى رئيسك المباشر'):'حُفظت المسوّدة');draw();
+  closeLayer();toast(sb?(commOnFor(S.me)?'أُرسل الطلب إلى إدارة الاتصال المؤسسي':'أُرسل الطلب إلى رئيسك المباشر'):'حُفظت المسوّدة');draw();
  },
  'visit-report'(t){if(!needRole('employee'))return;visitReportModal(t.dataset.id)},
  'vr-dur'(){const m=visitDur({start:fieldVal('vr_start'),end:fieldVal('vr_end')});const el=document.getElementById('vr_dur');if(el)el.textContent=m?minTxt(m):'—'},

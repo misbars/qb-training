@@ -146,7 +146,27 @@ async function readCtx(ses, S) {
     const a = dirOf(t.deptId), b = dirOf(ses.user.deptId);
     return !!a && a === b;
   };
-  return { team: () => teamIds, commOn: () => commOn, isComm: () => isComm, sameUnit, salt: await vSecret(S) };
+  // المحطة المبدئية تُطوى حين يكون معتمدها الوحيد هو الرئيس المباشر نفسه،
+  // فلا يُعتمد الطلب مرتين من شخصٍ واحد. ولو كان معه مفوَّضٌ أو معتمدٌ ثانٍ
+  // بقيت المحطة، لأن غيره قد يكون هو الناظر فيها.
+  const effective = () => {
+    const m = new Map();
+    approvers.forEach(u => {
+      m.set(u.id, u);
+      const d = u.commDeleg;
+      if (d && d.to && d.until >= today) {
+        const t = users.find(x => x.id === d.to);
+        if (t && t.active !== false) m.set(t.id, t);
+      }
+    });
+    return [...m.values()];
+  };
+  const commOnFor = uid => {
+    if (!commOn) return false;
+    const t = users.find(u => u.id === uid), ap = effective();
+    return !(t && t.managerId && ap.length === 1 && ap[0].id === t.managerId);
+  };
+  return { team: () => teamIds, commOn: () => commOn, commOnFor, isComm: () => isComm, sameUnit, salt: await vSecret(S) };
 }
 
 async function snapshot(ses, S) {
