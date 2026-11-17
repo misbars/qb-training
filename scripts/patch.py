@@ -331,14 +331,14 @@ _CERT = r"""  const line=[`بواقع <b style="color:var(--navy);font-weight:60
      <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column;text-align:center">
       <img src="${LOGO}" alt="" style="height:58px;width:auto;align-self:center;flex:none">
       <div style="margin-top:6px;font-size:13px;color:var(--ink-2);flex:none">الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</div>
-      <div style="font-size:14.5px;font-weight:600;color:var(--navy);letter-spacing:.1em;margin-top:12px;flex:none">شهادة إتمام تدريبي</div>
+      <div style="font-size:14.5px;font-weight:600;color:var(--navy);margin-top:12px;flex:none">شهادة إتمام تدريبي</div>
       <div style="display:flex;align-items:center;gap:9px;margin:9px auto 0;max-width:360px;width:100%;flex:none">
        <i style="flex:1;height:1px;background:var(--sand)"></i>
        <i style="width:6px;height:6px;background:var(--teal);transform:rotate(45deg)"></i>
        <i style="flex:1;height:1px;background:var(--sand)"></i>
       </div>
       <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:6px 0">
-       <div style="font-size:14px;color:var(--teal);letter-spacing:.04em">تشهد الجمعية بأن</div>
+       <div style="font-size:14px;color:var(--teal)">تشهد الجمعية بأن</div>
        <div style="font-size:42px;font-weight:600;color:var(--navy);margin:10px 0;line-height:1.3">${esc(u.name)}</div>
        <div style="font-size:14px;color:var(--ink-2)">قد أتمّ بنجاح متطلبات</div>
        <div style="font-size:27px;font-weight:600;color:var(--teal);margin:9px 0 16px;line-height:1.45">${esc(titleOf(x.kind,x.refId))}</div>
