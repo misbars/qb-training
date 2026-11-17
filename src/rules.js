@@ -76,7 +76,14 @@ export function authorize(ses, col, oldO, newO, del, ctx) {
   const only = (...ks) => diff.every(k => ks.includes(k));
   // سجل التدقيق والإشعارات: إضافة فقط
   if (col === 'audit') { if (oldO) return del ? 'skip' : 'لا يُعدَّل سجل التدقيق'; return newO.by === me ? true : 'لا يُكتب التدقيق باسم مستخدم آخر' }
-  if (col === 'mails') { if (!oldO) return true; if (oldO.to === me && (del || only('unread'))) return true; return 'لا يمكن تعديل إشعارات مستخدم آخر' }
+  if (col === 'mails') {
+    if (!oldO) return true;
+    if (oldO.to === me && (del || only('unread'))) return true;
+    // إشعارٌ تجريبيٌّ موجَّه إلى مستخدمٍ حُذف لا يصل أحدًا ولا يُحذف:
+    // يبقى معلّقًا فيُبقي معه شريط «بيانات تجريبية» فوق بيانات حقيقية
+    if (del && role === 'sysadmin' && oldO.demo === true) return true;
+    return 'لا يمكن تعديل إشعارات مستخدم آخر';
+  }
   // حالة تضمين فيديو يوتيوب يسجّلها مشغّل أي مستخدم؛ لا يُسمح بغيرها
   if (col === 'libs' && oldO && diff.length && only('embed')) return true;
   if (col === 'settings') {
