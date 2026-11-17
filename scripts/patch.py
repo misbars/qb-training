@@ -143,7 +143,7 @@ function loginView(){
    <p class="lg-hint">الموظفون والمدربون يدخلون من هنا بالبريد الرسمي نفسه.</p>
   </form>
 
-  <footer class="lg-foot"><b>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</b>إدارة التطوير والتدريب · جميع الحقوق محفوظة ${new Date().getFullYear()}</footer>
+  <footer class="lg-foot"><b>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</b>إدارة التطوير والتدريب · جميع الحقوق محفوظة ${new Date().getFullYear()}<span class="sig">Powered by Abdulrahman Alomar</span></footer>
  </main></div>`;
 }
 Object.assign(ACT,{
@@ -611,6 +611,9 @@ html:has(.login),body:has(.login){background:var(--sand-2)}
 .lg-help:hover{color:var(--lg-acc)}
 
 .lg-foot{text-align:center;font-size:11.5px;line-height:1.9;color:var(--ink-3)}
+/* التوقيع في سطر الحقوق وحده: لاتينيٌّ فيُعزل اتجاهه، وأخفتُ من اسم
+   الجمعية فلا ينازعه */
+.sig{display:block;direction:ltr;unicode-bidi:isolate;margin-top:3px;font-size:10.5px;letter-spacing:.02em;opacity:.72}
 .lg-foot b{display:block;font-weight:600;color:var(--ink-2);font-size:12.5px}
 
 /* شاشة الإقلاع بنفس الجو */
@@ -856,6 +859,7 @@ function homeView(){
  <footer class="hm-foot">
   <b>الجمعية الخيرية لتحفيظ القرآن الكريم ببريدة</b>
   إدارة التطوير والتدريب · جميع الحقوق محفوظة ${new Date().getFullYear()}
+  <span class="sig">Powered by Abdulrahman Alomar</span>
  </footer>
 </div>`;
 }
