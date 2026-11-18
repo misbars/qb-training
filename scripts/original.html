@@ -392,6 +392,13 @@ const dow=s=>DAY[D(s).getDay()];
 const dBetween=(a,b)=>Math.round((D(b)-D(a))/864e5);
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const nowISO=()=>new Date().toISOString();
+/* الأوقات تُحفظ بتوقيت غرينتش، وكان سجل التدقيق يعرض النصّ المحفوظ كما هو
+   فيقرأ مسؤول النظام كل عملية متأخرةً ثلاث ساعات عن ساعته. تُحوَّل للعرض
+   إلى توقيت جهاز القارئ. */
+const tLocal=iso=>{const d=new Date(iso);
+  if(isNaN(d))return String(iso||'').replace('T',' ').slice(0,16);
+  const z=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`};
 const mmss=s=>{s=Math.max(0,Math.round(s));return `${Math.floor(s/60)}:${pad(s%60)}`};
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
 const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
@@ -3799,7 +3806,7 @@ function vAdmAudit(){
   const q=S.af.q.trim();let L=DB.audit.slice().reverse();if(q)L=L.filter(a=>(a.action+a.byName+a.detail+a.type).includes(q));
   return `${pg('سجل التدقيق',`يسجّل العمليات المؤثرة: من فعل ماذا ومتى. السجل محدود بآخر ${N(3000)} عملية.`,`<button class="btn ghost sm" data-act="exp-audit" data-fmt="xlsx">Excel</button><button class="btn ghost sm" data-act="exp-audit" data-fmt="csv">CSV</button>`)}
   <div class="card pad" style="margin-bottom:12px"><input class="inp" id="aq" placeholder="بحث في الإجراء أو المستخدم أو التفاصيل" value="${esc(S.af.q)}" aria-label="بحث"></div>
-  <div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>النوع</th><th>التفاصيل</th></tr></thead><tbody>${L.slice(0,300).map(a=>`<tr><td class="small num" style="white-space:nowrap">${esc(a.at.replace('T',' ').slice(0,19))}</td><td class="small">${esc(a.byName)}<div class="muted" style="font-size:11px">${esc(ROLES[a.role]||'')}</div></td><td><span class="tag ${a.action==='denied'?'bad':''} mini">${esc(a.action)}</span></td><td class="small">${esc(a.type)}</td><td class="small">${esc(a.detail)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">لا سجلات</td></tr>'}</tbody></table></div><div class="small muted" style="margin-top:8px">يُعرض آخر ${Math.min(300,L.length)} من ${N(L.length)}</div>`;
+  <div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>النوع</th><th>التفاصيل</th></tr></thead><tbody>${L.slice(0,300).map(a=>`<tr><td class="small num" style="white-space:nowrap">${esc(tLocal(a.at))}</td><td class="small">${esc(a.byName)}<div class="muted" style="font-size:11px">${esc(ROLES[a.role]||'')}</div></td><td><span class="tag ${a.action==='denied'?'bad':''} mini">${esc(a.action)}</span></td><td class="small">${esc(a.type)}</td><td class="small">${esc(a.detail)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">لا سجلات</td></tr>'}</tbody></table></div><div class="small muted" style="margin-top:8px">يُعرض آخر ${Math.min(300,L.length)} من ${N(L.length)}</div>`;
 }
 
 /* ---- البيانات: النسخ الاحتياطي والاستعادة والسلامة ---- */

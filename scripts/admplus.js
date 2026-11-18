@@ -278,7 +278,7 @@ VIEWS['adm-audit'] = function () {
   </div>
   <div class="small muted" style="margin:10px 0 2px">${f.logins ? '' : 'عمليات الدخول والخروج مخفية · '}يُعرض ${num(Math.min(300, L.length))} من ${num(L.length)}</div>
   <div class="card tbl-wrap"><table class="sm-t"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>على</th><th>التفاصيل</th></tr></thead><tbody>${L.slice(0, 300).map(a => `<tr>
-    <td class="small num" style="white-space:nowrap">${esc(a.at.replace('T', ' ').slice(0, 16))}</td>
+    <td class="small num" style="white-space:nowrap">${esc(tLocal(a.at))}</td>
     <td class="small">${esc(a.byName)}<div class="muted" style="font-size:11px">${esc(ROLES[a.role] || '')}</div></td>
     <td class="small"><span class="tag ${/denied|fail/.test(a.action) ? 'bad' : ''} mini">${esc(audAr(a.action))}</span></td>
     <td class="small muted">${esc(AUD_SUBJ[a.type] || a.type || '—')}</td>
